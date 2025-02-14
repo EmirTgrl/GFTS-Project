@@ -4,6 +4,8 @@ import {
   fetchStopsByRoute,
   fetchRouteTimes,
   fetchBusesByRoute,
+  fetchCalendarByRoute,
+  fetchTripsByRoute,
 } from "../api";
 import {
   MapContainer,
@@ -32,8 +34,11 @@ const MapPage = () => {
   const [routes, setRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [stops, setStops] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [stopTimes, setStopTimes] = useState([]);
   const [buses, setBuses] = useState([]);
+  const [calendar, setCalendar] = useState(null);
+  const [trips, setTrips] = useState([]);
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
   const [zoom, setZoom] = useState(13);
 
@@ -52,19 +57,17 @@ const MapPage = () => {
   const handleRouteSelect = async (routeId) => {
     setSelectedRoute(routeId);
     try {
-      // Durakları al
       const stopsData = await fetchStopsByRoute(routeId);
       setStops(stopsData);
-
-      // Kalkış/Varış saatlerini al
       const timesData = await fetchRouteTimes(routeId);
       setStopTimes(timesData);
-
-      // Otobüsleri al
       const busesData = await fetchBusesByRoute(routeId);
       setBuses(busesData);
+      const calendarData = await fetchCalendarByRoute(routeId);
+      setCalendar(calendarData);
+      const tripsData = await fetchTripsByRoute(routeId);
+      setTrips(tripsData);
 
-      // Harita merkezini güncelle
       if (stopsData.length > 0) {
         const centerLat =
           stopsData.reduce((sum, stop) => sum + stop.stop_lat, 0) /
@@ -76,12 +79,13 @@ const MapPage = () => {
         setZoom(14);
       }
     } catch (error) {
-      console.error("Error fetching stops or times:", error);
+      console.error("Error fetching datas:", error);
     }
   };
 
   return (
     <div className="map-container">
+      <br />
       <h2>Rota Haritası</h2>
       <select
         onChange={(e) => handleRouteSelect(e.target.value)}
@@ -95,6 +99,42 @@ const MapPage = () => {
           </option>
         ))}
       </select>
+
+      {calendar && (
+        <div className="calendar-info">
+          {calendar.length > 0 ? (
+            <p>
+              Çalışma Günleri:{" "}
+              {calendar.some(
+                (c) =>
+                  c.monday &&
+                  c.tuesday &&
+                  c.wednesday &&
+                  c.thursday &&
+                  c.friday &&
+                  c.saturday &&
+                  c.sunday
+              )
+                ? "Her gün çalışıyor"
+                : calendar
+                    .map((c) => {
+                      let days = [];
+                      if (c.monday) days.push("Pazartesi");
+                      if (c.tuesday) days.push("Salı");
+                      if (c.wednesday) days.push("Çarşamba");
+                      if (c.thursday) days.push("Perşembe");
+                      if (c.friday) days.push("Cuma");
+                      if (c.saturday) days.push("Cumartesi");
+                      if (c.sunday) days.push("Pazar");
+                      return days.join(", ");
+                    })
+                    .join(" / ")}
+            </p>
+          ) : (
+            <p>Çalışma günleri bilgisi bulunamadı.</p>
+          )}
+        </div>
+      )}
 
       <MapContainer
         center={mapCenter}
@@ -116,7 +156,7 @@ const MapPage = () => {
               <u>Geçen Otobüsler:</u>
               <ul>
                 {buses
-                  .filter((bus) => bus.stop_id === stop.stop_id) // Sadece ilgili durağa gelen otobüsleri göster
+                  .filter((bus) => bus.stop_id === stop.stop_id)
                   .map((bus) => (
                     <li
                       key={`${bus.trip_id}-${bus.stop_id}-${bus.arrival_time}`}
@@ -124,6 +164,33 @@ const MapPage = () => {
                       <strong>Otobüs {bus.trip_id}</strong>
                       <br />
                       Varış: {bus.arrival_time} - Kalkış: {bus.departure_time}
+                    </li>
+                  ))}
+              </ul>
+
+              <u>Sefer Bilgisi: </u>
+              <ul>
+                {trips
+                  .filter((trip) => trip.route_id === selectedRoute)
+                  .map((trip) => (
+                    <li key={trip.trip_id}>
+                      <strong>
+                        {trip.trip_headsign
+                          ? trip.trip_headsign
+                          : "Bilinmeyen Sefer"}
+                      </strong>
+                      <br />
+                      Başlangıç Durakları:
+                      {trip.stop_times.map((stopTime, index) => (
+                        <div key={index}>
+                          Durak:{" "}
+                          {stops.find((s) => s.stop_id === stopTime.stop_id)
+                            ?.stop_name || "Bilinmeyen Durak"}
+                          <br />
+                          Varış: {stopTime.arrival_time} - Kalkış:{" "}
+                          {stopTime.departure_time}
+                        </div>
+                      ))}
                     </li>
                   ))}
               </ul>

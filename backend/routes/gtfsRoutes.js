@@ -100,4 +100,55 @@ router.get("/routes/:route_id/buses", async (req, res) => {
   }
 });
 
+router.get("/routes/:route_id/calendar", async (req, res) => {
+  try {
+    const { route_id } = req.params;
+    const [rows] = await pool.execute(
+      `SELECT calendar.* FROM calendar
+       JOIN trips ON calendar.service_id = trips.service_id
+       WHERE trips.route_id = ?
+       GROUP BY calendar.service_id`,
+      [route_id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
+router.get("/routes/:route_id/trips", async (req, res) => {
+  try {
+    const { route_id } = req.params;
+
+    const [trips] = await pool.execute(
+      `SELECT trip_id, route_id, service_id, trip_headsign, direction_id FROM trips WHERE route_id = ?`,
+      [route_id]
+    );
+
+    const stopTimesQuery = `SELECT stop_times.trip_id, stop_times.stop_id, stop_times.arrival_time, stop_times.departure_time
+    FROM stop_times
+    JOIN trips ON stop_times.trip_id = trips.trip_id
+    WHERE trips.route_id = ?
+    ORDER BY stop_times.arrival_time;`;
+
+    const [stopTimes] = await pool.execute(stopTimesQuery, [route_id]);
+
+    const tripsWithTimes = trips.map((trip) => {
+      const tripStopTimes = stopTimes.filter(
+        (stopTime) => stopTime.trip_id === trip.trip_id
+      );
+      return {
+        ...trip,
+        stop_times: tripStopTimes,
+      };
+    });
+
+    res.json(tripsWithTimes);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
 module.exports = router;
