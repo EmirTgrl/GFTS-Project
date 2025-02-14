@@ -32,8 +32,8 @@ const MapPage = () => {
   const [routes, setRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [stops, setStops] = useState([]);
-  const [stopTimes, setStopTimes] = useState([]); // stopTimes state'i eklendi
-  const [buses, setBuses] = useState([]); // Otobüs bilgilerini tutan state
+  const [stopTimes, setStopTimes] = useState([]);
+  const [buses, setBuses] = useState([]);
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
   const [zoom, setZoom] = useState(13);
 
@@ -106,16 +106,21 @@ const MapPage = () => {
         <MapUpdater center={mapCenter} zoom={zoom} />
 
         {stops.map((stop) => (
-          <Marker key={stop.stop_id} position={[stop.stop_lat, stop.stop_lon]}>
+          <Marker
+            key={`${stop.stop_id}-${selectedRoute}`}
+            position={[stop.stop_lat, stop.stop_lon]}
+          >
             <Popup>
               <strong>{stop.stop_name}</strong>
               <br />
               <u>Geçen Otobüsler:</u>
               <ul>
                 {buses
-                  .filter((bus) => bus.stop_id === stop.stop_id) // stop_id'ye göre filtrele
+                  .filter((bus) => bus.stop_id === stop.stop_id) // Sadece ilgili durağa gelen otobüsleri göster
                   .map((bus) => (
-                    <li key={bus.trip_id}>
+                    <li
+                      key={`${bus.trip_id}-${bus.stop_id}-${bus.arrival_time}`}
+                    >
                       <strong>Otobüs {bus.trip_id}</strong>
                       <br />
                       Varış: {bus.arrival_time} - Kalkış: {bus.departure_time}

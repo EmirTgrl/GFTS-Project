@@ -1,4 +1,4 @@
-.navbar {
+.header {
   background-color: #0078d7;
   padding: 10px;
   display: flex;
@@ -11,7 +11,7 @@
   z-index: 1000;
 }
 
-.navbar ul {
+.header ul {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -20,17 +20,17 @@
   width: 100%;
 }
 
-.navbar li {
+.header li {
   margin: 0 15px;
 }
 
-.navbar a {
+.header a {
   color: white;
   text-decoration: none;
   font-weight: bold;
   transition: color 0.3s;
 }
 
-.navbar a:hover {
+.header a:hover {
   color: #ffcc00;
 }

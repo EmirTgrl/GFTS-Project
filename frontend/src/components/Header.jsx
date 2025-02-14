@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import "../styles/Navbar.css";
+import "../styles/Header.css";
 
-const Navbar = () => {
+const Header = () => {
   return (
-    <nav className="navbar">
+    <nav className="header">
       <ul>
         <li>
           <Link to="/">Ana Sayfa</Link>
@@ -16,4 +16,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default Header;
