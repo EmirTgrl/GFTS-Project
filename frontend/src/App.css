@@ -1,4 +1,3 @@
-/* Sayfanın tamamını dikeyde ve yatayda ortalamak için */
 body,
 #root {
   font-family: Arial, sans-serif;
@@ -8,13 +7,12 @@ body,
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* Navbar üstte kalacak */
-  min-height: 100vh; /* Sayfa yüksekliği tam ekran olacak */
+  justify-content: flex-start;
+  min-height: 100vh; 
   width: 100%;
   text-align: center;
 }
 
-/* Navbar tam ortada */
 .navbar {
   background-color: #0078d7;
   padding: 10px;
@@ -24,7 +22,6 @@ body,
   width: 100%;
 }
 
-/* Navbar içindeki butonlar ortada */
 .navbar ul {
   list-style: none;
   padding: 0;
@@ -48,13 +45,12 @@ body,
   color: #ffcc00;
 }
 
-/* Sayfa içeriğini tam ortala */
 .page-content {
-  flex: 1; /* Tüm ekranı kaplamasını sağlar */
+  flex: 1; 
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* Dikey ve yatay ortalama */
+  justify-content: center;
   width: 100%;
   text-align: center;
 }
