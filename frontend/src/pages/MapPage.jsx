@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import {
   fetchRoutes,
   fetchStopsByRoute,
-  fetchRouteTimes,
   fetchBusesByRoute,
+  fetchCalendarByRoute,
+  fetchTripsByRoute,
 } from "../api";
 import {
   MapContainer,
   TileLayer,
   Marker,
-  Popup,
   Polyline,
+  Popup,
   useMap,
 } from "react-leaflet";
 import "../styles/Map.css";
@@ -19,10 +20,15 @@ import PropTypes from "prop-types";
 const MapUpdater = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom);
+    try {
+      map.setView(center, zoom);
+    } catch (error) {
+      console.error("MapUpdater error:", error);
+    }
   }, [center, zoom, map]);
   return null;
 };
+
 MapUpdater.propTypes = {
   center: PropTypes.arrayOf(PropTypes.number).isRequired,
   zoom: PropTypes.number.isRequired,
@@ -32,8 +38,9 @@ const MapPage = () => {
   const [routes, setRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [stops, setStops] = useState([]);
-  const [stopTimes, setStopTimes] = useState([]);
   const [buses, setBuses] = useState([]);
+  const [calendar, setCalendar] = useState(null);
+  const [trips, setTrips] = useState([]);
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
   const [zoom, setZoom] = useState(13);
 
@@ -51,57 +58,146 @@ const MapPage = () => {
 
   const handleRouteSelect = async (routeId) => {
     setSelectedRoute(routeId);
+    setStops([]);
+    setBuses([]);
+    setCalendar(null);
+    setTrips([]);
+
     try {
-      // Durakları al
       const stopsData = await fetchStopsByRoute(routeId);
-      setStops(stopsData);
+      const uniqueStops = stopsData.filter(
+        (stop, index, self) =>
+          index === self.findIndex((s) => s.stop_id === stop.stop_id)
+      );
+      setStops(uniqueStops);
 
-      // Kalkış/Varış saatlerini al
-      const timesData = await fetchRouteTimes(routeId);
-      setStopTimes(timesData);
-
-      // Otobüsleri al
       const busesData = await fetchBusesByRoute(routeId);
       setBuses(busesData);
 
-      // Harita merkezini güncelle
-      if (stopsData.length > 0) {
+      const calendarData = await fetchCalendarByRoute(routeId);
+      setCalendar(calendarData);
+
+      const tripsData = await fetchTripsByRoute(routeId);
+      setTrips(tripsData);
+
+      if (uniqueStops.length > 0) {
         const centerLat =
-          stopsData.reduce((sum, stop) => sum + stop.stop_lat, 0) /
-          stopsData.length;
+          uniqueStops.reduce(
+            (sum, stop) => sum + parseFloat(stop.stop_lat),
+            0
+          ) / uniqueStops.length;
         const centerLon =
-          stopsData.reduce((sum, stop) => sum + stop.stop_lon, 0) /
-          stopsData.length;
+          uniqueStops.reduce(
+            (sum, stop) => sum + parseFloat(stop.stop_lon),
+            0
+          ) / uniqueStops.length;
+        console.log("Center Lat:", centerLat, "Center Lon:", centerLon);
         setMapCenter([centerLat, centerLon]);
         setZoom(14);
       }
     } catch (error) {
-      console.error("Error fetching stops or times:", error);
+      console.error("Error fetching data:", error);
     }
   };
 
   return (
     <div className="map-container">
-      <h2>Rota Haritası</h2>
-      <select
-        onChange={(e) => handleRouteSelect(e.target.value)}
-        className="route-select"
-        value={selectedRoute || ""}
-      >
-        <option value="">Rota Seç</option>
-        {routes.map((route) => (
-          <option key={route.route_id} value={route.route_id}>
-            {route.route_long_name}
-          </option>
-        ))}
-      </select>
+      {/* Sidebar */}
+      <div className="sidebar">
+        <h2>Rota Seç</h2>
+        <select
+          onChange={(e) => handleRouteSelect(e.target.value)}
+          className="route-select"
+          value={selectedRoute || ""}
+        >
+          <option value="">Rota Seç</option>
+          {routes.map((route) => (
+            <option key={route.route_id} value={route.route_id}>
+              {route.route_long_name}
+            </option>
+          ))}
+        </select>
 
-      <MapContainer
-        center={mapCenter}
-        zoom={zoom}
-        style={{ height: "90vh", width: "calc(100vw - 20px)" }}
-        id="map"
-      >
+        {calendar && (
+          <div className="calendar-info">
+            <h3>Çalışma Günleri</h3>
+            {calendar.length > 0 ? (
+              <p>
+                {calendar.some(
+                  (c) =>
+                    c.monday &&
+                    c.tuesday &&
+                    c.wednesday &&
+                    c.thursday &&
+                    c.friday &&
+                    c.saturday &&
+                    c.sunday
+                )
+                  ? "Her gün çalışıyor"
+                  : calendar
+                      .map((c) => {
+                        let days = [];
+                        if (c.monday) days.push("Pazartesi");
+                        if (c.tuesday) days.push("Salı");
+                        if (c.wednesday) days.push("Çarşamba");
+                        if (c.thursday) days.push("Perşembe");
+                        if (c.friday) days.push("Cuma");
+                        if (c.saturday) days.push("Cumartesi");
+                        if (c.sunday) days.push("Pazar");
+                        return days.join(", ");
+                      })
+                      .join(" / ")}
+              </p>
+            ) : (
+              <p>Çalışma günleri bilgisi bulunamadı.</p>
+            )}
+          </div>
+        )}
+
+        {stops.length > 0 && (
+          <div className="stops-list">
+            <h3>Duraklar</h3>
+            <ul>
+              {stops.map((stop, index) => (
+                <li key={stop.stop_id}>
+                  <strong>
+                    {index + 1}. {stop.stop_name}
+                  </strong>
+                  <br />
+                  {buses
+                    .filter((bus) => bus.stop_id === stop.stop_id)
+                    .map((bus) => (
+                      <div key={bus.trip_id}>
+                        <p>
+                          <strong>Otobüs {bus.trip_id}</strong>
+                        </p>
+                        <p>Varış: {bus.arrival_time}</p>
+                        <p>Kalkış: {bus.departure_time}</p>
+                      </div>
+                    ))}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {buses.length > 0 && (
+          <div className="buses-list">
+            <h3>Geçen Otobüsler</h3>
+            <ul>
+              {buses.map((bus) => (
+                <li key={`${bus.trip_id}-${bus.stop_id}`}>
+                  <strong>Otobüs {bus.trip_id}</strong> - {bus.arrival_time} →{" "}
+                  {bus.departure_time}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Harita */}
+      <MapContainer center={mapCenter} zoom={zoom} id="map">
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <MapUpdater center={mapCenter} zoom={zoom} />
 
@@ -111,22 +207,19 @@ const MapPage = () => {
             position={[stop.stop_lat, stop.stop_lon]}
           >
             <Popup>
-              <strong>{stop.stop_name}</strong>
+              {stop.stop_name}
               <br />
-              <u>Geçen Otobüsler:</u>
-              <ul>
-                {buses
-                  .filter((bus) => bus.stop_id === stop.stop_id) // Sadece ilgili durağa gelen otobüsleri göster
-                  .map((bus) => (
-                    <li
-                      key={`${bus.trip_id}-${bus.stop_id}-${bus.arrival_time}`}
-                    >
+              {buses
+                .filter((bus) => bus.stop_id === stop.stop_id)
+                .map((bus) => (
+                  <div key={bus.trip_id}>
+                    <p>
                       <strong>Otobüs {bus.trip_id}</strong>
-                      <br />
-                      Varış: {bus.arrival_time} - Kalkış: {bus.departure_time}
-                    </li>
-                  ))}
-              </ul>
+                    </p>
+                    <p>Varış: {bus.arrival_time}</p>
+                    <p>Kalkış: {bus.departure_time}</p>
+                  </div>
+                ))}
             </Popup>
           </Marker>
         ))}

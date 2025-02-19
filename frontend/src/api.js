@@ -19,3 +19,13 @@ export const fetchBusesByRoute = async (routeId) => {
   const response = await fetch(`${API_BASE_URL}/routes/${routeId}/buses`);
   return response.json();
 };
+
+export const fetchCalendarByRoute = async (routeId) => {
+  const response = await fetch(`${API_BASE_URL}/routes/${routeId}/calendar`);
+  return response.json();
+};
+
+export const fetchTripsByRoute = async (routeId) => {
+  const response = await fetch(`${API_BASE_URL}/routes/${routeId}/trips`);
+  return response.json();
+};
