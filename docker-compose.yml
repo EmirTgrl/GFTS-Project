@@ -1,0 +1,50 @@
+version: "3.8"
+services:
+  db:
+    image: mysql:8.0
+    container_name: gtfs-mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+
+  backend:
+    build:
+      context: ./backend  # Updated path: Now points to the backend directory
+      dockerfile: Dockerfile #Dockerfile name.
+    container_name: gtfs-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - PORT=5000
+    volumes:
+      - ./backend:/usr/src/app  # Updated path: Mount the backend directory
+      - /usr/src/app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend  # Updated path: Now points directly to the frontend directory
+      dockerfile: Dockerfile # Dockerfile name.
+    container_name: gtfs-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+
+volumes:
+  mysql_data:
