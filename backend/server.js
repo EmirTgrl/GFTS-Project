@@ -3,7 +3,6 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const pool = require("./db.js");
 const importGTFS = require("./gtfsImport.js");
-const gtfsRoutes = require("./routes/gtfsRoutes");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -61,7 +60,9 @@ app.post("/import-gtfs", upload.single("file"), async (req, res) => {
   }
 });
 
-app.use("/api", gtfsRoutes);
+const indexController = require("./controllers/IndexController.js");
+app.use("/api",indexController);
+
 
 app.listen(port, () => {
   checkDatabaseConnection();
