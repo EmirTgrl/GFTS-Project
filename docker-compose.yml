@@ -41,7 +41,7 @@ services:
       dockerfile: Dockerfile # Dockerfile name.
     container_name: gtfs-frontend
     ports:
-      - "80:80"
+      - "5173:5173"
     depends_on:
       - backend
 
