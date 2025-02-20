@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../components/Auth/AuthContext";
 
 const HomePage = () => {
   const [file, setFile] = useState(null);
   const navigate = useNavigate();
+  const { isAuthenticated, token } = useContext(AuthContext);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (event) => {
+    event.preventDefault();
+
+    if (!isAuthenticated) {
+      alert("You must be logged in to upload data.");
+      navigate("/auth");
+      return;
+    }
+
     if (!file) {
-      alert("Lütfen bir dosya seçin");
+      alert("Please select a file");
       return;
     }
 
@@ -21,25 +31,30 @@ const HomePage = () => {
     try {
       const response = await fetch("http://localhost:5000/import-gtfs", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
+
       if (response.ok) {
-        alert("Veri başarıyla yüklendi!");
+        alert("Data importing successful!");
         navigate("/map");
       } else {
-        alert("Bir hata oluştu!");
+        const result = await response.json();
+        alert(`Error: ${result.message || "An error occurred!"}`);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Bir hata oluştu!");
+      alert("An error occurred!");
     }
   };
 
   return (
     <div className="page-content">
-      <h1>Ana Sayfa</h1>
+      <h1>Home Page</h1>
       <input type="file" onChange={handleFileChange} />
-      <button onClick={handleUpload}>Veriyi Yükle</button>
+      <button onClick={handleUpload}>Load Data</button>
     </div>
   );
 };

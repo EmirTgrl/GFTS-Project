@@ -3,10 +3,12 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const pool = require("./db.js");
 const importGTFS = require("./gtfsImport.js");
-const gtfsRoutes = require("./routes/gtfsRoutes");
+const auth = require("./routes/auth.js");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const authRoutes = require("./routes/authRoutes.js");
+const gtfsRoutes = require("./routes/gtfsRoutes.js");
 
 dotenv.config();
 const app = express();
@@ -15,11 +17,10 @@ const port = process.env.PORT || 5000;
 const checkDatabaseConnection = async () => {
   try {
     const connection = await pool.getConnection();
-    console.log("MySQL bağlantısı başarılı!");
+    console.log("Database connected successfully");
     connection.release();
   } catch (error) {
-    console.error("MySQL bağlantı hatası:", error.message);
-    process.exit(1);
+    console.error("Database connection error:", error);
   }
 };
 
@@ -41,21 +42,49 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.post("/import-gtfs", upload.single("file"), async (req, res) => {
+app.post("/import-gtfs", auth, upload.single("file"), async (req, res) => {
   try {
-    const zipFilePath = req.file.path;
-    console.log("Yüklenen dosya yolu:", zipFilePath);
-    await importGTFS(zipFilePath);
-    res.status(200).send("GTFS verisi başarıyla içe aktarıldı!");
+    console.log("📤 Import request received");
+    console.log("User ID from token:", req.user?.id);
+
+    const userId = req.user.id;
+    if (!userId) {
+      console.error("❌ User ID missing in request");
+      return res.status(400).json({ message: "User ID is missing" });
+    }
+
+    if (!req.file) {
+      console.error("❌ No file uploaded");
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    console.log("✅ File received:", req.file.originalname);
+
+    const filePath = path.join(__dirname, "uploads", req.file.originalname);
+    console.log("📂 File path:", filePath);
+
+    await importGTFS(filePath, userId);
+
+    const query = `
+      INSERT INTO imported_data (id, file_name, import_date)
+      VALUES (?, ?, NOW())
+    `;
+    await pool.query(query, [userId, req.file.originalname]);
+
+    console.log("✅ GTFS Import Completed Successfully!");
+    res.status(200).json({ message: "GTFS data imported successfully" });
   } catch (error) {
-    console.error("Veri içe aktarma hatası:", error);
-    res.status(500).send("GTFS verisi içe aktarılırken bir hata oluştu.");
+    console.error("❌ GTFS Import Error:", error.message);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 });
 
+app.use("/auth", authRoutes);
 app.use("/api", gtfsRoutes);
 
 app.listen(port, () => {
   checkDatabaseConnection();
-  console.log(`Sunucu ${port} portunda çalışıyor`);
+  console.log(`Server running on http://localhost:${port}`);
 });
