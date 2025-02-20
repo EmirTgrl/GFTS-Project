@@ -40,6 +40,7 @@ const MapPage = () => {
   const [stops, setStops] = useState([]);
   const [buses, setBuses] = useState([]);
   const [calendar, setCalendar] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [trips, setTrips] = useState([]);
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
   const [zoom, setZoom] = useState(13);
