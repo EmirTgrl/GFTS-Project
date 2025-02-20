@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: localhost    Database: gtfs_test
+-- Host: localhost    Database: gtfs
 -- ------------------------------------------------------
 -- Server version	8.0.41
 
@@ -24,16 +24,19 @@ DROP TABLE IF EXISTS `calendar`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `calendar` (
   `service_id` varchar(255) NOT NULL,
-  `monday` int DEFAULT NULL,
-  `tuesday` int DEFAULT NULL,
-  `wednesday` int DEFAULT NULL,
-  `thursday` int DEFAULT NULL,
-  `friday` int DEFAULT NULL,
-  `saturday` int DEFAULT NULL,
-  `sunday` int DEFAULT NULL,
-  `start_date` date DEFAULT NULL,
-  `end_date` date DEFAULT NULL,
-  PRIMARY KEY (`service_id`)
+  `import_id` int DEFAULT NULL,
+  `monday` tinyint NOT NULL,
+  `tuesday` tinyint NOT NULL,
+  `wednesday` tinyint NOT NULL,
+  `thursday` tinyint NOT NULL,
+  `friday` tinyint NOT NULL,
+  `saturday` tinyint NOT NULL,
+  `sunday` tinyint NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  PRIMARY KEY (`service_id`),
+  KEY `fk_calendar_imported_data` (`import_id`),
+  CONSTRAINT `fk_calendar_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -43,7 +46,7 @@ CREATE TABLE `calendar` (
 
 LOCK TABLES `calendar` WRITE;
 /*!40000 ALTER TABLE `calendar` DISABLE KEYS */;
-INSERT INTO `calendar` VALUES ('FULLW',1,1,1,1,1,1,1,'2007-01-01','2010-12-31'),('WE',0,0,0,0,0,1,1,'2007-01-01','2010-12-31');
+INSERT INTO `calendar` VALUES ('FULLW',15,1,1,1,1,1,1,1,'2007-01-01','2010-12-31'),('WE',15,0,0,0,0,0,1,1,'2007-01-01','2010-12-31');
 /*!40000 ALTER TABLE `calendar` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -56,4 +59,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-17 14:18:19
+-- Dump completed on 2025-02-20 16:57:56

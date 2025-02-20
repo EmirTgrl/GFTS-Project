@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: localhost    Database: gtfs_test
+-- Host: localhost    Database: gtfs
 -- ------------------------------------------------------
 -- Server version	8.0.41
 
@@ -23,20 +23,22 @@ DROP TABLE IF EXISTS `stop_times`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stop_times` (
-  `trip_id` varchar(255) DEFAULT NULL,
-  `arrival_time` time DEFAULT NULL,
-  `departure_time` time DEFAULT NULL,
-  `stop_id` varchar(255) DEFAULT NULL,
+  `trip_id` varchar(255) NOT NULL,
+  `arrival_time` varchar(8) NOT NULL,
+  `departure_time` varchar(8) NOT NULL,
+  `stop_id` varchar(255) NOT NULL,
   `stop_sequence` int NOT NULL,
   `stop_headsign` varchar(255) DEFAULT NULL,
-  `pickup_type` int DEFAULT NULL,
-  `drop_off_time` varchar(30) DEFAULT NULL,
+  `pickup_type` tinyint DEFAULT NULL,
+  `drop_off_time` int DEFAULT NULL,
   `shape_dist_travelled` float DEFAULT NULL,
-  `timepoint` int DEFAULT NULL,
-  KEY `trip_id` (`trip_id`),
+  `import_id` int DEFAULT NULL,
+  PRIMARY KEY (`trip_id`,`stop_sequence`),
   KEY `stop_id` (`stop_id`),
+  KEY `import_id` (`import_id`),
   CONSTRAINT `stop_times_ibfk_1` FOREIGN KEY (`trip_id`) REFERENCES `trips` (`trip_id`),
-  CONSTRAINT `stop_times_ibfk_2` FOREIGN KEY (`stop_id`) REFERENCES `stops` (`stop_id`)
+  CONSTRAINT `stop_times_ibfk_2` FOREIGN KEY (`stop_id`) REFERENCES `stops` (`stop_id`),
+  CONSTRAINT `stop_times_ibfk_3` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -46,7 +48,7 @@ CREATE TABLE `stop_times` (
 
 LOCK TABLES `stop_times` WRITE;
 /*!40000 ALTER TABLE `stop_times` DISABLE KEYS */;
-INSERT INTO `stop_times` VALUES ('STBA','06:00:00','06:00:00','STAGECOACH',1,'',0,'',0,NULL),('STBA','06:20:00','06:20:00','BEATTY_AIRPORT',2,'',0,'',0,NULL),('CITY1','06:00:00','06:00:00','STAGECOACH',1,'',0,'',0,NULL),('CITY1','06:05:00','06:07:00','NANAA',2,'',0,'',0,NULL),('CITY1','06:12:00','06:14:00','NADAV',3,'',0,'',0,NULL),('CITY1','06:19:00','06:21:00','DADAN',4,'',0,'',0,NULL),('CITY1','06:26:00','06:28:00','EMSI',5,'',0,'',0,NULL),('CITY2','06:28:00','06:30:00','EMSI',1,'',0,'',0,NULL),('CITY2','06:35:00','06:37:00','DADAN',2,'',0,'',0,NULL),('CITY2','06:42:00','06:44:00','NADAV',3,'',0,'',0,NULL),('CITY2','06:49:00','06:51:00','NANAA',4,'',0,'',0,NULL),('CITY2','06:56:00','06:58:00','STAGECOACH',5,'',0,'',0,NULL),('AB1','08:00:00','08:00:00','BEATTY_AIRPORT',1,'',0,'',0,NULL),('AB1','08:10:00','08:15:00','BULLFROG',2,'',0,'',0,NULL),('AB2','12:05:00','12:05:00','BULLFROG',1,'',0,'',0,NULL),('AB2','12:15:00','12:15:00','BEATTY_AIRPORT',2,NULL,NULL,NULL,NULL,NULL),('BFC1','08:20:00','08:20:00','BULLFROG',1,NULL,NULL,NULL,NULL,NULL),('BFC1','09:20:00','09:20:00','FUR_CREEK_RES',2,NULL,NULL,NULL,NULL,NULL),('BFC2','11:00:00','11:00:00','FUR_CREEK_RES',1,NULL,NULL,NULL,NULL,NULL),('BFC2','12:00:00','12:00:00','BULLFROG',2,NULL,NULL,NULL,NULL,NULL),('AAMV1','08:00:00','08:00:00','BEATTY_AIRPORT',1,NULL,NULL,NULL,NULL,NULL),('AAMV1','09:00:00','09:00:00','AMV',2,NULL,NULL,NULL,NULL,NULL),('AAMV2','10:00:00','10:00:00','AMV',1,NULL,NULL,NULL,NULL,NULL),('AAMV2','11:00:00','11:00:00','BEATTY_AIRPORT',2,NULL,NULL,NULL,NULL,NULL),('AAMV3','13:00:00','13:00:00','BEATTY_AIRPORT',1,NULL,NULL,NULL,NULL,NULL),('AAMV3','14:00:00','14:00:00','AMV',2,NULL,NULL,NULL,NULL,NULL),('AAMV4','15:00:00','15:00:00','AMV',1,NULL,NULL,NULL,NULL,NULL),('AAMV4','16:00:00','16:00:00','BEATTY_AIRPORT',2,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `stop_times` VALUES ('STBA','6:00:00','6:00:00','STAGECOACH',1,NULL,NULL,NULL,NULL,15);
 /*!40000 ALTER TABLE `stop_times` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -59,4 +61,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-17 14:18:19
+-- Dump completed on 2025-02-20 16:57:57

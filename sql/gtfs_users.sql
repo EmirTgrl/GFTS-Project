@@ -16,32 +16,30 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `shapes`
+-- Table structure for table `users`
 --
 
-DROP TABLE IF EXISTS `shapes`;
+DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `shapes` (
-  `shape_id` varchar(255) NOT NULL,
-  `shape_pt_lat` double NOT NULL,
-  `shape_pt_lon` double NOT NULL,
-  `shape_pt_sequence` int NOT NULL,
-  `shape_dist_traveled` float DEFAULT NULL,
-  `import_id` int DEFAULT NULL,
-  PRIMARY KEY (`shape_id`,`shape_pt_sequence`),
-  KEY `fk_shapes_imported_data` (`import_id`),
-  CONSTRAINT `fk_shapes_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE `users` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `shapes`
+-- Dumping data for table `users`
 --
 
-LOCK TABLES `shapes` WRITE;
-/*!40000 ALTER TABLE `shapes` DISABLE KEYS */;
-/*!40000 ALTER TABLE `shapes` ENABLE KEYS */;
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (3,'emir@gmail.com','$2b$10$nyHnRAlY7C4qa62zNZQHNukMR1ydOx2P1km0LV42wquaWiE00BiTS','2025-02-20 12:38:49');
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

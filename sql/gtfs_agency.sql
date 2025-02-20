@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: localhost    Database: gtfs_test
+-- Host: localhost    Database: gtfs
 -- ------------------------------------------------------
 -- Server version	8.0.41
 
@@ -24,14 +24,17 @@ DROP TABLE IF EXISTS `agency`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `agency` (
   `agency_id` varchar(255) NOT NULL,
+  `import_id` int DEFAULT NULL,
   `agency_name` varchar(255) NOT NULL,
-  `agency_url` varchar(255) DEFAULT NULL,
-  `agency_timezone` varchar(255) NOT NULL,
-  `agency_lang` varchar(255) DEFAULT NULL,
-  `agency_phone` varchar(255) DEFAULT NULL,
+  `agency_url` varchar(255) NOT NULL,
+  `agency_timezone` varchar(50) NOT NULL,
+  `agency_lang` varchar(10) DEFAULT NULL,
+  `agency_phone` varchar(50) DEFAULT NULL,
   `agency_fare_url` varchar(255) DEFAULT NULL,
   `agency_email` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`agency_id`)
+  PRIMARY KEY (`agency_id`),
+  KEY `fk_agency_imported_data` (`import_id`),
+  CONSTRAINT `fk_agency_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -41,7 +44,7 @@ CREATE TABLE `agency` (
 
 LOCK TABLES `agency` WRITE;
 /*!40000 ALTER TABLE `agency` DISABLE KEYS */;
-INSERT INTO `agency` VALUES ('DTA','Demo Transit Authority','http://google.com','America/Los_Angeles',NULL,NULL,NULL,NULL);
+INSERT INTO `agency` VALUES ('DTA',15,'Demo Transit Authority','http://google.com','America/Los_Angeles',NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `agency` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -54,4 +57,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-17 14:18:19
+-- Dump completed on 2025-02-20 16:57:56

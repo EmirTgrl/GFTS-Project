@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: localhost    Database: gtfs_test
+-- Host: localhost    Database: gtfs
 -- ------------------------------------------------------
 -- Server version	8.0.41
 
@@ -28,13 +28,18 @@ CREATE TABLE `routes` (
   `route_short_name` varchar(255) DEFAULT NULL,
   `route_long_name` varchar(255) DEFAULT NULL,
   `route_desc` text,
-  `route_type` int NOT NULL,
+  `route_type` tinyint NOT NULL,
   `route_url` varchar(255) DEFAULT NULL,
-  `route_color` varchar(255) DEFAULT NULL,
-  `route_text_color` varchar(255) DEFAULT NULL,
+  `route_color` varchar(6) DEFAULT NULL,
+  `route_text_color` varchar(6) DEFAULT NULL,
   `route_sort_order` int DEFAULT NULL,
+  `continuous_pickup` tinyint DEFAULT NULL,
+  `continuous_drop_off` tinyint DEFAULT NULL,
+  `import_id` int DEFAULT NULL,
   PRIMARY KEY (`route_id`),
-  KEY `agency_id` (`agency_id`),
+  KEY `fk_routes_agency` (`agency_id`),
+  KEY `fk_routes_imported_data` (`import_id`),
+  CONSTRAINT `fk_routes_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE,
   CONSTRAINT `routes_ibfk_1` FOREIGN KEY (`agency_id`) REFERENCES `agency` (`agency_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -45,7 +50,7 @@ CREATE TABLE `routes` (
 
 LOCK TABLES `routes` WRITE;
 /*!40000 ALTER TABLE `routes` DISABLE KEYS */;
-INSERT INTO `routes` VALUES ('AAMV','DTA','50','Airport - Amargosa Valley','',3,'','',NULL,NULL),('AB','DTA','10','Airport - Bullfrog','',3,'','','\r',NULL),('BFC','DTA','20','Bullfrog - Furnace Creek Resort','',3,'','','\r',NULL),('CITY','DTA','40','City','',3,'','','\r',NULL),('STBA','DTA','30','Stagecoach - Airport Shuttle','',3,'','','\r',NULL);
+INSERT INTO `routes` VALUES ('AAMV','DTA','50','Airport - Amargosa Valley',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15),('AB','DTA','10','Airport - Bullfrog',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15),('BFC','DTA','20','Bullfrog - Furnace Creek Resort',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15),('CITY','DTA','40','City',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15),('STBA','DTA','30','Stagecoach - Airport Shuttle',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15);
 /*!40000 ALTER TABLE `routes` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -58,4 +63,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-17 14:18:19
+-- Dump completed on 2025-02-20 16:57:56

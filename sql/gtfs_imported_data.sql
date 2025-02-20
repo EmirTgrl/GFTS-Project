@@ -16,32 +16,31 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `shapes`
+-- Table structure for table `imported_data`
 --
 
-DROP TABLE IF EXISTS `shapes`;
+DROP TABLE IF EXISTS `imported_data`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `shapes` (
-  `shape_id` varchar(255) NOT NULL,
-  `shape_pt_lat` double NOT NULL,
-  `shape_pt_lon` double NOT NULL,
-  `shape_pt_sequence` int NOT NULL,
-  `shape_dist_traveled` float DEFAULT NULL,
-  `import_id` int DEFAULT NULL,
-  PRIMARY KEY (`shape_id`,`shape_pt_sequence`),
-  KEY `fk_shapes_imported_data` (`import_id`),
-  CONSTRAINT `fk_shapes_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE `imported_data` (
+  `import_id` int NOT NULL AUTO_INCREMENT,
+  `id` int DEFAULT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `import_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`import_id`),
+  KEY `imported_data_ibfk_1` (`id`),
+  CONSTRAINT `imported_data_ibfk_1` FOREIGN KEY (`id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `shapes`
+-- Dumping data for table `imported_data`
 --
 
-LOCK TABLES `shapes` WRITE;
-/*!40000 ALTER TABLE `shapes` DISABLE KEYS */;
-/*!40000 ALTER TABLE `shapes` ENABLE KEYS */;
+LOCK TABLES `imported_data` WRITE;
+/*!40000 ALTER TABLE `imported_data` DISABLE KEYS */;
+INSERT INTO `imported_data` VALUES (15,3,'sample-feed-1.zip','2025-02-20 12:39:18'),(16,3,'sample-feed-1.zip','2025-02-20 12:39:18'),(17,3,'sample-feed-1.zip','2025-02-20 12:40:34'),(18,3,'sample_feed-1.zip','2025-02-20 12:54:27'),(19,3,'sample_feed-1.zip','2025-02-20 12:56:38'),(20,3,'sample_feed-1.zip','2025-02-20 12:59:14'),(21,3,'sample_feed-1.zip','2025-02-20 13:03:33'),(22,3,'sample-feed-1.zip','2025-02-20 13:10:07'),(23,3,'sample-feed-1.zip','2025-02-20 13:13:32'),(24,3,'sample-feed-1.zip','2025-02-20 13:14:22'),(25,3,'sample-feed-1.zip','2025-02-20 13:15:40');
+/*!40000 ALTER TABLE `imported_data` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
