@@ -11,7 +11,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-
+// TODO: move this to db.js
 const checkDatabaseConnection = async (retries = 5, interval = 3000) => {
   for (let i = 0; i < retries; i++) {
     try {
@@ -34,6 +34,7 @@ const checkDatabaseConnection = async (retries = 5, interval = 3000) => {
 app.use(express.json());
 app.use(cors());
 
+// TODO: move this import/export service
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = path.join(__dirname, "uploads");
@@ -48,6 +49,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// TODO: move this import/export service
 app.post("/import-gtfs", upload.single("file"), async (req, res) => {
   try {
     const zipFilePath = req.file.path;
