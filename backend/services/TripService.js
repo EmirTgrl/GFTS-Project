@@ -1,11 +1,7 @@
 const pool = require("../db.js");
 
 const tripService = {
-<<<<<<< HEAD
-  //TODO: move this to another service or fix naming 
-=======
   //TODO: move this to another service or fix naming also improve 
->>>>>>> 18200d1 (feat: trip service crud)
     getTripsByRouteId: async (req, res) =>{
         try {
             const { route_id } = req.params;
