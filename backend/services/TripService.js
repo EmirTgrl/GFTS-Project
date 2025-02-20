@@ -1,6 +1,7 @@
 const pool = require("../db.js");
 
 const tripService = {
+  //TODO: move this to another service or fix naming 
     getTripsByRouteId: async (req, res) =>{
         try {
             const { route_id } = req.params;
@@ -34,6 +35,7 @@ const tripService = {
             res.status(500).json({ error: "Server Error" });
           }
     },
+  //TODO: move this to another service or fix naming 
     getTripsAndStopsByRouteId: async (req,res) =>{
         try {
             const { route_id } = req.params;
@@ -54,7 +56,75 @@ const tripService = {
             console.error(error);
             res.status(500).json({ error: "Server Error" });
           }
+    },
+    getTripById: async (req, res) => {
+      try {
+        const { trip_id } = req.params;
+        const [rows] = await pool.execute(`
+          SELECT * FROM trips
+          WHERE trip.trip_id
+          `, [trip_id]);
+          res.json(rows)
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({error:"server error"});
+      }
+    },
+    deleteTripById: async (req,res) => {
+      try {
+        const {trip_id} = req.params;
+        await pool.execute(`
+            DELETE FROM trips
+            WHERE trip.trip_id = ?
+          `, [trip_id]);
+        res.status(200).json({message: "trip deleted successfully"});
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({error:"server error"});
+      }
+    },
+    updateTrip: async (req,res) => {
+      try {
+        const {trip_id, sercice_id, route_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id, wheelchair_accessible, bike_accessible} = req.body;
+        const query = `
+          UPDATE trips
+          SET
+            sercice_id = ?,
+            route_id = ?,
+            trip_headsign = ?,
+            trip_short_name = ?,
+            direction_id = ?,
+            block_id = ?,
+            shape_id = ?,
+            wheelchair_accessible = ?, 
+            bike_accessible = ?
+          WHERE trip_id = ?
+        `
+        const result = await pool.execute(query, [sercice_id, route_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id, wheelchair_accessible, bike_accessible, trip_id]);
+        if (result.affectedRows = 0) {
+          return res.status(404).json({error:"trip not found"});
+        }
+        res.status(200).json({message: "trip successfully updated"});
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "server error"});
+      }
+    },
+    saveTrip: async (req,res) => {
+      try {
+        const {sercice_id, route_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id, wheelchair_accessible, bike_accessible} = req.body;
+      const query = `
+        INSERT INTO trips(sercice_id, route_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id, wheelchair_accessible, bike_accessible)
+        VALUES(?,?,?,?,?,?,?,?,?)
+      `;
+      const [result] = await pool.execute(query, [sercice_id, route_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id, wheelchair_accessible, bike_accessible]);
+      res.status(201).json({message: "trip successfully created", trip_id: result.insertId});
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({error:"server error"});
+      }
     }
+
 };
 
 module.exports = tripService;
