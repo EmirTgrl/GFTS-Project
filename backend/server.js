@@ -8,7 +8,6 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const authRoutes = require("./routes/authRoutes.js");
-const gtfsRoutes = require("./routes/gtfsRoutes.js");
 
 dotenv.config();
 const app = express();
