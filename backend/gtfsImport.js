@@ -4,163 +4,174 @@ const unzipper = require("unzipper");
 const csv = require("csv-parser");
 const pool = require("./db.js");
 
+// Temizleme fonksiyonu
+const cleanup = (filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      if (fs.lstatSync(filePath).isDirectory()) {
+        fs.rmSync(filePath, { recursive: true, force: true });
+      } else {
+        fs.unlinkSync(filePath);
+      }
+    }
+  } catch (error) {
+    console.error("Cleanup error:", error);
+  }
+};
+
 const insertImportedData = async (userId, fileName) => {
-  if (!userId) {
-    console.error("User ID is missing, cannot insert data");
-    return null;
-  }
-
-  const importDate = new Date();
-
-  // Aynı dosya adı ve kullanıcıya ait veriyi kontrol et
-  const checkQuery = `SELECT id FROM imported_data WHERE id = ? AND file_name = ?`;
-  const [checkResult] = await pool.query(checkQuery, [userId, fileName]);
-
-  if (checkResult.length > 0) {
-    console.log("File already imported, returning existing id");
-    return checkResult[0].id; // Var olan import_id'yi döndür
-  } else {
-    // Yeni import işlemi başlat
-    const insertQuery = `
-      INSERT INTO imported_data (id, file_name, import_date)
-      VALUES (?, ?, ?)`;
-    const [result] = await pool.query(insertQuery, [
-      userId,
-      fileName,
-      importDate,
-    ]);
-
-    console.log(`Data inserted into imported_data for user ${userId}`);
-    return result.insertId; // Yeni import_id'yi döndür
-  }
+  const [result] = await pool.execute(
+    "INSERT INTO imported_data (id, file_name, import_date) VALUES (?, ?, NOW())",
+    [userId, fileName]
+  );
+  return result.insertId;
 };
 
 const gtfsImport = async (zipFilePath, userId) => {
+  let tempDir = null;
+
   try {
-    if (!userId) {
-      console.error("User ID is missing, cannot proceed with import");
-      return;
+    // Geçici dizin oluştur
+    tempDir = path.join(__dirname, "temp", Date.now().toString());
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    const extractPath = path.join(__dirname, "gtfs_data");
-
-    // Çıktı klasörünü oluştur
-    if (!fs.existsSync(extractPath)) {
-      fs.mkdirSync(extractPath);
-    }
-
-    // ZIP dosyasını çıkar
+    // ZIP dosyasını aç
     await fs
       .createReadStream(zipFilePath)
-      .pipe(unzipper.Extract({ path: extractPath }))
+      .pipe(unzipper.Extract({ path: tempDir }))
       .promise();
 
-    const fileName = path.basename(zipFilePath);
+    // Import işlemlerini gerçekleştir
+    const importId = await insertImportedData(
+      userId,
+      path.basename(zipFilePath)
+    );
 
-    // Import ID'yi al (dosya zaten var mı kontrol et)
-    const importId = await insertImportedData(userId, fileName);
+    // Dosyaları import et
+    await importFiles(tempDir, importId);
 
-    if (!importId) {
-      console.error(
-        "Import ID is missing, cannot continue importing GTFS data"
-      );
-      return;
-    }
+    // Başarılı olursa temizlik yap
+    cleanup(tempDir);
+    cleanup(zipFilePath);
 
-    const files = fs.readdirSync(extractPath);
-
-    for (const file of files) {
-      const filePath = path.join(extractPath, file);
-
-      // Eğer dosya değilse, devam et
-      if (fs.lstatSync(filePath).isDirectory()) {
-        console.log(`Skipping directory: ${file}`);
-        continue;
-      }
-
-      const tableName = path.basename(file, path.extname(file));
-      await importCSV(filePath, tableName, importId);
-    }
+    return true;
   } catch (error) {
-    console.error("GTFS import error:", error);
+    // Hata durumunda da temizlik yap
+    if (tempDir) cleanup(tempDir);
+    cleanup(zipFilePath);
+
+    console.error("Import error:", error);
+    throw error;
   }
 };
 
-const importCSV = async (filePath, tableName, importId) => {
-  return new Promise((resolve, reject) => {
-    if (!importId) {
-      console.error(`Skipping import for ${tableName} due to missing importId`);
-      return reject(new Error("Missing importId"));
-    }
+const importFiles = async (tempDir, importId) => {
+  const files = {
+    agency: path.join(tempDir, "agency.txt"),
+    calendar: path.join(tempDir, "calendar.txt"),
+    shapes: path.join(tempDir, "shapes.txt"),
+    routes: path.join(tempDir, "routes.txt"),
+    stops: path.join(tempDir, "stops.txt"),
+    trips: path.join(tempDir, "trips.txt"),
+    stopTimes: path.join(tempDir, "stop_times.txt"),
+  };
 
+  // Sırayla import et
+  for (const [table, filePath] of Object.entries(files)) {
+    if (fs.existsSync(filePath)) {
+      await importCSV(table, filePath, importId);
+      // Her dosyayı import ettikten sonra sil
+      cleanup(filePath);
+    }
+  }
+};
+
+const importCSV = async (tableName, filePath, importId) => {
+  return new Promise((resolve, reject) => {
     const rows = [];
     fs.createReadStream(filePath)
       .pipe(csv())
       .on("data", (data) => {
-        // Her satıra import_id ekliyoruz
+        // Boş shape_id'leri NULL olarak ayarla
+        if (tableName === "trips" && (!data.shape_id || data.shape_id === "")) {
+          data.shape_id = null;
+        }
         data.import_id = importId;
         rows.push(data);
       })
       .on("end", async () => {
         try {
-          await insertRowsBulk(tableName, rows);
+          // Önce bu import_id'ye ait eski verileri sil
+          await pool.execute(`DELETE FROM ${tableName} WHERE import_id = ?`, [
+            importId,
+          ]);
+
+          if (rows.length > 0) {
+            // Her bir satırı tek tek ekle
+            for (const row of rows) {
+              const columns = Object.keys(row);
+              const values = columns.map((col) => row[col]);
+              const placeholders = columns.map(() => "?").join(",");
+
+              try {
+                const sql = `INSERT INTO ${tableName} (${columns.join(
+                  ","
+                )}) VALUES (${placeholders})`;
+                await pool.query(sql, values);
+              } catch (err) {
+                if (err.code === "ER_DUP_ENTRY") {
+                  // GTFS standartlarına göre doğru ID kolonları
+                  const idColumnMap = {
+                    agency: "agency_id",
+                    routes: "route_id",
+                    stops: "stop_id",
+                    trips: "trip_id",
+                    shapes: "shape_id",
+                    calendar: "service_id",
+                  };
+
+                  const idColumn = idColumnMap[tableName];
+                  if (!idColumn) {
+                    throw new Error(`Unknown table: ${tableName}`);
+                  }
+
+                  const updateColumns = columns
+                    .filter((col) => col !== idColumn && col !== "import_id")
+                    .map((col) => `${col} = ?`);
+
+                  if (updateColumns.length > 0) {
+                    const updateSql = `
+                      UPDATE ${tableName} 
+                      SET import_id = ?, ${updateColumns.join(", ")}
+                      WHERE ${idColumn} = ?
+                    `;
+
+                    const updateValues = [
+                      importId,
+                      ...columns
+                        .filter(
+                          (col) => col !== idColumn && col !== "import_id"
+                        )
+                        .map((col) => row[col]),
+                      row[idColumn],
+                    ];
+
+                    await pool.query(updateSql, updateValues);
+                  }
+                } else {
+                  throw err;
+                }
+              }
+            }
+          }
           resolve();
         } catch (error) {
           reject(error);
         }
-      })
-      .on("error", (error) => {
-        reject(error);
       });
   });
-};
-
-const insertRowsBulk = async (tableName, rows) => {
-  if (rows.length === 0) {
-    console.warn(`Skipping ${tableName} because it has no data`);
-    return;
-  }
-
-  const connection = await pool.getConnection();
-  await connection.beginTransaction();
-
-  try {
-    const [columnsResult] = await connection.query(
-      `SHOW COLUMNS FROM ${tableName}`
-    );
-    const validColumns = columnsResult.map((col) => col.Field); // Geçerli sütun adları
-
-    const csvColumns = Object.keys(rows[0]);
-    const matchedColumns = csvColumns.filter((col) =>
-      validColumns.includes(col)
-    );
-
-    console.log(`Table: ${tableName}`);
-    console.log(`CSV Columns:`, csvColumns);
-    console.log(`Matched Columns:`, matchedColumns);
-
-    if (matchedColumns.length === 0) {
-      console.warn(`No matching columns for ${tableName}, skipping import`);
-      return;
-    }
-
-    const values = rows.map((row) =>
-      matchedColumns.map((col) => (row[col] === "" ? null : row[col]))
-    );
-
-    const query = `INSERT INTO ${tableName} (${matchedColumns.join(
-      ", "
-    )}) VALUES ?`;
-    await connection.query(query, [values]);
-
-    await connection.commit();
-    console.log(`Data successfully inserted into ${tableName}`);
-  } catch (error) {
-    await connection.rollback();
-    console.error("Error inserting data:", error);
-  } finally {
-    connection.release();
-  }
 };
 
 module.exports = gtfsImport;

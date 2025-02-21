@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import {
   fetchRoutes,
   fetchStopsByRoute,
@@ -16,6 +16,7 @@ import {
 } from "react-leaflet";
 import "../styles/Map.css";
 import PropTypes from "prop-types";
+import { AuthContext } from "../components/Auth/AuthContext";
 
 const MapUpdater = ({ center, zoom }) => {
   const map = useMap();
@@ -35,6 +36,7 @@ MapUpdater.propTypes = {
 };
 
 const MapPage = () => {
+  const { token } = useContext(AuthContext);
   const [routes, setRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [stops, setStops] = useState([]);
@@ -48,14 +50,14 @@ const MapPage = () => {
   useEffect(() => {
     const loadRoutes = async () => {
       try {
-        const data = await fetchRoutes();
+        const data = await fetchRoutes(token);
         setRoutes(data);
       } catch (error) {
         console.error("Error fetching routes:", error);
       }
     };
     loadRoutes();
-  }, []);
+  }, [token]);
 
   const handleRouteSelect = async (routeId) => {
     setSelectedRoute(routeId);
@@ -65,20 +67,23 @@ const MapPage = () => {
     setTrips([]);
 
     try {
-      const stopsData = await fetchStopsByRoute(routeId);
+      const [stopsData, busesData, calendarData, tripsData] = await Promise.all(
+        [
+          fetchStopsByRoute(routeId, token),
+          fetchBusesByRoute(routeId, token),
+          fetchCalendarByRoute(routeId, token),
+          fetchTripsByRoute(routeId, token),
+        ]
+      );
+
       const uniqueStops = stopsData.filter(
         (stop, index, self) =>
           index === self.findIndex((s) => s.stop_id === stop.stop_id)
       );
       setStops(uniqueStops);
 
-      const busesData = await fetchBusesByRoute(routeId);
       setBuses(busesData);
-
-      const calendarData = await fetchCalendarByRoute(routeId);
       setCalendar(calendarData);
-
-      const tripsData = await fetchTripsByRoute(routeId);
       setTrips(tripsData);
 
       if (uniqueStops.length > 0) {
