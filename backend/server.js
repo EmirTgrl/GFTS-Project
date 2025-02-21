@@ -52,49 +52,48 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.post("/import-gtfs", auth, upload.single("file"), async (req, res) => {
+  const userId = req.user.id;
+  console.log("Import request received");
+  console.log("User ID from token:", userId);
+
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
   try {
-    console.log("📤 Import request received");
-    console.log("User ID from token:", req.user?.id);
-
-    const userId = req.user.id;
-    if (!userId) {
-      console.error("❌ User ID missing in request");
-      return res.status(400).json({ message: "User ID is missing" });
-    }
-
-    if (!req.file) {
-      console.error("❌ No file uploaded");
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
     console.log("✅ File received:", req.file.originalname);
+    console.log("📂 File path:", req.file.path);
 
-    const filePath = path.join(__dirname, "uploads", req.file.originalname);
-    console.log("📂 File path:", filePath);
-
-    await importGTFS(filePath, userId);
-
-    const query = `
-      INSERT INTO imported_data (id, file_name, import_date)
-      VALUES (?, ?, NOW())
-    `;
-    await pool.query(query, [userId, req.file.originalname]);
-
-    console.log("✅ GTFS Import Completed Successfully!");
-    res.status(200).json({ message: "GTFS data imported successfully" });
+    await importGTFS(req.file.path, userId);
+    res.json({ message: "GTFS data imported successfully" });
   } catch (error) {
     console.error("❌ GTFS Import Error:", error.message);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    // Hata durumunda da dosyayı temizle
+    if (req.file && req.file.path) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ message: "Error importing GTFS data" });
   }
 });
 
 const indexController = require("./controllers/IndexController.js");
-app.use("/api",indexController);
+app.use("/api", indexController);
 
 app.use("/auth", authRoutes);
 
+const cleanupDirs = [
+  path.join(__dirname, "temp"),
+  path.join(__dirname, "uploads"),
+];
+
+cleanupDirs.forEach((dir) => {
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(dir, { recursive: true });
+});
+
+console.log("✨ Cleanup completed");
 
 app.listen(port, () => {
   checkDatabaseConnection();

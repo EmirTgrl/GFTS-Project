@@ -4,7 +4,6 @@ const unzipper = require("unzipper");
 const csv = require("csv-parser");
 const pool = require("./db.js");
 
-// Temizleme fonksiyonu
 const cleanup = (filePath) => {
   try {
     if (fs.existsSync(filePath)) {
@@ -31,7 +30,6 @@ const gtfsImport = async (zipFilePath, userId) => {
   let tempDir = null;
 
   try {
-    // Geçici dizin oluştur
     tempDir = path.join(__dirname, "temp", Date.now().toString());
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
@@ -82,7 +80,6 @@ const importFiles = async (tempDir, importId) => {
   for (const [table, filePath] of Object.entries(files)) {
     if (fs.existsSync(filePath)) {
       await importCSV(table, filePath, importId);
-      // Her dosyayı import ettikten sonra sil
       cleanup(filePath);
     }
   }
@@ -94,7 +91,6 @@ const importCSV = async (tableName, filePath, importId) => {
     fs.createReadStream(filePath)
       .pipe(csv())
       .on("data", (data) => {
-        // Boş shape_id'leri NULL olarak ayarla
         if (tableName === "trips" && (!data.shape_id || data.shape_id === "")) {
           data.shape_id = null;
         }
@@ -103,13 +99,11 @@ const importCSV = async (tableName, filePath, importId) => {
       })
       .on("end", async () => {
         try {
-          // Önce bu import_id'ye ait eski verileri sil
           await pool.execute(`DELETE FROM ${tableName} WHERE import_id = ?`, [
             importId,
           ]);
 
           if (rows.length > 0) {
-            // Her bir satırı tek tek ekle
             for (const row of rows) {
               const columns = Object.keys(row);
               const values = columns.map((col) => row[col]);
@@ -122,7 +116,6 @@ const importCSV = async (tableName, filePath, importId) => {
                 await pool.query(sql, values);
               } catch (err) {
                 if (err.code === "ER_DUP_ENTRY") {
-                  // GTFS standartlarına göre doğru ID kolonları
                   const idColumnMap = {
                     agency: "agency_id",
                     routes: "route_id",
