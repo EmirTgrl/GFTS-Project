@@ -37,16 +37,17 @@ const HomePage = () => {
         body: formData,
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         alert("Data importing successful!");
         navigate("/map");
       } else {
-        const result = await response.json();
-        alert(`Error: ${result.message || "An error occurred!"}`);
+        alert(`Error: ${data.message || "An error occurred during import!"}`);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("An error occurred!");
+      alert("Failed to connect to the server. Please try again.");
     }
   };
 
