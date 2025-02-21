@@ -7,7 +7,6 @@ const auth = require("./routes/auth.js");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const authRoutes = require("./routes/authRoutes.js");
 
 dotenv.config();
 const app = express();
@@ -73,8 +72,6 @@ app.post("/import-gtfs", auth, upload.single("file"), async (req, res) => {
 
 const indexController = require("./controllers/IndexController.js");
 app.use("/api",indexController);
-
-app.use("/auth", authRoutes);
 
 
 app.listen(port, () => {
