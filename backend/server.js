@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const {pool, checkDatabaseConnection} = require("./db.js");
 const importGTFS = require("./gtfsImport.js");
-const auth = require("./routes/auth.js");
+const authService = require("./services/AuthSercive.js");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.post("/import-gtfs", auth, upload.single("file"), async (req, res) => {
+app.post("/import-gtfs", authService.auth, upload.single("file"), async (req, res) => {
   try {
     console.log("📤 Import request received");
     console.log("User ID from token:", req.user?.id);
