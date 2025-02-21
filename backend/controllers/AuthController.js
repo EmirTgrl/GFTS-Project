@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const authService = require("../services/AuthSercive.js");
+const authService = require("../services/AuthService.js");
 
 router.post("/login", authService.login);
 
