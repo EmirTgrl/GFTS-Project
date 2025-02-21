@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const csv = require("csv-parser");
 const unzipper = require("unzipper");
-const pool = require("../db.js");
+const {pool} = require("../db.js");
 
 class ImportService {
   constructor() {

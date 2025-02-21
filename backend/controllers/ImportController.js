@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const auth = require("../routes/auth");
+const authService = require("../services/AuthService.js");
 const importService = require("../services/ImportService");
 
 // Post isteğini async/await ile işleyelim
 router.post(
   "/",
-  auth,
+  authService.auth,
   importService.upload.single("file"),
   async (req, res) => {
     try {

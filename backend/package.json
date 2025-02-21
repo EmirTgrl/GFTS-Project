@@ -17,8 +17,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "cleanup": "node cleanup.js",
-    "start": "npm run cleanup && node server.js"
+    "start": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
