@@ -10,33 +10,37 @@ import MapPage from "./pages/MapPage";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import Header from "./components/Header";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./styles/Layout.css";
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <Header />
-        <div className="page-content">
-          <Routes>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route
-              path="/home"
-              element={
-                <ProtectedRoute>
-                  <HomePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/map"
-              element={
-                <ProtectedRoute>
-                  <MapPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/auth" />} />
-          </Routes>
+        <div className="app-container">
+          <Header />
+          <main className="main-content">
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route
+                path="/home"
+                element={
+                  <ProtectedRoute>
+                    <HomePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/map"
+                element={
+                  <ProtectedRoute>
+                    <MapPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/auth" />} />
+            </Routes>
+          </main>
         </div>
       </Router>
     </AuthProvider>

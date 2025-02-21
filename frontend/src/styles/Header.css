@@ -1,36 +1,69 @@
-.header {
-  background-color: #0078d7;
-  padding: 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1000;
+.custom-navbar {
+  background: linear-gradient(135deg, #0078d7, #005bb5);
+  min-height: 50px !important;
+  padding: 0 1rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  width: 100vw; /* Header tam genişlik */
+  margin-left: calc(-50vw + 50%); /* Viewport merkezleme */
+  margin-right: calc(-50vw + 50%);
 }
 
-.header ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  width: 100%;
+.navbar-brand {
+  font-size: 1.2rem !important; /* 1.5rem'den küçülttüm */
+  font-weight: 700;
+  color: #fff !important;
+  padding: 0.4rem 0 !important; /* Padding'i azalttım */
+  letter-spacing: 1px;
 }
 
-.header li {
-  margin: 0 15px;
+.brand-highlight {
+  color: #ffd700;
 }
 
-.header a {
-  color: white;
-  text-decoration: none;
-  font-weight: bold;
-  transition: color 0.3s;
+.nav-link-custom {
+  color: #fff !important;
+  font-size: 0.9rem !important; /* 1rem'den küçülttüm */
+  padding: 0.4rem 0.8rem !important; /* Padding'i azalttım */
+  font-weight: 500;
+  position: relative;
+  transition: all 0.3s ease;
 }
 
-.header a:hover {
-  color: #ffcc00;
+.nav-link-custom:hover {
+  color: #ffd700 !important;
+}
+
+.nav-link-custom::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 50%;
+  background: #ffd700;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-link-custom:hover::after {
+  width: 50%;
+}
+
+.logout-btn {
+  padding: 0.3rem 1rem !important; /* Daha küçük */
+  font-size: 0.9rem !important;
+  border-radius: 20px !important;
+  border: 2px solid #fff !important;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background-color: #ffd700 !important;
+  color: #005bb5 !important;
+  border-color: #ffd700 !important;
+}
+
+.navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.5) !important;
 }

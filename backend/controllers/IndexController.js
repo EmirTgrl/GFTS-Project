@@ -7,7 +7,7 @@ const stopController = require("./StopController.js");
 const authController = require("./AuthController.js");
 
 // routes
-router.use("/routes",routeController);
+router.use("/routes", routeController);
 router.use("/stops", stopController);
 router.use("/auth", authController);
 

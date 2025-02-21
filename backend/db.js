@@ -15,7 +15,6 @@ const pool = mysql
   })
   .promise();
 
-
 const checkDatabaseConnection = async (retries = 5, interval = 3000) => {
   for (let i = 0; i < retries; i++) {
     try {
@@ -27,11 +26,11 @@ const checkDatabaseConnection = async (retries = 5, interval = 3000) => {
       console.error(`MySQL connection attempt ${i + 1} failed:`, error.message);
       if (i === retries - 1) {
         console.error("Max retries reached. Exiting.");
-        process.exit(1); 
+        process.exit(1);
       }
       await new Promise((resolve) => setTimeout(resolve, interval));
     }
   }
 };
 
-module.exports = {pool,checkDatabaseConnection};
+module.exports = { pool, checkDatabaseConnection };

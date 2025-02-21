@@ -1,9 +1,9 @@
-const {pool} = require("../db.js");
+const { pool } = require("../db.js");
 
 const routeService = {
   getAllRoutes: async (req, res) => {
     try {
-      const userId = req.user.id; 
+      const userId = req.user.id;
       const [rows] = await pool.execute(
         `SELECT DISTINCT routes.* FROM routes 
          JOIN imported_data ON routes.import_id = imported_data.import_id
@@ -19,7 +19,7 @@ const routeService = {
   // TODO: validation for route_id
   getRouteByRouteId: async (req, res) => {
     try {
-      const userId = req.user.id; 
+      const userId = req.user.id;
       const { route_id } = req.params;
       const [rows] = await pool.execute(
         `SELECT routes.* FROM routes 
@@ -51,7 +51,7 @@ const routeService = {
   // TODO: validation for object
   updateRoute: async (req, res) => {
     try {
-      const userId = req.user.id; 
+      const userId = req.user.id;
       const {
         route_id,
         agency_id,

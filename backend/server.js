@@ -18,21 +18,6 @@ const importController = require("./controllers/ImportController.js");
 app.use("/api", indexController);
 app.use("/import-gtfs", importController);
 
-// Cleanup directories
-// const cleanupDirs = [
-//   path.join(__dirname, "temp"),
-//   path.join(__dirname, "uploads"),
-// ];
-
-// cleanupDirs.forEach((dir) => {
-//   if (fs.existsSync(dir)) {
-//     fs.rmSync(dir, { recursive: true, force: true });
-//   }
-//   fs.mkdirSync(dir, { recursive: true });
-// });
-
-// console.log("✨ Cleanup completed");
-
 app.listen(port, () => {
   checkDatabaseConnection();
   console.log(`Server running on http://localhost:${port}`);

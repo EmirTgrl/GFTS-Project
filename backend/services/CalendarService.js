@@ -1,4 +1,4 @@
-const {pool} = require("../db.js");
+const { pool } = require("../db.js");
 
 const calendarService = {
   getCalendarsByRouteId: async (req, res) => {
@@ -126,12 +126,10 @@ const calendarService = {
         start_date,
         end_date,
       ]);
-      res
-        .status(201)
-        .json({
-          message: "Calendar saved successfully",
-          calendar_id: result.insertId,
-        });
+      res.status(201).json({
+        message: "Calendar saved successfully",
+        calendar_id: result.insertId,
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Server Error" });
