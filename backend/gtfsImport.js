@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const unzipper = require("unzipper");
 const csv = require("csv-parser");
-const pool = require("./db.js");
+const {pool} = require("./db.js");
 
 const insertImportedData = async (userId, fileName) => {
   if (!userId) {

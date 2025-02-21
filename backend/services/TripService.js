@@ -1,4 +1,4 @@
-const pool = require("../db.js");
+const {pool} = require("../db.js");
 
 const tripService = {
   //TODO: move this to another service or fix naming also improve 
