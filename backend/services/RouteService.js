@@ -1,14 +1,14 @@
 const {pool} = require("../db.js");
 
 const routeService = {
-  getAllRoutes: async (req, res) => {
+  getRoutesByProjectId: async (req, res) => {
     try {
-      const userId = req.user.id; 
+      const user_id = req.user.id;
+      const {project_id} = req.params;
       const [rows] = await pool.execute(
-        `SELECT DISTINCT routes.* FROM routes 
-         JOIN imported_data ON routes.import_id = imported_data.import_id
-         WHERE imported_data.id = ?`,
-        [userId]
+        `SELECT * FROM routes 
+         WHERE project_id = ? AND user_id = ?`,
+        [project_id, user_id]
       );
       res.json(rows);
     } catch (error) {
@@ -16,42 +16,39 @@ const routeService = {
       res.status(500).json({ error: "Server Error" });
     }
   },
-  // TODO: validation for route_id
-  getRouteByRouteId: async (req, res) => {
+  getRouteById: async (req, res) => {
     try {
-      const userId = req.user.id; 
+      const user_id = req.user.id; 
       const { route_id } = req.params;
       const [rows] = await pool.execute(
-        `SELECT routes.* FROM routes 
-         JOIN imported_data ON routes.import_id = imported_data.import_id
-         WHERE routes.route_id = ? AND imported_data.id = ?`,
-        [route_id, userId]
+        `SELECT * FROM routes 
+        WHERE user_id = ?  AND route_id = ?`
+        [user_id, route_id]
       );
-      res.json(rows[0]);
+      res.json(rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Server Error" });
     }
   },
-  // TODO: validation for route_id
-  deleteRouteByRouteId: async (req, res) => {
+  deleteRouteById: async (req, res) => {
     try {
-      const userId = req.user.id;
+      const user_id = req.user.id;
       const { route_id } = req.params;
-      await pool.execute("DELETE FROM routes WHERE route_id = ? AND id = ?", [
-        route_id,
-        userId,
-      ]);
+      await pool.execute(`
+        DELETE FROM routes 
+        WHERE route_id = ? AND user_id = ?`, 
+        [route_id,user_id]
+    );
       res.status(200).json({ message: "Route deleted successfully" });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Server Error" });
     }
   },
-  // TODO: validation for object
   updateRoute: async (req, res) => {
     try {
-      const userId = req.user.id; 
+      const user_id = req.user.id; 
       const {
         route_id,
         agency_id,
@@ -63,6 +60,8 @@ const routeService = {
         route_color,
         route_text_color,
         route_sort_order,
+        continuous_pickup,
+        continuous_drop_off
       } = req.body;
       const query = `
                 UPDATE routes
@@ -76,7 +75,9 @@ const routeService = {
                   route_color = ?, 
                   route_text_color = ?, 
                   route_sort_order = ?
-                WHERE route_id = ? AND id = ?
+                  continuous_pickup = ?,
+                  continuous_drop_off = ?
+                WHERE route_id = ? AND user_id = ?
               `;
       const result = await pool.execute(query, [
         agency_id,
@@ -88,8 +89,10 @@ const routeService = {
         route_color,
         route_text_color,
         route_sort_order,
+        continuous_pickup,
+        continuous_drop_off,
         route_id,
-        userId,
+        user_id,
       ]);
       if (result.affectedRows == 0) {
         return res.status(404).json({ error: "Route not found" });
@@ -101,12 +104,12 @@ const routeService = {
       res.status(500).json({ error: "Server Error" });
     }
   },
-  // TODO: validation for object
   saveRoute: async (req, res) => {
     try {
-      const userId = req.user.id;
+      const user_id = req.user.id;
       const {
         agency_id,
+        project_id,
         route_short_name,
         route_long_name,
         route_desc,
@@ -115,22 +118,27 @@ const routeService = {
         route_color,
         route_text_color,
         route_sort_order,
+        continuous_pickup,
+        continuous_drop_off
       } = req.body;
       const query = `
-              INSERT INTO routes(id, agency_id, route_short_name, route_long_name, route_desc, route_type, route_url, route_color, route_text_color, route_sort_order)
-              VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO routes(user_id, agency_id, project_id, route_short_name, route_long_name, route_desc, route_type, route_url, route_color, route_text_color, route_sort_order, continuous_pickup, continuous_drop_off)
+              VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               `;
       const [result] = await pool.execute(query, [
-        userId,
-        agency_id,
-        route_short_name,
-        route_long_name,
-        route_desc,
-        route_type,
-        route_url,
-        route_color,
-        route_text_color,
-        route_sort_order,
+        user_id, 
+        agency_id, 
+        project_id, 
+        route_short_name, 
+        route_long_name, 
+        route_desc, 
+        route_type, 
+        route_url, 
+        route_color, 
+        route_text_color, 
+        route_sort_order, 
+        continuous_pickup, 
+        continuous_drop_off
       ]);
       res.status(201).json({
         message: "Route saved successfully",

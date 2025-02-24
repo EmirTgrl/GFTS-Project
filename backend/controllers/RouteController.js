@@ -3,20 +3,20 @@ const router = express.Router();
 
 // Services
 const routeService = require("../services/RouteService.js");
-const stopService = require("../services/StopService.js");
-const stopTimeService = require("../services/StopTimeService.js");
-const tripService = require("../services/TripService.js");
-const calendarService = require("../services/CalendarService.js");
 const authService = require("../services/AuthService.js");
 
 router.use(authService.auth);
 
 // Paths
-router.get("/", routeService.getAllRoutes);
-router.get("/:route_id/stops", stopService.getStopsByRouteId);
-router.get("/:route_id/times", stopTimeService.getTimesByRouteId);
-router.get("/:route_id/trips", tripService.getTripsByRouteId);
-router.get("/:route_id/calendar", calendarService.getCalendarsByRouteId);
-router.get("/:route_id/buses", tripService.getTripsAndStopsByRouteId);
+
+router.get("/:project_id", routeService.getRoutesByProjectId);
+router.get("/:route_id",routeService.getRouteById);
+router.delete("/:route_id", routeService.deleteRouteById);
+router.put("/", routeService.updateRoute);
+router.post("/", routeService.saveRoute);
+
+
+
+
 
 module.exports = router;
