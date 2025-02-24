@@ -28,10 +28,13 @@ CREATE TABLE `shapes` (
   `shape_pt_lon` double NOT NULL,
   `shape_pt_sequence` int NOT NULL,
   `shape_dist_traveled` float DEFAULT NULL,
-  `import_id` int DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  `user_id` int DEFAULT NULL,
   PRIMARY KEY (`shape_id`,`shape_pt_sequence`),
-  KEY `fk_shapes_imported_data` (`import_id`),
-  CONSTRAINT `fk_shapes_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE
+  KEY `fk_shapes_projects` (`project_id`),
+  KEY `fk_shapes_users` (`user_id`),
+  CONSTRAINT `fk_shapes_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_shapes_projects` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

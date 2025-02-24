@@ -32,13 +32,16 @@ CREATE TABLE `stop_times` (
   `pickup_type` tinyint DEFAULT NULL,
   `drop_off_time` int DEFAULT NULL,
   `shape_dist_travelled` float DEFAULT NULL,
-  `import_id` int DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  `user_id` int DEFAULT NULL,
   PRIMARY KEY (`trip_id`,`stop_sequence`),
   KEY `stop_id` (`stop_id`),
-  KEY `import_id` (`import_id`),
+  KEY `project_id` (`project_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `fk_stop_times_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`), 
   CONSTRAINT `stop_times_ibfk_1` FOREIGN KEY (`trip_id`) REFERENCES `trips` (`trip_id`),
   CONSTRAINT `stop_times_ibfk_2` FOREIGN KEY (`stop_id`) REFERENCES `stops` (`stop_id`),
-  CONSTRAINT `stop_times_ibfk_3` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE
+  CONSTRAINT `stop_times_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -48,7 +51,7 @@ CREATE TABLE `stop_times` (
 
 LOCK TABLES `stop_times` WRITE;
 /*!40000 ALTER TABLE `stop_times` DISABLE KEYS */;
-INSERT INTO `stop_times` VALUES ('STBA','6:00:00','6:00:00','STAGECOACH',1,NULL,NULL,NULL,NULL,15);
+INSERT INTO `stop_times` (`trip_id`, `arrival_time`, `departure_time`, `stop_id`, `stop_sequence`, `stop_headsign`, `pickup_type`, `drop_off_time`, `shape_dist_travelled`, `project_id`, `user_id`) VALUES ('STBA','6:00:00','6:00:00','STAGECOACH',1,NULL,NULL,NULL,NULL,15, NULL);
 /*!40000 ALTER TABLE `stop_times` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

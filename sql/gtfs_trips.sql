@@ -33,13 +33,16 @@ CREATE TABLE `trips` (
   `shape_id` varchar(255) DEFAULT NULL,
   `wheelchair_accessible` tinyint DEFAULT NULL,
   `bikes_allowed` tinyint DEFAULT NULL,
-  `import_id` int DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  `user_id` int DEFAULT NULL,
   PRIMARY KEY (`trip_id`),
   KEY `route_id` (`route_id`),
   KEY `service_id` (`service_id`),
   KEY `shape_id` (`shape_id`),
-  KEY `fk_trips_imported_data` (`import_id`),
-  CONSTRAINT `fk_trips_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE,
+  KEY `fk_trips_projects` (`project_id`),
+  KEY `fk_trips_users` (`user_id`),
+  CONSTRAINT `fk_trips_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_trips_projects` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE,
   CONSTRAINT `trips_ibfk_1` FOREIGN KEY (`route_id`) REFERENCES `routes` (`route_id`),
   CONSTRAINT `trips_ibfk_2` FOREIGN KEY (`service_id`) REFERENCES `calendar` (`service_id`),
   CONSTRAINT `trips_ibfk_3` FOREIGN KEY (`shape_id`) REFERENCES `shapes` (`shape_id`)
@@ -52,8 +55,7 @@ CREATE TABLE `trips` (
 
 LOCK TABLES `trips` WRITE;
 /*!40000 ALTER TABLE `trips` DISABLE KEYS */;
-INSERT INTO `trips` VALUES ('AAMV','WE','AAMV1','to Amargosa Valley',NULL,0,NULL,NULL,NULL,NULL,15),('AAMV','WE','AAMV2','to Airport',NULL,1,NULL,NULL,NULL,NULL,15),('AAMV','WE','AAMV3','to Amargosa Valley',NULL,0,NULL,NULL,NULL,NULL,15),('AAMV','WE','AAMV4','to Airport',NULL,1,NULL,NULL,NULL,NULL,15),('AB','FULLW','AB1','to Bullfrog',NULL,0,'1',NULL,NULL,NULL,15),('AB','FULLW','AB2','to Airport',NULL,1,'2',NULL,NULL,NULL,15),('BFC','FULLW','BFC1','to Furnace Creek Resort',NULL,0,'1',NULL,NULL,NULL,15),('BFC','FULLW','BFC2','to Bullfrog',NULL,1,'2',NULL,NULL,NULL,15),('CITY','FULLW','CITY1',NULL,NULL,0,NULL,NULL,NULL,NULL,15),('CITY','FULLW','CITY2',NULL,NULL,1,NULL,NULL,NULL,NULL,15),('STBA','FULLW','STBA','Shuttle',NULL,NULL,NULL,NULL,NULL,NULL,15);
-/*!40000 ALTER TABLE `trips` ENABLE KEYS */;
+INSERT INTO `trips` (`route_id`, `service_id`, `trip_id`, `trip_headsign`, `trip_short_name`, `direction_id`, `block_id`, `shape_id`, `wheelchair_accessible`, `bikes_allowed`, `project_id`, `user_id`) VALUES ('AAMV','WE','AAMV1','to Amargosa Valley',NULL,0,NULL,NULL,NULL,NULL,15, NULL),('AAMV','WE','AAMV2','to Airport',NULL,1,NULL,NULL,NULL,NULL,15, NULL),('AAMV','WE','AAMV3','to Amargosa Valley',NULL,0,NULL,NULL,NULL,NULL,15, NULL),('AAMV','WE','AAMV4','to Airport',NULL,1,NULL,NULL,NULL,NULL,15, NULL),('AB','FULLW','AB1','to Bullfrog',NULL,0,'1',NULL,NULL,NULL,15, NULL),('AB','FULLW','AB2','to Airport',NULL,1,'2',NULL,NULL,NULL,15, NULL),('BFC','FULLW','BFC1','to Furnace Creek Resort',NULL,0,'1',NULL,NULL,NULL,15, NULL),('BFC','FULLW','BFC2','to Bullfrog',NULL,1,'2',NULL,NULL,NULL,15, NULL),('CITY','FULLW','CITY1',NULL,NULL,0,NULL,NULL,NULL,NULL,15, NULL),('CITY','FULLW','CITY2',NULL,NULL,1,NULL,NULL,NULL,NULL,15, NULL),('STBA','FULLW','STBA','Shuttle',NULL,NULL,NULL,NULL,NULL,NULL,15, NULL);/*!40000 ALTER TABLE `trips` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

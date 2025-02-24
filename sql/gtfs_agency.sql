@@ -24,7 +24,8 @@ DROP TABLE IF EXISTS `agency`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `agency` (
   `agency_id` varchar(255) NOT NULL,
-  `import_id` int DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  `user_id` int DEFAULT NULL,
   `agency_name` varchar(255) NOT NULL,
   `agency_url` varchar(255) NOT NULL,
   `agency_timezone` varchar(50) NOT NULL,
@@ -33,8 +34,10 @@ CREATE TABLE `agency` (
   `agency_fare_url` varchar(255) DEFAULT NULL,
   `agency_email` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`agency_id`),
-  KEY `fk_agency_imported_data` (`import_id`),
-  CONSTRAINT `fk_agency_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE
+  KEY `fk_agency_projects` (`project_id`),
+  KEY `fk_agency_users` (`user_id`),
+  CONSTRAINT `fk_agency_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_agency_projects` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -44,7 +47,7 @@ CREATE TABLE `agency` (
 
 LOCK TABLES `agency` WRITE;
 /*!40000 ALTER TABLE `agency` DISABLE KEYS */;
-INSERT INTO `agency` VALUES ('DTA',15,'Demo Transit Authority','http://google.com','America/Los_Angeles',NULL,NULL,NULL,NULL);
+INSERT INTO `agency` (`agency_id`, `project_id`, `user_id`, `agency_name`, `agency_url`, `agency_timezone`, `agency_lang`, `agency_phone`, `agency_fare_url`, `agency_email`) VALUES ('DTA', 15, NULL, 'Demo Transit Authority', 'http://google.com', 'America/Los_Angeles', NULL, NULL, NULL, NULL);
 /*!40000 ALTER TABLE `agency` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

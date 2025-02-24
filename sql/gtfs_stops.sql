@@ -36,11 +36,14 @@ CREATE TABLE `stops` (
   `stop_timezone` varchar(50) DEFAULT NULL,
   `wheelchair_boarding` tinyint DEFAULT NULL,
   `platform_code` varchar(255) DEFAULT NULL,
-  `import_id` int DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  `user_id` int DEFAULT NULL,
   PRIMARY KEY (`stop_id`),
   KEY `parent_station` (`parent_station`),
-  KEY `fk_stops_imported_data` (`import_id`),
-  CONSTRAINT `fk_stops_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE,
+  KEY `fk_stops_projects` (`project_id`),
+  KEY `fk_stops_users` (`user_id`),
+  CONSTRAINT `fk_stops_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_stops_projects` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE,
   CONSTRAINT `stops_ibfk_1` FOREIGN KEY (`parent_station`) REFERENCES `stops` (`stop_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -51,8 +54,7 @@ CREATE TABLE `stops` (
 
 LOCK TABLES `stops` WRITE;
 /*!40000 ALTER TABLE `stops` DISABLE KEYS */;
-INSERT INTO `stops` VALUES ('AMV',NULL,'Amargosa Valley (Demo)',NULL,36.641496,-116.400940,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15),('BEATTY_AIRPORT',NULL,'Nye County Airport (Demo)',NULL,36.868446,-116.784582,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15),('BULLFROG',NULL,'Bullfrog (Demo)',NULL,36.881080,-116.817970,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15),('DADAN',NULL,'Doing Ave / D Ave N (Demo)',NULL,36.909489,-116.768242,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15),('EMSI',NULL,'E Main St / S Irving St (Demo)',NULL,36.905697,-116.762180,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15),('FUR_CREEK_RES',NULL,'Furnace Creek Resort (Demo)',NULL,36.425288,-117.133162,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15),('NADAV',NULL,'North Ave / D Ave N (Demo)',NULL,36.914893,-116.768210,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15),('NANAA',NULL,'North Ave / N A Ave (Demo)',NULL,36.914944,-116.761472,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15),('STAGECOACH',NULL,'Stagecoach Hotel & Casino (Demo)',NULL,36.915682,-116.751677,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15);
-/*!40000 ALTER TABLE `stops` ENABLE KEYS */;
+INSERT INTO `stops` (`stop_id`, `stop_code`, `stop_name`, `stop_desc`, `stop_lat`, `stop_lon`, `zone_id`, `stop_url`, `location_type`, `parent_station`, `stop_timezone`, `wheelchair_boarding`, `platform_code`, `project_id`, `user_id`) VALUES ('AMV',NULL,'Amargosa Valley (Demo)',NULL,36.641496,-116.400940,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('BEATTY_AIRPORT',NULL,'Nye County Airport (Demo)',NULL,36.868446,-116.784582,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('BULLFROG',NULL,'Bullfrog (Demo)',NULL,36.881080,-116.817970,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('DADAN',NULL,'Doing Ave / D Ave N (Demo)',NULL,36.909489,-116.768242,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('EMSI',NULL,'E Main St / S Irving St (Demo)',NULL,36.905697,-116.762180,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('FUR_CREEK_RES',NULL,'Furnace Creek Resort (Demo)',NULL,36.425288,-117.133162,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('NADAV',NULL,'North Ave / D Ave N (Demo)',NULL,36.914893,-116.768210,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('NANAA',NULL,'North Ave / N A Ave (Demo)',NULL,36.914944,-116.761472,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('STAGECOACH',NULL,'Stagecoach Hotel & Casino (Demo)',NULL,36.915682,-116.751677,NULL,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL);/*!40000 ALTER TABLE `stops` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

@@ -35,11 +35,14 @@ CREATE TABLE `routes` (
   `route_sort_order` int DEFAULT NULL,
   `continuous_pickup` tinyint DEFAULT NULL,
   `continuous_drop_off` tinyint DEFAULT NULL,
-  `import_id` int DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  `user_id` int DEFAULT NULL,
   PRIMARY KEY (`route_id`),
   KEY `fk_routes_agency` (`agency_id`),
-  KEY `fk_routes_imported_data` (`import_id`),
-  CONSTRAINT `fk_routes_imported_data` FOREIGN KEY (`import_id`) REFERENCES `imported_data` (`import_id`) ON DELETE CASCADE,
+  KEY `fk_routes_projects` (`project_id`),
+  KEY `fk_routes_users` (`user_id`),
+  CONSTRAINT `fk_routes_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_routes_projects` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE,
   CONSTRAINT `routes_ibfk_1` FOREIGN KEY (`agency_id`) REFERENCES `agency` (`agency_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -50,7 +53,7 @@ CREATE TABLE `routes` (
 
 LOCK TABLES `routes` WRITE;
 /*!40000 ALTER TABLE `routes` DISABLE KEYS */;
-INSERT INTO `routes` VALUES ('AAMV','DTA','50','Airport - Amargosa Valley',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15),('AB','DTA','10','Airport - Bullfrog',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15),('BFC','DTA','20','Bullfrog - Furnace Creek Resort',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15),('CITY','DTA','40','City',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15),('STBA','DTA','30','Stagecoach - Airport Shuttle',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15);
+INSERT INTO `routes` (`route_id`, `agency_id`, `route_short_name`, `route_long_name`, `route_desc`, `route_type`, `route_url`, `route_color`, `route_text_color`, `route_sort_order`, `continuous_pickup`, `continuous_drop_off`, `project_id`, `user_id`) VALUES ('AAMV','DTA','50','Airport - Amargosa Valley',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('AB','DTA','10','Airport - Bullfrog',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('BFC','DTA','20','Bullfrog - Furnace Creek Resort',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('CITY','DTA','40','City',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('STBA','DTA','30','Stagecoach - Airport Shuttle',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL);
 /*!40000 ALTER TABLE `routes` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
