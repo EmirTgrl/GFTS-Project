@@ -36,7 +36,7 @@ CREATE TABLE `agency` (
   PRIMARY KEY (`agency_id`),
   KEY `fk_agency_projects` (`project_id`),
   KEY `fk_agency_users` (`user_id`),
-  CONSTRAINT `fk_agency_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_agency_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_agency_projects` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

@@ -37,7 +37,7 @@ CREATE TABLE `calendar` (
   `end_date` date NOT NULL,
   PRIMARY KEY (`service_id`),
   KEY `fk_calendar_projects` (`project_id`),
-  CONSTRAINT `fk_calendar_projects` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE
+  CONSTRAINT `fk_calendar_projects` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE,
   KEY `fk_calendar_users` (`user_id`),
   CONSTRAINT `fk_calendar_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
