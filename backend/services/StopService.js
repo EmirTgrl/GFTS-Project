@@ -1,33 +1,14 @@
-const {pool} = require("../db.js");
+const { pool } = require("../db.js");
 
 const stopService = {
-  getAllStops: async (req, res) => {
+  getStopsByProjectId: async (req, res) => {
     try {
-      const userId = req.user.id;
+      const user_id = req.user.id;
+      const { project_id } = req.params
       const [rows] = await pool.execute(
-        `SELECT DISTINCT stops.* FROM stops 
-                 JOIN imported_data ON stops.import_id = imported_data.import_id
-                 WHERE imported_data.id = ?`,
-        [userId]
-      );
-      res.json(rows);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server Error" });
-    }
-  },
-
-  getStopsByRouteId: async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const { route_id } = req.params;
-      const [rows] = await pool.execute(
-        `SELECT DISTINCT stops.* FROM stops 
-                 JOIN stop_times ON stops.stop_id = stop_times.stop_id 
-                 JOIN trips ON stop_times.trip_id = trips.trip_id
-                 JOIN imported_data ON stops.import_id = imported_data.import_id
-                 WHERE trips.route_id = ? AND imported_data.id = ?`,
-        [route_id, userId]
+        `SELECT * FROM stops
+        WHERE user_id = ? AND project_id = ?`,
+        [user_id, project_id]
       );
       res.json(rows);
     } catch (error) {
@@ -41,11 +22,8 @@ const stopService = {
       const userId = req.user.id;
       const { stop_id } = req.params;
       const [rows] = await pool.execute(
-        `SELECT DISTINCT stops.* FROM stops
-                 JOIN stop_times ON stops.stop_id = stop_times.stop_id
-                 JOIN trips ON stop_times.trip_id = trips.trip_id
-                 JOIN routes ON trips.route_id = routes.route_id
-                 WHERE stops.stop_id = ? AND routes.id = ?`,
+        `SELECT * FROM stops
+        WHERE stop_id = ? AND user_id = ?`,
         [stop_id, userId]
       );
       res.json(rows);
@@ -55,16 +33,13 @@ const stopService = {
     }
   },
 
-  deleteStopById: async (req, res) => {
+  deleteStopByStopId: async (req, res) => {
     try {
       const userId = req.user.id;
       const { stop_id } = req.params;
       await pool.execute(
-        `DELETE stops FROM stops
-                 JOIN stop_times ON stops.stop_id = stop_times.stop_id
-                 JOIN trips ON stop_times.trip_id = trips.trip_id
-                 JOIN routes ON trips.route_id = routes.route_id
-                 WHERE stops.stop_id = ? AND routes.id = ?`,
+        `DELETE FROM stops
+        WHERE stop_id = ? AND user_id = ?`,
         [stop_id, userId]
       );
       res.status(200).json({ message: "Stop deleted successfully" });
@@ -76,7 +51,7 @@ const stopService = {
 
   updateStop: async (req, res) => {
     try {
-      const userId = req.user.id;
+      const user_id = req.user.id;
       const {
         stop_id,
         stop_code,
@@ -90,36 +65,26 @@ const stopService = {
         parent_station,
         stop_timezone,
         wheelchair_boarding,
+        platform_code,
+        project_id
       } = req.body;
-
-      const [checkAccess] = await pool.execute(
-        `SELECT 1 FROM stops
-                 JOIN stop_times ON stops.stop_id = stop_times.stop_id
-                 JOIN trips ON stop_times.trip_id = trips.trip_id
-                 JOIN routes ON trips.route_id = routes.route_id
-                 WHERE stops.stop_id = ? AND routes.id = ?
-                 LIMIT 1`,
-        [stop_id, userId]
-      );
-
-      if (checkAccess.length === 0) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-
       const query = `
-                UPDATE stops 
-                SET stop_code = ?,
-                    stop_name = ?,
-                    stop_desc = ?,
-                    stop_lat = ?,
-                    stop_lon = ?,
-                    zone_id = ?,
-                    stop_url = ?,
-                    location_type = ?,
-                    parent_station = ?,
-                    stop_timezone = ?,
-                    wheelchair_boarding = ?
-                WHERE stop_id = ?`;
+        UPDATE stops 
+        SET
+          stop_code = ?,
+          stop_name = ?,
+          stop_desc = ?,
+          stop_lat = ?,
+          stop_lon = ?,
+          zone_id = ?,
+          stop_url = ?,
+          location_type = ?,
+          parent_station = ?,
+          stop_timezone = ?,
+          wheelchair_boarding = ?,
+          platform_code = ?,
+          project_id = ?
+                WHERE stop_id = ? AND user_id = ?`;
 
       await pool.execute(query, [
         stop_code,
@@ -133,7 +98,10 @@ const stopService = {
         parent_station,
         stop_timezone,
         wheelchair_boarding,
+        platform_code,
+        project_id,
         stop_id,
+        user_id
       ]);
 
       res.status(200).json({ message: "Stop updated successfully" });
@@ -145,7 +113,7 @@ const stopService = {
 
   saveStop: async (req, res) => {
     try {
-      const userId = req.user.id;
+      const user_id = req.user.id;
       const {
         stop_code,
         stop_name,
@@ -158,34 +126,13 @@ const stopService = {
         parent_station,
         stop_timezone,
         wheelchair_boarding,
-        route_id,
+        platform_code,
+        project_id,
       } = req.body;
 
-      // Check if user has access to the route
-      const [checkRoute] = await pool.execute(
-        "SELECT 1 FROM routes WHERE route_id = ? AND id = ?",
-        [route_id, userId]
-      );
-
-      if (checkRoute.length === 0) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-
       const query = `
-                INSERT INTO stops (
-                    stop_code,
-                    stop_name,
-                    stop_desc,
-                    stop_lat,
-                    stop_lon,
-                    zone_id,
-                    stop_url,
-                    location_type,
-                    parent_station,
-                    stop_timezone,
-                    wheelchair_boarding
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
+        INSERT INTO stops(stop_code,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,stop_timezone,wheelchair_boarding,platform_code,project_id,user_id)
+        VALUES( ?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
       const [result] = await pool.execute(query, [
         stop_code,
         stop_name,
@@ -198,6 +145,9 @@ const stopService = {
         parent_station,
         stop_timezone,
         wheelchair_boarding,
+        platform_code,
+        project_id,
+        user_id
       ]);
 
       res.status(201).json({
