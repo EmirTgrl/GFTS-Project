@@ -5,7 +5,7 @@ const tripService = {
     try {
       const user_id = req.user.id;
       const {route_id} = req.params;
-      const[rows] = pool.execute(`
+      const[rows] = await pool.execute(`
         SELECT * FROM trips
         WHERE user_id = ? AND route_id =?
         `, [user_id, route_id]);

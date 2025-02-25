@@ -228,6 +228,13 @@
   margin: 0;
 }
 
+.inactive-select{
+  opacity: 0.6;
+  pointer-events: none;
+  background-color: #eee;
+  color: #aaa;
+}
+
 #map {
   flex: 1;
   height: 100%;

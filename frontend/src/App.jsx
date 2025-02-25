@@ -31,14 +31,14 @@ function App() {
                 }
               />
               <Route
-                path="/map"
+                path="/map/:project_id"
                 element={
                   <ProtectedRoute>
                     <MapPage />
                   </ProtectedRoute>
                 }
               />
-              <Route path="*" element={<Navigate to="/auth" />} />
+              
             </Routes>
           </main>
         </div>

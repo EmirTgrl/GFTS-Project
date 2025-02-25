@@ -154,7 +154,7 @@ const HomePage = () => {
                             {new Date(project.import_date).toLocaleDateString()}
                           </Card.Subtitle>
                         </div>
-                        <Button variant="outline-primary" size="sm" className="stretched-link" onClick={() => navigate(`map/${project.project_id}`)}>
+                        <Button variant="outline-primary" size="sm" className="stretched-link" onClick={() => navigate(`/map/${project.project_id}`)}>
                           View
                         </Button>
                       </Card.Body>
