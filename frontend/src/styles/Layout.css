@@ -1,0 +1,90 @@
+/* Tam genişlik ve arka planı kaplama */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden; /* Yatay kaydırmayı engeller */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(
+    to bottom,
+    #f8f9fa,
+    #e9ecef
+  ); /* Arka plan tüm sayfayı kaplar */
+  width: 100vw; /* Görünür genişlik kadar */
+  margin: 0;
+  padding: 0;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: 50px; /* Header yüksekliği ile uyumlu */
+  width: 100vw; /* Tam genişlik */
+  margin: 0;
+}
+
+.btn-primary {
+  background: #0078d7;
+  border: none;
+  transition: background 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #005bb5;
+}
+
+.container-fluid {
+  padding-top: 2rem !important;
+  padding-bottom: 3rem !important;
+  width: 100vw !important; /* Container da tam genişlik */
+  margin: 0 !important;
+  padding-left: 15px !important; /* Bootstrap varsayılan padding */
+  padding-right: 15px !important;
+}
+
+/* Form odaklanma */
+.form-control:focus {
+  border-color: #0078d7;
+  box-shadow: 0 0 0 0.2rem rgba(0, 120, 215, 0.25);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0078d7;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #005bb5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-content {
+    padding-top: 60px;
+  }
+
+  .container-fluid {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+}

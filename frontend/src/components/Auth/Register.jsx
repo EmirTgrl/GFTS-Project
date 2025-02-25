@@ -1,12 +1,17 @@
 import { useState } from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
+import { Container, Form, Button, Alert } from "react-bootstrap";
+import "../../styles/Register.css";
 
-const Register = () => {
+const Register = ({ switchToLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleRegister = async () => {
+  const handleRegister = async (e) => {
+    e.preventDefault();
     try {
       const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
@@ -16,35 +21,64 @@ const Register = () => {
         body: JSON.stringify({ email, password }),
       });
       if (response.ok) {
-        alert("Registration successful!");
-        navigate("/login");
+        navigate("/auth", { state: { isRegister: true, isLogin: true } });
       } else {
-        alert("An error occurred!");
+        setError("Registration failed!");
       }
     } catch (error) {
       console.error("Registration error:", error);
-      alert("An error occurred!");
+      setError("An error occurred!");
     }
   };
 
   return (
-    <div className="auth-form">
-      <h1>Register</h1>
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <button onClick={handleRegister}>Register</button>
-    </div>
+    <Container className="auth-container">
+      <div className="form-wrapper">
+        <Form onSubmit={handleRegister}>
+          <h2 className="title text-center">Register</h2>
+          {error && <Alert variant="danger">{error}</Alert>}
+
+          <Form.Group className="mb-3">
+            <Form.Label>Email Address</Form.Label>
+            <Form.Control
+              className="input-field"
+              type="email"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-4">
+            <Form.Label>Password</Form.Label>
+            <Form.Control
+              className="input-field"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </Form.Group>
+
+          <Button className="styled-button" variant="primary" type="submit">
+            Register
+          </Button>
+
+          <p className="switch-link text-center mt-3">
+            Already have an account?{" "}
+            <span className="link" onClick={switchToLogin}>
+              Login here
+            </span>
+          </p>
+        </Form>
+      </div>
+    </Container>
   );
+};
+Register.propTypes = {
+  switchToLogin: PropTypes.func.isRequired,
 };
 
 export default Register;

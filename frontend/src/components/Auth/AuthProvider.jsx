@@ -5,68 +5,79 @@ import { AuthContext } from "./AuthContext";
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    !!localStorage.getItem("token")
+  );
   const [userId, setUserId] = useState(null);
+  const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   useEffect(() => {
     const updateAuthState = () => {
       const storedToken = localStorage.getItem("token");
+
       if (storedToken) {
-        const decodedToken = jwtDecode(storedToken);
-        console.log("Decoded Token:", decodedToken);
+        try {
+          const decodedToken = jwtDecode(storedToken);
 
-        if (decodedToken.exp * 1000 > Date.now()) {
-          setToken(storedToken);
-          setIsAuthenticated(true);
-
-          const userId = decodedToken.id;
-          setUserId(userId);
-          console.log("User ID from token:", userId);
-        } else {
-          localStorage.removeItem("token");
-          setToken(null);
-          setIsAuthenticated(false);
-          setUserId(null);
+          if (decodedToken.exp * 1000 > Date.now()) {
+            setToken(storedToken);
+            setIsAuthenticated(true);
+            setUserId(decodedToken.id);
+            setIsLoggedOut(false);
+          } else {
+            handleLogout();
+          }
+        } catch (error) {
+          console.error("Token decode error:", error);
+          handleLogout();
         }
-      } else {
-        setToken(null);
-        setIsAuthenticated(false);
-        setUserId(null);
       }
     };
 
     updateAuthState();
-    window.addEventListener("storage", updateAuthState);
 
-    return () => {
-      window.removeEventListener("storage", updateAuthState);
+    const handleStorageChange = (e) => {
+      if (e.key === "token") {
+        updateAuthState();
+      }
     };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  const login = (newToken) => {
-    localStorage.setItem("token", newToken);
-    setToken(newToken);
-
-    const decodedToken = jwtDecode(newToken);
-    console.log("Decoded Token:", decodedToken);
-
-    const userId = decodedToken.id;
-    console.log("User ID from token:", userId);
-
-    setUserId(userId);
-    setIsAuthenticated(true);
-  };
-
-  const logout = () => {
+  const handleLogout = () => {
     localStorage.removeItem("token");
     setToken(null);
     setUserId(null);
     setIsAuthenticated(false);
+    setIsLoggedOut(true);
+  };
+
+  const login = (newToken) => {
+    try {
+      const decodedToken = jwtDecode(newToken);
+      localStorage.setItem("token", newToken);
+      setToken(newToken);
+      setUserId(decodedToken.id);
+      setIsAuthenticated(true);
+      setIsLoggedOut(false);
+    } catch (error) {
+      console.error("Login error:", error);
+      handleLogout();
+    }
   };
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, token, userId, login, logout }}
+      value={{
+        isAuthenticated,
+        token,
+        userId,
+        login,
+        logout: handleLogout,
+        isLoggedOut,
+      }}
     >
       {children}
     </AuthContext.Provider>

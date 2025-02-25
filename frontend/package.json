@@ -12,6 +12,7 @@
   "dependencies": {
     "antd": "^5.23.4",
     "axios": "^1.7.9",
+    "bootstrap": "^5.3.3",
     "buffer": "^6.0.3",
     "gtfs-utils": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -20,12 +21,14 @@
     "leaflet": "^1.9.4",
     "papaparse": "^5.5.2",
     "react": "^19.0.0",
+    "react-bootstrap": "^2.10.9",
     "react-dom": "^19.0.0",
     "react-leaflet": "^5.0.0",
     "react-router": "^7.1.5",
     "react-router-dom": "^7.1.5",
     "react-slick": "^0.30.3",
-    "slick-carousel": "^1.8.1"
+    "slick-carousel": "^1.8.1",
+    "styled-components": "^6.1.15"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
