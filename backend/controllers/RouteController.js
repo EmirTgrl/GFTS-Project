@@ -9,7 +9,7 @@ router.use(authService.auth);
 
 // Paths
 
-router.get("/:project_id", routeService.getRoutesByProjectId);
+router.get("/project/:project_id", routeService.getRoutesByProjectId);
 router.get("/:route_id",routeService.getRouteById);
 router.delete("/:route_id", routeService.deleteRouteById);
 router.put("/", routeService.updateRoute);
