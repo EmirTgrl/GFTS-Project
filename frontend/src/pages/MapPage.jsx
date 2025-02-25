@@ -11,7 +11,6 @@ import {
   TileLayer,
   Marker,
   Polyline,
-  Popup,
   useMap,
 } from "react-leaflet";
 import "../styles/Map.css";
@@ -237,21 +236,7 @@ const MapPage = () => {
             key={`${stop.stop_id}-${selectedRoute}`}
             position={[stop.stop_lat, stop.stop_lon]}
             icon={stopIcon}
-          >
-            <Popup>
-              <strong>{stop.stop_name}</strong>
-              <br />
-              {buses
-                .filter((bus) => bus.stop_id === stop.stop_id)
-                .map((bus) => (
-                  <div key={bus.trip_id}>
-                    <p>🚌 Otobüs {bus.trip_id}</p>
-                    <p>Varış: {bus.arrival_time}</p>
-                    <p>Kalkış: {bus.departure_time}</p>
-                  </div>
-                ))}
-            </Popup>
-          </Marker>
+          ></Marker>
         ))}
 
         {stops.length > 1 && (

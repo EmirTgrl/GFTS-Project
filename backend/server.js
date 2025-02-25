@@ -22,3 +22,8 @@ app.listen(port, () => {
   checkDatabaseConnection();
   console.log(`Server running on http://localhost:${port}`);
 });
+
+
+process.on('uncaughtException', (err, origin) => {
+  console.log(`Caught exception: ${err}\n Exception origin: ${origin}`);
+});
