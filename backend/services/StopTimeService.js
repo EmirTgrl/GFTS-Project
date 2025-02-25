@@ -1,6 +1,22 @@
 const {pool} = require("../db.js")
 
 const stopTimeService = {
+  getStopsAndStopTimes: async (req,res) => {
+    try {
+      const user_id = req.user.id;
+      const {trip_id} = req.params;
+      const [rows] = await pool.execute(`
+        SELECT * FROM stop_times
+        LEFT OUTER JOIN stops 
+        ON stop_times.stop_id = stops.stop_id
+        WHERE user_id = ? AND trip_id = ? 
+        `,[user_id, trip_id]);
+      res.json(rows);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({error:"server error"});
+    }
+  },
   getStopTimesByProjectId: async (req,res) => {
     try {
       const user_id = req.user.id;

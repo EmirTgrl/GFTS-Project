@@ -11,5 +11,6 @@ router.get("/:trip_id",tripService.getTripById);
 router.put("/", tripService.updateTrip);
 router.delete("/:trip_id", tripService.deleteTripById);
 router.post("/", tripService.saveTrip)
+router.get("/:route_id",tripService.getTripsByRouteId);
 
 module.exports = router;

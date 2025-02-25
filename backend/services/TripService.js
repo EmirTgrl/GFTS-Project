@@ -1,6 +1,20 @@
 const {pool} = require("../db.js");
 
 const tripService = {
+  getTripsByRouteId: async (req, res) => {
+    try {
+      const user_id = req.user.id;
+      const {route_id} = req.params;
+      const[rows] = pool.execute(`
+        SELECT * FROM trips
+        WHERE user_id = ? AND route_id =?
+        `, [user_id, route_id]);
+      res.json(rows);  
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({error:"server error"});
+    }
+  },
   getTripsByProjectId: async (req,res) => {
     try {
       const user_id = req.user.id;
