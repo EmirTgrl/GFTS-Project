@@ -53,3 +53,56 @@ export const fetchTripsByRoute = async (routeId, token) => {
   });
   return response.json();
 };
+
+export const fetchProjects = async (token) => {
+  const response = await fetch(`${API_BASE_URL}/projects`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    // Handle HTTP errors.  Crucially important!
+    const errorText = await response.text(); // Get the error message
+    console.error("HTTP error!", response.status, errorText);
+    throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorText}`);
+  }
+
+  return response.json();
+};
+
+export const fetchRoutesByProjectId = async (project_id, token) => {
+  const response = await fetch(`${API_BASE_URL}/routes/${project_id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.json();
+};
+
+export const fetchTripsByRouteId = async (route_id, token) => {
+  const response = await fetch(`${API_BASE_URL}/trips/route/${route_id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.json();
+};
+
+export const fetchCalendarByServiceId = async (service_id, token) => {
+  const response = await fetch(`${API_BASE_URL}/calendars/${service_id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.json();
+};
+
+export const fetchStopsAndStopTimesByTripId = async (trip_id, token) => {
+  const response = await fetch(`${API_BASE_URL}/stop-times/stops/${trip_id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.json();
+};

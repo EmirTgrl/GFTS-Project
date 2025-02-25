@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../components/Auth/AuthContext";
+import { fetchProjects } from "../api";
 import {
   Container,
   Form,
@@ -16,31 +17,24 @@ const HomePage = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [imports, setImports] = useState([]);
+  const [projects, setProjects] = useState([]);
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
 
-  const fetchImports = useCallback(async () => {
+  const loadProjects = async () => {
     try {
-      const response = await fetch("http://localhost:5000/import-gtfs", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setImports(data);
-      }
+      const projectsData = await fetchProjects(token);
+      setProjects(projectsData);
     } catch (error) {
-      console.error("Failed to fetch imports:", error);
+      console.error("Failed to load projects:", error);
     }
-  }, [token]);
+  };
 
   useEffect(() => {
     if (isAuthenticated && token) {
-      fetchImports();
+      loadProjects()
     }
-  }, [isAuthenticated, token, fetchImports]);
+  }, [isAuthenticated, token]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -148,19 +142,19 @@ const HomePage = () => {
             <Card.Body className="p-3">
               <h2 className="card-title h5 mb-2">Recent Imports</h2>
               <div className="imports-list">
-                {imports.length > 0 ? (
-                  imports.map((imp) => (
-                    <Card key={imp.import_id} className="import-item mb-2">
+                {projects.length > 0 ? (
+                  projects.map((project) => (
+                    <Card key={project.project_id} className="import-item mb-2">
                       <Card.Body className="py-2 px-3 d-flex justify-content-between align-items-center">
                         <div>
                           <Card.Title className="mb-0 h6">
-                            {imp.file_name}
+                            {project.file_name}
                           </Card.Title>
                           <Card.Subtitle className="text-muted small">
-                            {new Date(imp.import_date).toLocaleDateString()}
+                            {new Date(project.import_date).toLocaleDateString()}
                           </Card.Subtitle>
                         </div>
-                        <Button variant="outline-primary" size="sm">
+                        <Button variant="outline-primary" size="sm" className="stretched-link" onClick={() => navigate(`map/${project.project_id}`)}>
                           View
                         </Button>
                       </Card.Body>
@@ -168,13 +162,13 @@ const HomePage = () => {
                   ))
                 ) : (
                   <p className="text-muted text-center py-2 small">
-                    No imports yet. Start by uploading a GTFS file!
+                    No projects yet. Start by uploading a GTFS file!
                   </p>
                 )}
               </div>
             </Card.Body>
           </Card>
-        </Col>
+          </Col>
       </Row>
     </Container>
   );
