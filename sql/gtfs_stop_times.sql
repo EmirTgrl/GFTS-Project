@@ -30,7 +30,7 @@ CREATE TABLE `stop_times` (
   `stop_sequence` int NOT NULL,
   `stop_headsign` varchar(255) DEFAULT NULL,
   `pickup_type` tinyint DEFAULT NULL,
-  `drop_off_time` int DEFAULT NULL,
+  `drop_off_type` int DEFAULT NULL,
   `shape_dist_travelled` float DEFAULT NULL,
   `project_id` int DEFAULT NULL,
   `user_id` int DEFAULT NULL,
