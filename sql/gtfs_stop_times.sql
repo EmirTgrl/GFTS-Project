@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `stop_times`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stop_times` (
   `trip_id` varchar(255) NOT NULL,
-  `arrival_time` varchar(8) NOT NULL,
+  `arrival_time` varchar(8) DEFAULT NULL,
   `departure_time` varchar(8) NOT NULL,
   `stop_id` varchar(255) NOT NULL,
   `stop_sequence` int NOT NULL,
