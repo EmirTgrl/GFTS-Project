@@ -17,6 +17,6 @@ router.use("/routes",routeController);
 router.use("/stops", stopController);
 router.use("/stop-times", stopTimeController);
 router.use("/trips", tripController)
-router.use("/projets", projectController);
+router.use("/projects", projectController);
 
 module.exports = router;
