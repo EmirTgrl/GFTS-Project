@@ -24,7 +24,7 @@ class ImportService {
     try {
       console.log("📝 Importing metadata for user:", userId, "file:", fileName);
       const [result] = await pool.execute(
-        "INSERT INTO imported_data (id, file_name, import_date) VALUES (?, ?, NOW())",
+        "INSERT INTO projects (user_id, file_name, import_date) VALUES (?, ?, NOW())",
         [userId, fileName]
       );
       console.log("✅ Metadata inserted - ID:", result.insertId);
@@ -96,7 +96,7 @@ class ImportService {
     return orderedTables;
   }
 
-  async ensureDependencies(tableName, rows, importId) {
+  async ensureDependencies(tableName, rows, userId, projectId) {
     const [foreignKeys] = await pool.query(
       `
       SELECT 
@@ -138,17 +138,31 @@ class ImportService {
         console.log(
           `🛠️ Adding ${missingKeys.length} missing ${REFERENCED_COLUMN_NAME}s to ${REFERENCED_TABLE_NAME}...`
         );
-        const sql = `INSERT IGNORE INTO ${REFERENCED_TABLE_NAME} (${REFERENCED_COLUMN_NAME}, import_id) VALUES ?`;
-        const values = missingKeys.map((k) => [k, importId]);
+        const sql = `INSERT IGNORE INTO ${REFERENCED_TABLE_NAME} (${REFERENCED_COLUMN_NAME}, user_id, project_id) VALUES ?`;
+        const values = missingKeys.map((k) => [k, userId, projectId]);
         await pool.query(sql, [values]);
         console.log(
           `✅ Added missing ${REFERENCED_COLUMN_NAME}s to ${REFERENCED_TABLE_NAME}`
         );
       }
     }
+
+    // user_id için ek kontrol
+    if (tableName !== "users") {
+      const [userExists] = await pool.query(
+        "SELECT COUNT(*) as count FROM users WHERE id = ?",
+        [userId]
+      );
+      if (userExists[0].count === 0) {
+        console.log(`🛠️ Adding missing user_id ${userId} to users...`);
+        await pool.execute("INSERT IGNORE INTO users (id) VALUES (?)", [
+          userId,
+        ]);
+      }
+    }
   }
 
-  async bulkImportCSV(tableName, fileBuffer, importId) {
+  async bulkImportCSV(tableName, fileBuffer, userId, projectId) {
     return new Promise((resolve, reject) => {
       const rows = [];
       console.log(`📊 Importing ${tableName}...`);
@@ -161,7 +175,8 @@ class ImportService {
               data[key] = null;
             }
           });
-          data.import_id = importId;
+          data.user_id = userId; // Her satıra user_id ekle
+          data.project_id = projectId;
           rows.push(data);
         })
         .on("end", async () => {
@@ -172,7 +187,7 @@ class ImportService {
               return;
             }
 
-            await this.ensureDependencies(tableName, rows, importId);
+            await this.ensureDependencies(tableName, rows, userId, projectId);
 
             const columns = Object.keys(rows[0]);
             const placeholders = columns.map(() => "?").join(",");
@@ -194,7 +209,12 @@ class ImportService {
                 INSERT INTO ${tableName} (${columns.join(",")})
                 VALUES ?
                 ON DUPLICATE KEY UPDATE ${columns
-                  .filter((col) => col !== primaryKey && col !== "import_id")
+                  .filter(
+                    (col) =>
+                      col !== primaryKey &&
+                      col !== "user_id" &&
+                      col !== "project_id"
+                  )
                   .map((col) => `${col} = VALUES(${col})`)
                   .join(",")}
               `
@@ -242,7 +262,7 @@ class ImportService {
     });
   }
 
-  async importFiles(files, importId) {
+  async importFiles(files, userId, projectId) {
     const existingTables = await this.getExistingTables();
     const availableFiles = Object.keys(files).map((filename) =>
       filename.toLowerCase()
@@ -268,7 +288,7 @@ class ImportService {
       const filename = `${table}.txt`;
       console.log(`📥 Importing ${filename} (${table})...`);
       try {
-        await this.bulkImportCSV(table, files[filename], importId);
+        await this.bulkImportCSV(table, files[filename], userId, projectId);
       } catch (error) {
         console.error(`❌ Failed to import ${filename}:`, error);
         continue;
@@ -341,19 +361,19 @@ class ImportService {
       );
 
       console.log("🚧 Proceeding to insert import record...");
-      const importId = await this.insertImportedData(
+      const projectId = await this.insertImportedData(
         userId,
         req.file.originalname
       );
 
-      console.log("🚀 Starting file imports with importId:", importId);
-      await this.importFiles(files, importId);
+      console.log("🚀 Starting file imports with projectId:", projectId);
+      await this.importFiles(files, userId, projectId);
 
       console.log("🎉 Import process completed");
       return res.status(200).json({
         message: "GTFS data import completed",
         success: true,
-        importId,
+        projectId,
       });
     } catch (error) {
       console.error("❌ GTFS Import Error:", error);
