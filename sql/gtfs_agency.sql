@@ -45,12 +45,6 @@ CREATE TABLE `agency` (
 -- Dumping data for table `agency`
 --
 
-LOCK TABLES `agency` WRITE;
-/*!40000 ALTER TABLE `agency` DISABLE KEYS */;
-INSERT INTO `agency` (`agency_id`, `project_id`, `user_id`, `agency_name`, `agency_url`, `agency_timezone`, `agency_lang`, `agency_phone`, `agency_fare_url`, `agency_email`) VALUES ('DTA', 15, NULL, 'Demo Transit Authority', 'http://google.com', 'America/Los_Angeles', NULL, NULL, NULL, NULL);
-/*!40000 ALTER TABLE `agency` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

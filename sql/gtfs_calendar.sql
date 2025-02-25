@@ -47,12 +47,7 @@ CREATE TABLE `calendar` (
 -- Dumping data for table `calendar`
 --
 
-LOCK TABLES `calendar` WRITE;
-/*!40000 ALTER TABLE `calendar` DISABLE KEYS */;
-INSERT INTO `calendar` (`service_id`, `project_id`, `user_id`, `monday`, `tuesday`, `wednesday`, `thursday`, `friday`, `saturday`, `sunday`, `start_date`, `end_date`) VALUES ('FULLW', 15, 1, 1, 1, 1, 1, 1, 1, 1, '2007-01-01', '2010-12-31'), ('WE', 15, 0, 0, 0, 0, 0, 1, 1, 1, '2007-01-01', '2010-12-31');
-/*!40000 ALTER TABLE `calendar` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

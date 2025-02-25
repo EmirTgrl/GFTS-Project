@@ -37,11 +37,7 @@ CREATE TABLE `projects` (
 -- Dumping data for table `projects`
 --
 
-LOCK TABLES `projects` WRITE;
-/*!40000 ALTER TABLE `projects` DISABLE KEYS */;
-INSERT INTO `projects` VALUES (15,3,'sample-feed-1.zip','2025-02-20 12:39:18'),(16,3,'sample-feed-1.zip','2025-02-20 12:39:18'),(17,3,'sample-feed-1.zip','2025-02-20 12:40:34'),(18,3,'sample_feed-1.zip','2025-02-20 12:54:27'),(19,3,'sample_feed-1.zip','2025-02-20 12:56:38'),(20,3,'sample_feed-1.zip','2025-02-20 12:59:14'),(21,3,'sample_feed-1.zip','2025-02-20 13:03:33'),(22,3,'sample-feed-1.zip','2025-02-20 13:10:07'),(23,3,'sample-feed-1.zip','2025-02-20 13:13:32'),(24,3,'sample-feed-1.zip','2025-02-20 13:14:22'),(25,3,'sample-feed-1.zip','2025-02-20 13:15:40');
-/*!40000 ALTER TABLE `projects` ENABLE KEYS */;
-UNLOCK TABLES;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

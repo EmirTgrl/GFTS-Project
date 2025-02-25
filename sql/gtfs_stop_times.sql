@@ -47,14 +47,7 @@ CREATE TABLE `stop_times` (
 
 --
 -- Dumping data for table `stop_times`
---
 
-LOCK TABLES `stop_times` WRITE;
-/*!40000 ALTER TABLE `stop_times` DISABLE KEYS */;
-INSERT INTO `stop_times` (`trip_id`, `arrival_time`, `departure_time`, `stop_id`, `stop_sequence`, `stop_headsign`, `pickup_type`, `drop_off_time`, `shape_dist_travelled`, `project_id`, `user_id`) VALUES ('STBA','6:00:00','6:00:00','STAGECOACH',1,NULL,NULL,NULL,NULL,15, NULL);
-/*!40000 ALTER TABLE `stop_times` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
