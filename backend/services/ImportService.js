@@ -1,210 +1,362 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const csv = require("csv-parser");
 const unzipper = require("unzipper");
 const { pool } = require("../db.js");
+const { Readable } = require("stream");
 
 class ImportService {
   constructor() {
-    this.storage = multer.diskStorage({
-      destination: (req, file, cb) => {
-        const uploadPath = path.join(__dirname, "..", "uploads");
-        if (!fs.existsSync(uploadPath)) {
-          fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-      },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        cb(null, uniqueSuffix + "-" + file.originalname);
-      },
-    });
-
+    this.storage = multer.memoryStorage();
     this.upload = multer({
       storage: this.storage,
       fileFilter: (req, file, cb) => {
-        if (path.extname(file.originalname) !== ".zip") {
+        if (!file.originalname.toLowerCase().endsWith(".zip")) {
           return cb(new Error("Only .zip files are allowed"));
         }
         cb(null, true);
       },
     });
-  }
 
-  cleanup(filePath) {
-    try {
-      if (fs.existsSync(filePath)) {
-        if (fs.lstatSync(filePath).isDirectory()) {
-          fs.rmSync(filePath, { recursive: true, force: true });
-        } else {
-          fs.unlinkSync(filePath);
-        }
-      }
-    } catch (error) {
-      console.error("Cleanup error:", error);
-    }
+    this.chunkSize = 10000;
   }
 
   async insertImportedData(userId, fileName) {
-    const [result] = await pool.execute(
-      "INSERT INTO imported_data (id, file_name, import_date) VALUES (?, ?, NOW())",
-      [userId, fileName]
-    );
-    return result.insertId;
+    try {
+      console.log("📝 Importing metadata for user:", userId, "file:", fileName);
+      const [result] = await pool.execute(
+        "INSERT INTO imported_data (id, file_name, import_date) VALUES (?, ?, NOW())",
+        [userId, fileName]
+      );
+      console.log("✅ Metadata inserted - ID:", result.insertId);
+      return result.insertId;
+    } catch (error) {
+      console.error("❌ Error inserting metadata:", error);
+      throw error;
+    }
   }
 
-  async importCSV(tableName, filePath, importId) {
+  async tableExists(tableName) {
+    try {
+      await pool.query(`DESCRIBE ${tableName}`);
+      return true;
+    } catch (error) {
+      if (error.code === "ER_NO_SUCH_TABLE") {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  async getExistingTables() {
+    const [tables] = await pool.query(`
+      SELECT TABLE_NAME 
+      FROM information_schema.TABLES 
+      WHERE TABLE_SCHEMA = DATABASE()
+    `);
+    return new Set(tables.map((row) => row.TABLE_NAME.toLowerCase()));
+  }
+
+  async getTableDependencies(tablesToProcess) {
+    const [foreignKeys] = await pool.query(
+      `
+      SELECT 
+        TABLE_NAME,
+        COLUMN_NAME,
+        REFERENCED_TABLE_NAME,
+        REFERENCED_COLUMN_NAME
+      FROM information_schema.KEY_COLUMN_USAGE
+      WHERE TABLE_SCHEMA = DATABASE()
+      AND REFERENCED_TABLE_NAME IS NOT NULL
+      AND TABLE_NAME IN (?)
+    `,
+      [[...tablesToProcess]]
+    );
+
+    const dependencies = {};
+    foreignKeys.forEach((row) => {
+      if (!dependencies[row.TABLE_NAME]) {
+        dependencies[row.TABLE_NAME] = new Set();
+      }
+      dependencies[row.TABLE_NAME].add(row.REFERENCED_TABLE_NAME);
+    });
+
+    const orderedTables = [];
+    const visited = new Set();
+
+    const visit = (table) => {
+      if (visited.has(table) || !tablesToProcess.has(table)) return;
+      visited.add(table);
+
+      const deps = dependencies[table] || new Set();
+      deps.forEach((depTable) => visit(depTable));
+      orderedTables.push(table);
+    };
+
+    tablesToProcess.forEach((table) => visit(table));
+    return orderedTables;
+  }
+
+  async ensureDependencies(tableName, rows, importId) {
+    const [foreignKeys] = await pool.query(
+      `
+      SELECT 
+        COLUMN_NAME,
+        REFERENCED_TABLE_NAME,
+        REFERENCED_COLUMN_NAME
+      FROM information_schema.KEY_COLUMN_USAGE
+      WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = ?
+      AND REFERENCED_TABLE_NAME IS NOT NULL
+    `,
+      [tableName]
+    );
+
+    for (const fk of foreignKeys) {
+      const { COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME } = fk;
+      const refValues = new Set(
+        rows.map((row) => row[COLUMN_NAME]).filter((v) => v)
+      );
+
+      if (refValues.size === 0) continue;
+
+      console.log(
+        `🔍 Checking ${COLUMN_NAME} references for ${tableName} in ${REFERENCED_TABLE_NAME}...`
+      );
+      const [existing] = await pool.query(
+        `SELECT ${REFERENCED_COLUMN_NAME} FROM ${REFERENCED_TABLE_NAME} WHERE ${REFERENCED_COLUMN_NAME} IN (?)`,
+        [[...refValues]]
+      );
+      const existingKeys = new Set(
+        existing.map((row) => row[REFERENCED_COLUMN_NAME])
+      );
+      const missingKeys = [...refValues].filter((k) => !existingKeys.has(k));
+
+      if (
+        missingKeys.length > 0 &&
+        (await this.tableExists(REFERENCED_TABLE_NAME))
+      ) {
+        console.log(
+          `🛠️ Adding ${missingKeys.length} missing ${REFERENCED_COLUMN_NAME}s to ${REFERENCED_TABLE_NAME}...`
+        );
+        const sql = `INSERT IGNORE INTO ${REFERENCED_TABLE_NAME} (${REFERENCED_COLUMN_NAME}, import_id) VALUES ?`;
+        const values = missingKeys.map((k) => [k, importId]);
+        await pool.query(sql, [values]);
+        console.log(
+          `✅ Added missing ${REFERENCED_COLUMN_NAME}s to ${REFERENCED_TABLE_NAME}`
+        );
+      }
+    }
+  }
+
+  async bulkImportCSV(tableName, fileBuffer, importId) {
     return new Promise((resolve, reject) => {
       const rows = [];
-      fs.createReadStream(filePath)
+      console.log(`📊 Importing ${tableName}...`);
+
+      Readable.from(fileBuffer)
         .pipe(csv())
         .on("data", (data) => {
-          if (
-            tableName === "trips" &&
-            (!data.shape_id || data.shape_id === "")
-          ) {
-            data.shape_id = null;
-          }
+          Object.keys(data).forEach((key) => {
+            if (data[key] === "" || data[key] === undefined) {
+              data[key] = null;
+            }
+          });
           data.import_id = importId;
           rows.push(data);
         })
         .on("end", async () => {
           try {
-            await pool.execute(`DELETE FROM ${tableName} WHERE import_id = ?`, [
-              importId,
-            ]);
+            if (rows.length === 0) {
+              console.log(`⚠️ No data found in ${tableName}, skipping...`);
+              resolve();
+              return;
+            }
 
-            if (rows.length > 0) {
-              for (const row of rows) {
-                const columns = Object.keys(row);
-                const values = columns.map((col) => row[col]);
-                const placeholders = columns.map(() => "?").join(",");
+            await this.ensureDependencies(tableName, rows, importId);
 
+            const columns = Object.keys(rows[0]);
+            const placeholders = columns.map(() => "?").join(",");
+            const [primaryKeys] = await pool.query(
+              `
+              SELECT COLUMN_NAME
+              FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = ?
+              AND COLUMN_KEY = 'PRI'
+            `,
+              [tableName]
+            );
+            const primaryKey =
+              primaryKeys.length > 0 ? primaryKeys[0].COLUMN_NAME : null;
+
+            const sqlUpsert = primaryKey
+              ? `
+                INSERT INTO ${tableName} (${columns.join(",")})
+                VALUES ?
+                ON DUPLICATE KEY UPDATE ${columns
+                  .filter((col) => col !== primaryKey && col !== "import_id")
+                  .map((col) => `${col} = VALUES(${col})`)
+                  .join(",")}
+              `
+              : `INSERT IGNORE INTO ${tableName} (${columns.join(
+                  ","
+                )}) VALUES ?`;
+
+            for (let i = 0; i < rows.length; i += this.chunkSize) {
+              const chunk = rows.slice(i, i + this.chunkSize);
+              const values = chunk.map((row) => columns.map((col) => row[col]));
+              console.log(
+                `📈 Bulk importing ${
+                  values.length
+                } rows into ${tableName} (chunk ${i / this.chunkSize + 1})...`
+              );
+              let retries = 3;
+              while (retries > 0) {
                 try {
-                  const sql = `INSERT INTO ${tableName} (${columns.join(
-                    ","
-                  )}) VALUES (${placeholders})`;
-                  await pool.query(sql, values);
-                } catch (err) {
-                  if (err.code === "ER_DUP_ENTRY") {
-                    const idColumnMap = {
-                      agency: "agency_id",
-                      routes: "route_id",
-                      stops: "stop_id",
-                      trips: "trip_id",
-                      shapes: "shape_id",
-                      calendar: "service_id",
-                    };
-
-                    const idColumn = idColumnMap[tableName];
-                    if (!idColumn) {
-                      throw new Error(`Unknown table: ${tableName}`);
-                    }
-
-                    const updateColumns = columns
-                      .filter((col) => col !== idColumn && col !== "import_id")
-                      .map((col) => `${col} = ?`);
-
-                    if (updateColumns.length > 0) {
-                      const updateSql = `
-                        UPDATE ${tableName} 
-                        SET import_id = ?, ${updateColumns.join(", ")}
-                        WHERE ${idColumn} = ?
-                      `;
-
-                      const updateValues = [
-                        importId,
-                        ...columns
-                          .filter(
-                            (col) => col !== idColumn && col !== "import_id"
-                          )
-                          .map((col) => row[col]),
-                        row[idColumn],
-                      ];
-
-                      await pool.query(updateSql, updateValues);
-                    }
+                  await pool.query(sqlUpsert, [values]);
+                  break;
+                } catch (error) {
+                  if (error.code === "ECONNRESET" && retries > 0) {
+                    console.warn(
+                      `⚠️ Connection reset, retrying (${retries} attempts left)...`
+                    );
+                    retries--;
+                    await new Promise((res) => setTimeout(res, 1000));
                   } else {
-                    throw err;
+                    throw error;
                   }
                 }
               }
             }
+            console.log(`✅ Bulk import completed for ${tableName}`);
             resolve();
           } catch (error) {
+            console.error(`❌ Error importing ${tableName}:`, error);
             reject(error);
           }
+        })
+        .on("error", (error) => {
+          console.error(`❌ CSV parsing error for ${tableName}:`, error);
+          reject(error);
         });
     });
   }
 
-  async importFiles(tempDir, importId) {
-    const files = {
-      agency: path.join(tempDir, "agency.txt"),
-      calendar: path.join(tempDir, "calendar.txt"),
-      shapes: path.join(tempDir, "shapes.txt"),
-      routes: path.join(tempDir, "routes.txt"),
-      stops: path.join(tempDir, "stops.txt"),
-      trips: path.join(tempDir, "trips.txt"),
-      stopTimes: path.join(tempDir, "stop_times.txt"),
-    };
+  async importFiles(files, importId) {
+    const existingTables = await this.getExistingTables();
+    const availableFiles = Object.keys(files).map((filename) =>
+      filename.toLowerCase()
+    );
 
-    for (const [table, filePath] of Object.entries(files)) {
-      if (fs.existsSync(filePath)) {
-        await this.importCSV(table, filePath, importId);
-        this.cleanup(filePath);
+    const tablesToProcessSet = new Set(
+      availableFiles
+        .map((filename) => filename.replace(".txt", "").toLowerCase())
+        .filter((table) => existingTables.has(table))
+    );
+
+    if (tablesToProcessSet.size === 0) {
+      console.log(
+        "⚠️ No matching tables found in ZIP and database, skipping import..."
+      );
+      return;
+    }
+
+    const orderedTables = await this.getTableDependencies(tablesToProcessSet);
+    console.log("🔧 Tables to process (in dependency order):", orderedTables);
+
+    for (const table of orderedTables) {
+      const filename = `${table}.txt`;
+      console.log(`📥 Importing ${filename} (${table})...`);
+      try {
+        await this.bulkImportCSV(table, files[filename], importId);
+      } catch (error) {
+        console.error(`❌ Failed to import ${filename}:`, error);
+        continue;
       }
     }
+
+    console.log("✅ All files processed");
   }
 
   async importGTFSData(req, res) {
-    let tempDir = null;
-
     try {
       const userId = req.user.id;
-      console.log("📤 Import request received");
-      console.log("User ID from token:", userId);
+      console.log("📤 Import request received from user:", userId);
 
       if (!req.file) {
+        console.log("⚠️ No file uploaded");
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      console.log("✅ File received:", req.file.originalname);
-      console.log("📂 File path:", req.file.path);
+      console.log("📁 Processing file:", req.file.originalname);
+      console.log("📦 Starting ZIP extraction...");
 
-      tempDir = path.join(__dirname, "..", "temp", Date.now().toString());
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
+      const files = {};
+      await new Promise((resolve, reject) => {
+        const zipStream = Readable.from(req.file.buffer).pipe(unzipper.Parse());
+        let totalFiles = 0;
+        let processedFiles = 0;
 
-      await fs
-        .createReadStream(req.file.path)
-        .pipe(unzipper.Extract({ path: tempDir }))
-        .promise();
+        zipStream
+          .on("entry", (entry) => {
+            const fileName = entry.path;
+            const chunks = [];
+            totalFiles++;
 
-      const importId = await this.insertImportedData(
-        userId,
-        path.basename(req.file.path)
+            entry
+              .on("data", (chunk) => chunks.push(chunk))
+              .on("end", () => {
+                files[fileName] = Buffer.concat(chunks);
+                console.log("📄 Extracted:", fileName);
+                processedFiles++;
+              })
+              .on("error", (error) => {
+                console.error("❌ Error processing entry:", fileName, error);
+                reject(error);
+              });
+          })
+          .on("error", (error) => {
+            console.error("❌ ZIP parsing error:", error);
+            reject(error);
+          })
+          .on("finish", () => {
+            console.log("✅ ZIP stream finished");
+            const waitForFiles = () => {
+              if (processedFiles === totalFiles && totalFiles > 0) {
+                console.log("✅ All files extracted, total:", processedFiles);
+                resolve();
+              } else if (totalFiles === 0) {
+                reject(new Error("No files found in ZIP"));
+              } else {
+                setTimeout(waitForFiles, 100);
+              }
+            };
+            waitForFiles();
+          });
+      });
+
+      console.log(
+        "✅ ZIP extraction complete, extracted files:",
+        Object.keys(files)
       );
 
-      await this.importFiles(tempDir, importId);
+      console.log("🚧 Proceeding to insert import record...");
+      const importId = await this.insertImportedData(
+        userId,
+        req.file.originalname
+      );
 
-      this.cleanup(tempDir);
-      this.cleanup(req.file.path);
+      console.log("🚀 Starting file imports with importId:", importId);
+      await this.importFiles(files, importId);
 
+      console.log("🎉 Import process completed");
       return res.status(200).json({
-        message: "GTFS data imported successfully",
+        message: "GTFS data import completed",
         success: true,
+        importId,
       });
     } catch (error) {
-      console.error("❌ GTFS Import Error:", error.message);
-
-      if (tempDir) this.cleanup(tempDir);
-      if (req.file && req.file.path) {
-        this.cleanup(req.file.path);
-      }
-
+      console.error("❌ GTFS Import Error:", error);
       return res.status(500).json({
         message: error.message || "Error importing GTFS data",
         success: false,
