@@ -3,60 +3,298 @@
   height: 100vh;
   width: 100vw;
   position: relative;
+  overflow: hidden;
 }
 
 .sidebar {
   width: 350px;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
+  background-color: #f7f7f7;
   padding: 20px;
   overflow-y: auto;
-  position: absolute;
+  position: fixed;
   left: 0;
-  top: 0;
+  top: 50px; 
   bottom: 0;
   z-index: 1000;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
-.sidebar h2 {
-  font-size: 20px;
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 15px;
 }
 
-.sidebar ul {
-  list-style: none;
-  padding: 0;
+.sidebar-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 5px;
 }
 
-.sidebar li {
-  padding: 10px 0;
-  border-bottom: 1px solid #444;
+.toggle-btn {
+  background: #007bff;
+  border: none;
+  font-size: 20px;
+  color: #fff;
+  cursor: pointer;
+  padding: 5px 10px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
 }
 
-.sidebar li:last-child {
-  border-bottom: none;
+.toggle-btn:hover {
+  background-color: #0056b3;
+}
+
+.toggle-sidebar-btn {
+  position: fixed;
+  left: 10px;
+  top: 60px;
+  z-index: 999;
+  background: #007bff;
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.toggle-sidebar-btn:hover {
+  background: #0056b3;
+}
+
+.toggle-sidebar-btn.show {
+  display: flex;
 }
 
 .route-select {
   width: 100%;
   padding: 10px;
   margin-bottom: 20px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  background-color: #fff;
+  color: #333;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.calendar-info {
+.route-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.sidebar-section {
   margin-top: 20px;
 }
 
-.stops-list {
-  margin-top: 20px;
+.section-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #007bff;
+  margin-bottom: 10px;
 }
 
-.buses-list {
-  margin-top: 20px;
+.scrollable-section {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.scrollable-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollable-section::-webkit-scrollbar-thumb {
+  background-color: #007bff;
+  border-radius: 10px;
+}
+
+.section-card {
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.section-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.card-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 5px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.edit-btn {
+  color: #007bff;
+}
+
+.edit-btn:hover {
+  background-color: #e6f0ff;
+}
+
+.delete-btn {
+  color: #dc3545;
+}
+
+.delete-btn:hover {
+  background-color: #f8d7da;
+}
+
+.section-text {
+  font-size: 14px;
+  color: #555;
+  margin: 0;
+}
+
+.bus-info {
+  margin-top: 8px;
+  padding-left: 10px;
+  border-left: 2px solid #007bff;
+}
+
+.bus-icon {
+  margin-right: 5px;
+}
+
+.bus-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #007bff;
+  margin: 0;
+}
+
+.bus-time {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
 }
 
 #map {
   flex: 1;
   height: 100%;
   width: 100%;
+  z-index: 500;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 300px;
+    top: 50px; 
+  }
+
+  .sidebar.closed {
+    transform: translateX(-300px);
+  }
+
+  .sidebar-title {
+    font-size: 20px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+
+  .section-card {
+    padding: 10px;
+  }
+
+  .card-title {
+    font-size: 14px;
+  }
+
+  .bus-title {
+    font-size: 13px;
+  }
+
+  .bus-time {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 576px) {
+  .sidebar {
+    width: 100%;
+    height: 50vh;
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    transform: translateY(0);
+  }
+
+  .sidebar.closed {
+    transform: translateY(100%);
+  }
+
+  .toggle-sidebar-btn {
+    top: auto;
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .toggle-sidebar-btn.show {
+    display: flex;
+  }
+
+  #map {
+    height: 50vh;
+  }
 }

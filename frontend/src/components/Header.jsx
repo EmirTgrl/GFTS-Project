@@ -10,14 +10,18 @@ const Header = () => {
 
   const handleLogout = () => {
     logout();
-    navigate("/auth");
+    navigate("/auth/login", { state: { isLogin: true }, replace: true });
   };
 
   return (
     <Navbar expand="lg" className="custom-navbar" fixed="top">
       <Container>
-        <Navbar.Brand as={Link} to="/home" className="navbar-brand">
-          <span className="brand-highlight">GTFS</span> Manager
+        <Navbar.Brand
+          as={Link}
+          to={isAuthenticated ? "/home" : "/auth"}
+          className="navbar-brand"
+        >
+          <span className="brand-highlight">GTFS</span> Editor
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
@@ -39,7 +43,12 @@ const Header = () => {
                 </Button>
               </>
             ) : (
-              <Nav.Link as={Link} to="/auth" className="nav-link-custom">
+              <Nav.Link
+                as={Link}
+                to="/auth"
+                state={{ isLogin: true }}
+                className="nav-link-custom"
+              >
                 Login
               </Nav.Link>
             )}
