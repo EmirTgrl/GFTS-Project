@@ -72,7 +72,7 @@ export const fetchProjects = async (token) => {
 };
 
 export const fetchRoutesByProjectId = async (project_id, token) => {
-  const response = await fetch(`${API_BASE_URL}/routes/${project_id}`, {
+  const response = await fetch(`${API_BASE_URL}/routes/project/${project_id}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

@@ -55,7 +55,7 @@ function App() {
                 }
               />
               <Route
-                path="/map"
+                path="/map/:project_id"
                 element={
                   <ProtectedRoute>
                     <MapPage />

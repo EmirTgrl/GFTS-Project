@@ -5,6 +5,8 @@ import {
   fetchBusesByRoute,
   fetchCalendarByRoute,
   fetchTripsByRoute,
+  fetchRoutesByProjectId,
+  fetchTripsByRouteId
 } from "../api";
 import {
   MapContainer,
@@ -17,6 +19,7 @@ import "../styles/Map.css";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 import L from "leaflet";
+import { useParams } from "react-router-dom";
 
 // Özel durak ikonu
 const stopIcon = new L.Icon({
@@ -49,6 +52,7 @@ const MapPage = () => {
   const { token } = useContext(AuthContext);
   const [routes, setRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
+  const [selectedTrip, setSelectedTrip] = useState(null);
   const [stops, setStops] = useState([]);
   const [buses, setBuses] = useState([]);
   const [calendar, setCalendar] = useState(null);
@@ -57,11 +61,12 @@ const MapPage = () => {
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
   const [zoom, setZoom] = useState(13);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const {project_id} = useParams();
 
   useEffect(() => {
     const loadRoutes = async () => {
       try {
-        const data = await fetchRoutes(token);
+        const data = await fetchRoutesByProjectId(project_id, token);
         setRoutes(data);
       } catch (error) {
         console.error("Error fetching routes:", error);
@@ -72,48 +77,55 @@ const MapPage = () => {
 
   const handleRouteSelect = async (routeId) => {
     setSelectedRoute(routeId);
+    setTrips([]);
     setStops([]);
     setBuses([]);
     setCalendar(null);
-    setTrips([]);
 
-    try {
-      const [stopsData, busesData, calendarData, tripsData] = await Promise.all(
-        [
-          fetchStopsByRoute(routeId, token),
-          fetchBusesByRoute(routeId, token),
-          fetchCalendarByRoute(routeId, token),
-          fetchTripsByRoute(routeId, token),
-        ]
-      );
+      try {
+    //   const [stopsData, busesData, calendarData, tripsData] = await Promise.all(
+    //     [
+    //       fetchTripsByRouteId(routeId,token),
+    //       fetchStopsByRoute(routeId, token),
+    //       fetchBusesByRoute(routeId, token),
+    //       fetchCalendarByRoute(routeId, token),
+    //     ]
+    //   );
 
-      const uniqueStops = stopsData.filter(
-        (stop, index, self) =>
-          index === self.findIndex((s) => s.stop_id === stop.stop_id)
-      );
-      setStops(uniqueStops);
-      setBuses(busesData);
-      setCalendar(calendarData);
+      // const uniqueStops = stopsData.filter(
+      //   (stop, index, self) =>
+      //     index === self.findIndex((s) => s.stop_id === stop.stop_id)
+      // );
+      // setStops(uniqueStops);
+      // setBuses(busesData);
+      // setCalendar(calendarData);
+      // setTrips(tripsData);
+
+      const tripsData = await fetchTripsByRouteId(routeId,token);
       setTrips(tripsData);
 
-      if (uniqueStops.length > 0) {
-        const centerLat =
-          uniqueStops.reduce(
-            (sum, stop) => sum + parseFloat(stop.stop_lat),
-            0
-          ) / uniqueStops.length;
-        const centerLon =
-          uniqueStops.reduce(
-            (sum, stop) => sum + parseFloat(stop.stop_lon),
-            0
-          ) / uniqueStops.length;
-        setMapCenter([centerLat, centerLon]);
-        setZoom(14);
-      }
+      // if (uniqueStops.length > 0) {
+      //   const centerLat =
+      //     uniqueStops.reduce(
+      //       (sum, stop) => sum + parseFloat(stop.stop_lat),
+      //       0
+      //     ) / uniqueStops.length;
+      //   const centerLon =
+      //     uniqueStops.reduce(
+      //       (sum, stop) => sum + parseFloat(stop.stop_lon),
+      //       0
+      //     ) / uniqueStops.length;
+      //   setMapCenter([centerLat, centerLon]);
+      //   setZoom(14);
+      // }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   };
+
+  const handleTripSelect = async (trip_id) => {
+    setSelectedTrip(trip_id);
+  }
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -143,7 +155,7 @@ const MapPage = () => {
               className="route-select"
               value={selectedRoute || ""}
             >
-              <option value="">Bir Rota Seçin</option>
+              <option value="">Rota Seçin</option>
               {routes.map((route) => (
                 <option key={route.route_id} value={route.route_id}>
                   {route.route_long_name}
@@ -151,7 +163,25 @@ const MapPage = () => {
               ))}
             </select>
 
-            {calendar && (
+            <select
+              onChange={(f) => handleTripSelect(f.target.value)}
+              className={`route-select ${!selectedRoute ? 'inactive-select' : ''}`}
+              value={selectedTrip || ""}
+              disabled={!selectedRoute}
+            >
+              <option value="">Trip Seçin</option>
+              {trips.map((trip) => (
+                <option key={trip.trip_id} value={trip.trip_id}>
+                  {trip.trip_id +  " - "  + trip.trip_headsign}
+                </option>
+              ))}
+            </select>
+            
+
+          
+
+
+            {/* {calendar && (
               <div className="sidebar-section">
                 <h3 className="section-title">Çalışma Günleri</h3>
                 <div className="section-card">
@@ -222,7 +252,7 @@ const MapPage = () => {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
           </>
         )}
       </div>
