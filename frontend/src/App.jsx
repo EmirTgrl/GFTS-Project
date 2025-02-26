@@ -4,7 +4,9 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { useContext } from "react";
 import { AuthProvider } from "./components/Auth/AuthProvider";
+import { AuthContext } from "./components/Auth/AuthContext";
 import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
 import MapPage from "./pages/MapPage";
 import HomePage from "./pages/HomePage";
@@ -12,6 +14,15 @@ import AuthPage from "./pages/AuthPage";
 import Header from "./components/Header";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./styles/Layout.css";
+
+const RedirectHandler = () => {
+  const { isAuthenticated } = useContext(AuthContext);
+  return isAuthenticated ? (
+    <Navigate to="/home" replace />
+  ) : (
+    <Navigate to="/auth" replace />
+  );
+};
 
 function App() {
   return (
@@ -21,7 +32,20 @@ function App() {
           <Header />
           <main className="main-content">
             <Routes>
-              <Route path="/auth" element={<AuthPage />} />
+              <Route
+                path="/auth"
+                element={
+                  <AuthContext.Consumer>
+                    {({ isAuthenticated }) =>
+                      isAuthenticated ? (
+                        <Navigate to="/home" replace />
+                      ) : (
+                        <AuthPage />
+                      )
+                    }
+                  </AuthContext.Consumer>
+                }
+              />
               <Route
                 path="/home"
                 element={
@@ -38,7 +62,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="*" element={<Navigate to="/auth" />} />
+              <Route path="/" element={<RedirectHandler />} />
+              <Route path="*" element={<RedirectHandler />} />
             </Routes>
           </main>
         </div>
