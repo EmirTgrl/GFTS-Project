@@ -61,7 +61,7 @@ const HomePage = () => {
     formData.append("file", file);
 
     try {
-      const response = await fetch("http://localhost:5000/import-gtfs", {
+      const response = await fetch("http://localhost:5000/api/import", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

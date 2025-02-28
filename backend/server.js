@@ -13,10 +13,8 @@ app.use(cors());
 
 // Routes
 const indexController = require("./controllers/IndexController.js");
-const importController = require("./controllers/ImportController.js");
 
 app.use("/api", indexController);
-app.use("/import-gtfs", importController);
 
 app.listen(port, () => {
   checkDatabaseConnection();
