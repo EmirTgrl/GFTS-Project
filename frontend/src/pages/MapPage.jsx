@@ -89,7 +89,7 @@ const MapPage = () => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsRouteDropdownOpen(false);
-        setSearchTerm(""); // Dropdown kapandığında arama sıfırlanır
+        setSearchTerm("");
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -146,7 +146,7 @@ const MapPage = () => {
   };
 
   const toggleRouteDropdown = () => {
-    setIsRouteDropdownOpen((prev) => !prev); // Açıkken tıklayınca kapanır
+    setIsRouteDropdownOpen((prev) => !prev);
   };
 
   const handleTripSelect = async (tripId) => {
@@ -235,10 +235,7 @@ const MapPage = () => {
         {isSidebarOpen && (
           <>
             <div className="route-dropdown" ref={dropdownRef}>
-              <div
-                className="route-select"
-                onClick={toggleRouteDropdown} // Geri tıklayınca kapanır
-              >
+              <div className="route-select" onClick={toggleRouteDropdown}>
                 {selectedRoute
                   ? routes.find((r) => r.route_id === selectedRoute)
                       ?.route_long_name ||
@@ -352,7 +349,7 @@ const MapPage = () => {
         )}
       </div>
 
-      <MapContainer center={mapCenter} zoom={zoom} id="map">
+      <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <MapUpdater center={mapCenter} zoom={zoom} />
 
