@@ -11,27 +11,64 @@ export const AuthProvider = ({ children }) => {
   const [userId, setUserId] = useState(null);
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
-  const updateAuthState = useCallback((newToken) => {
-    if (newToken) {
-      try {
-        const decodedToken = jwtDecode(newToken);
-        if (decodedToken.exp * 1000 > Date.now()) {
-          localStorage.setItem("token", newToken);
-          setToken(newToken);
-          setIsAuthenticated(true);
-          setUserId(decodedToken.id);
-          setIsLoggedOut(false);
-        } else {
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setUserId(null);
+    setIsAuthenticated(false);
+    setIsLoggedOut(true); 
+  }, []);
+
+  const updateAuthState = useCallback(
+    (newToken) => {
+      if (newToken) {
+        try {
+          const decodedToken = jwtDecode(newToken);
+          if (decodedToken.exp * 1000 > Date.now()) {
+            localStorage.setItem("token", newToken);
+            setToken(newToken);
+            setIsAuthenticated(true);
+            setUserId(decodedToken.id);
+            setIsLoggedOut(false);
+          } else {
+            handleLogout();
+          }
+        } catch (error) {
+          console.error("Token decode error:", error);
           handleLogout();
         }
-      } catch (error) {
-        console.error("Token decode error:", error);
+      } else {
         handleLogout();
       }
-    } else {
-      handleLogout();
-    }
-  }, []);
+    },
+    [handleLogout]
+  );
+
+  const login = (newToken) => {
+    updateAuthState(newToken);
+  };
+
+  useEffect(() => {
+    const checkTokenExpiration = () => {
+      const storedToken = localStorage.getItem("token");
+      if (storedToken) {
+        try {
+          const decodedToken = jwtDecode(storedToken);
+          if (decodedToken.exp * 1000 < Date.now()) {
+            handleLogout();
+          }
+        } catch (error) {
+          console.error("Token decode error in interval:", error);
+          handleLogout();
+        }
+      }
+    };
+
+    const interval = setInterval(checkTokenExpiration, 10000);
+    checkTokenExpiration();
+
+    return () => clearInterval(interval);
+  }, [handleLogout]);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
@@ -46,18 +83,6 @@ export const AuthProvider = ({ children }) => {
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [updateAuthState]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken(null);
-    setUserId(null);
-    setIsAuthenticated(false);
-    setIsLoggedOut(true);
-  };
-
-  const login = (newToken) => {
-    updateAuthState(newToken);
-  };
 
   return (
     <AuthContext.Provider

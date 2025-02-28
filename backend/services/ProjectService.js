@@ -43,7 +43,7 @@ const projectService = {
                 `, [file_name, project_id, user_id]);
 
             if (result.affectedRows === 0) {
-                return res.status(404).json({ message: "Project not found" }); // Redundant, but good to be explicit
+                return res.status(404).json({ message: "Project not found" }); 
             }
             res.json({ message: "Project updated successfully" });
         } catch (error) {
