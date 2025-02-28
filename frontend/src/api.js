@@ -72,16 +72,9 @@ export const fetchCalendarByServiceId = async (service_id, token) => {
   return response.json();
 };
 
-export const fetchStopsAndStopTimesByTripId = async (
-  trip_id,
-  project_id,
-  token
-) => {
-  console.log(
-    `Calling API: ${API_BASE_URL}/stop-times/stops/${project_id}/${trip_id} with token: ${token}`
-  );
+export const fetchStopsAndStopTimesByTripId = async (trip_id, token) => {
   const response = await fetch(
-    `${API_BASE_URL}/stop-times/stops/${project_id}/${trip_id}`,
+    `${API_BASE_URL}/stop-times/stops/${trip_id}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -99,7 +92,5 @@ export const fetchStopsAndStopTimesByTripId = async (
     throw new Error(`Fetch stops and stop times failed: ${errorText}`);
   }
 
-  const data = await response.json();
-  console.log("Response from fetchStopsAndStopTimesByTripId:", data);
-  return data;
+  return await response.json();
 };

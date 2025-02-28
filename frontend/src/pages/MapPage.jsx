@@ -56,8 +56,7 @@ const MapPage = () => {
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [trips, setTrips] = useState([]);
   const [selectedTrip, setSelectedTrip] = useState(null);
-  const [stops, setStops] = useState([]);
-  const [stopTimes, setStopTimes] = useState([]);
+  const [stopsAndTimes, setStopsAndTimes] = useState([]);
   const [calendar, setCalendar] = useState(null);
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
   const [zoom, setZoom] = useState(13);
@@ -132,8 +131,7 @@ const MapPage = () => {
     setIsRouteDropdownOpen(false);
     setSelectedTrip(null);
     setTrips([]);
-    setStops([]);
-    setStopTimes([]);
+    setStopsAndTimes([]);
     setCalendar(null);
 
     try {
@@ -151,29 +149,15 @@ const MapPage = () => {
 
   const handleTripSelect = async (tripId) => {
     setSelectedTrip(tripId);
-    setStops([]);
-    setStopTimes([]);
     setCalendar(null);
 
     try {
       const stopsAndTimesData = await fetchStopsAndStopTimesByTripId(
         tripId,
-        project_id,
         token
       );
-      if (!stopsAndTimesData) {
-        console.error("No data returned from fetchStopsAndStopTimesByTripId");
-        return;
-      }
-
-      const stopsData = Array.isArray(stopsAndTimesData.stops)
-        ? stopsAndTimesData.stops
-        : [];
-      const stopTimesData = Array.isArray(stopsAndTimesData.stop_times)
-        ? stopsAndTimesData.stop_times
-        : [];
-      setStops(stopsData);
-      setStopTimes(stopTimesData);
+  
+      setStopsAndTimes(stopsAndTimesData);
 
       const selectedTripData = trips.find((trip) => trip.trip_id === tripId);
       if (selectedTripData && selectedTripData.service_id) {
@@ -184,8 +168,8 @@ const MapPage = () => {
         setCalendar(calendarData || null);
       }
 
-      if (stopsData.length > 0) {
-        const validStops = stopsData.filter(
+      if (stopsAndTimesData.length > 0) {
+        const validStops = stopsAndTimesData.filter(
           (stop) =>
             stop.stop_lat &&
             stop.stop_lon &&
@@ -308,22 +292,19 @@ const MapPage = () => {
               </div>
             )}
 
-            {stopTimes.length > 0 && (
+            {stopsAndTimes.length > 0 && (
               <div className="sidebar-section">
                 <h3 className="section-title">Duraklar</h3>
                 <div className="scrollable-section">
-                  {stopTimes.map((stopTime) => {
-                    const stop = stops.find(
-                      (s) => s.stop_id === stopTime.stop_id
-                    );
+                  {stopsAndTimes.map((stopAndTime) => {
                     return (
                       <div
-                        key={stopTime.stop_id + stopTime.stop_sequence}
+                        key={stopAndTime.stop_id + stopAndTime.stop_sequence}
                         className="section-card"
                       >
                         <div className="card-header">
                           <h4 className="card-title">
-                            {stop ? stop.stop_name : "Bilinmeyen Durak"}
+                            {stopAndTime ? stopAndTime.stop_name : "Bilinmeyen Durak"}
                           </h4>
                           <div className="card-actions">
                             <button className="action-btn edit-btn">✏️</button>
@@ -334,13 +315,13 @@ const MapPage = () => {
                         </div>
                         <div className="bus-info">
                           <p className="bus-time">
-                            Varış: {stopTime.arrival_time || "Bilinmiyor"}{" "}
+                            Varış: {stopAndTime.arrival_time || "Bilinmiyor"}{" "}
                             <br />
-                            Kalkış: {stopTime.departure_time || "Bilinmiyor"}
+                            Kalkış: {stopAndTime.departure_time || "Bilinmiyor"}
                           </p>
                         </div>
                       </div>
-                    );
+                    )
                   })}
                 </div>
               </div>
@@ -353,24 +334,23 @@ const MapPage = () => {
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <MapUpdater center={mapCenter} zoom={zoom} />
 
-        {stopTimes.length > 0 &&
-          stopTimes
+        {stopsAndTimes.length > 0 &&
+          stopsAndTimes
             .sort((a, b) => a.stop_sequence - b.stop_sequence)
             .map((stopTime) => {
-              const stop = stops.find((s) => s.stop_id === stopTime.stop_id);
-              if (stop && stop.stop_lat && stop.stop_lon) {
+              if (stopTime && stopTime.stop_lat && stopTime.stop_lon) {
                 return (
                   <Marker
-                    key={`${stop.stop_id}-${selectedTrip}`}
+                    key={`${stopTime.stop_id}-${selectedTrip}`}
                     position={[
-                      parseFloat(stop.stop_lat),
-                      parseFloat(stop.stop_lon),
+                      parseFloat(stopTime.stop_lat),
+                      parseFloat(stopTime.stop_lon),
                     ]}
                     icon={stopIcon}
                   >
                     <Popup>
                       {stopTime.stop_sequence}.{" "}
-                      {stop.stop_name || "Bilinmeyen Durak"} <br />
+                      {stopTime.stop_name || "Bilinmeyen Durak"} <br />
                       Varış: {stopTime.arrival_time || "Bilinmiyor"} <br />
                       Kalkış: {stopTime.departure_time || "Bilinmiyor"}
                     </Popup>
@@ -378,23 +358,22 @@ const MapPage = () => {
                 );
               }
               return null;
-            })}
+            })} 
 
-        {stopTimes.length > 1 && (
+         {stopsAndTimes.length > 1 && (
           <Polyline
-            positions={stopTimes
+            positions={stopsAndTimes
               .sort((a, b) => a.stop_sequence - b.stop_sequence)
               .map((stopTime) => {
-                const stop = stops.find((s) => s.stop_id === stopTime.stop_id);
-                return stop && stop.stop_lat && stop.stop_lon
-                  ? [parseFloat(stop.stop_lat), parseFloat(stop.stop_lon)]
+                return stopTime && stopTime.stop_lat && stopTime.stop_lon
+                  ? [parseFloat(stopTime.stop_lat), parseFloat(stopTime.stop_lon)]
                   : null;
               })
               .filter((pos) => pos !== null)}
             color="#007bff"
             weight={5}
           />
-        )}
+        )} 
       </MapContainer>
     </div>
   );

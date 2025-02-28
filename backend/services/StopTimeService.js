@@ -2,40 +2,14 @@ const { pool } = require("../db.js");
 
 const stopTimeService = {
   getStopsAndStopTimes: async (req, res) => {
-    try {
+    try { 
       const user_id = req.user.id;
-      const { trip_id, project_id } = req.params;
-
-      const [stopTimesRows] = await pool.execute(
-        `
-        SELECT trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_headsign, pickup_type, drop_off_type, shape_dist_traveled
-        FROM stop_times
-        WHERE user_id = ? AND trip_id = ? AND project_id = ?
-        ORDER BY stop_sequence ASC
-        `,
-        [user_id, trip_id, project_id]
-      );
-
-      const stopIds = [...new Set(stopTimesRows.map((row) => row.stop_id))];
-      let stopsRows = [];
-      if (stopIds.length > 0) {
-        const placeholders = stopIds.map(() => "?").join(",");
-        const [rows] = await pool.execute(
-          `
-          SELECT stop_id, stop_name, stop_lat, stop_lon
-          FROM stops
-          WHERE user_id = ? AND project_id = ? AND stop_id IN (${placeholders})
-          `,
-          [user_id, project_id, ...stopIds]
-        );
-        stopsRows = rows;
-      }
-
-      const response = {
-        stops: stopsRows,
-        stop_times: stopTimesRows,
-      };
-      res.json(response);
+      const { trip_id } = req.params;  
+      const [rows] = await pool.execute(`SELECT * FROM stop_times st
+        LEFT OUTER JOIN stops s
+        ON st.stop_id = s.stop_id
+        WHERE st.user_id = ? AND st.trip_id = ? `, [user_id, trip_id]);
+      res.json(rows);
     } catch (error) {
       console.error(
         `Error in getStopsAndStopTimes for trip_id: ${req.params.trip_id}, project_id: ${req.params.project_id}:`,
@@ -70,13 +44,12 @@ const stopTimeService = {
     try {
       const user_id = req.user.id;
       const { trip_id, stop_id } = req.params;
-      const { project_id } = req.query;
       const [rows] = await pool.execute(
         `
         SELECT * FROM stop_times
-        WHERE user_id = ? AND trip_id = ? AND stop_id = ? AND project_id = ?
+        WHERE user_id = ? AND trip_id = ? AND stop_id = ?
         `,
-        [user_id, trip_id, stop_id, project_id]
+        [user_id, trip_id, stop_id]
       );
       res.json(rows.length > 0 ? rows[0] : null);
     } catch (error) {
@@ -92,13 +65,12 @@ const stopTimeService = {
     try {
       const user_id = req.user.id;
       const { trip_id, stop_id } = req.params;
-      const { project_id } = req.query;
       await pool.execute(
         `
         DELETE FROM stop_times
-        WHERE user_id = ? AND trip_id = ? AND stop_id = ? AND project_id = ?
+        WHERE user_id = ? AND trip_id = ? AND stop_id = ?
         `,
-        [user_id, trip_id, stop_id, project_id]
+        [user_id, trip_id, stop_id]
       );
       res.status(200).json({ message: "Stop time deleted successfully" });
     } catch (error) {
