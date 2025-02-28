@@ -9,20 +9,32 @@ const Login = ({ switchToRegister }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useContext(AuthContext);
+  const { login, isAuthenticated, isLoggedOut } = useContext(AuthContext);
 
   useEffect(() => {
-    if (location.state?.isRegister) {
+    if (isAuthenticated && !isLoggingIn) {
+      navigate("/home", { replace: true });
+    }
+  }, [isAuthenticated, isLoggingIn, navigate]);
+  useEffect(() => {
+    if (isLoggedOut) {
+      setError("You have been logged out.");
+    } else if (location.state?.isRegister) {
       setError("Registration successful! You can login.");
     } else if (location.state?.isLogout) {
       setError("You have been logged out.");
     }
-  }, [location.state]);
+  }, [isLoggedOut, location.state]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isLoggingIn) return;
+
+    setError("");
+    setIsLoggingIn(true);
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
@@ -33,14 +45,16 @@ const Login = ({ switchToRegister }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        login(data.token);
-        navigate("/home");
+        login(data.token); // Token’ı AuthProvider’a gönder
+        // Yönlendirme useEffect tarafından halledilecek
       } else {
         setError("Invalid email or password!");
       }
     } catch (error) {
       console.error("Login error:", error);
       setError("An error occurred!");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -79,12 +93,17 @@ const Login = ({ switchToRegister }) => {
             />
           </Form.Group>
 
-          <Button className="styled-button" variant="primary" type="submit">
+          <Button
+            className="styled-button"
+            variant="primary"
+            type="submit"
+            disabled={isLoggingIn}
+          >
             Login
           </Button>
 
           <p className="switch-link text-center mt-3">
-            Dont have an account?{" "}
+            Don’t have an account?{" "}
             <span className="link" onClick={switchToRegister}>
               Register here
             </span>
@@ -94,6 +113,7 @@ const Login = ({ switchToRegister }) => {
     </Container>
   );
 };
+
 Login.propTypes = {
   switchToRegister: PropTypes.func.isRequired,
 };

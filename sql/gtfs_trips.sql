@@ -53,11 +53,6 @@ CREATE TABLE `trips` (
 -- Dumping data for table `trips`
 --
 
-LOCK TABLES `trips` WRITE;
-/*!40000 ALTER TABLE `trips` DISABLE KEYS */;
-INSERT INTO `trips` (`route_id`, `service_id`, `trip_id`, `trip_headsign`, `trip_short_name`, `direction_id`, `block_id`, `shape_id`, `wheelchair_accessible`, `bikes_allowed`, `project_id`, `user_id`) VALUES ('AAMV','WE','AAMV1','to Amargosa Valley',NULL,0,NULL,NULL,NULL,NULL,15, NULL),('AAMV','WE','AAMV2','to Airport',NULL,1,NULL,NULL,NULL,NULL,15, NULL),('AAMV','WE','AAMV3','to Amargosa Valley',NULL,0,NULL,NULL,NULL,NULL,15, NULL),('AAMV','WE','AAMV4','to Airport',NULL,1,NULL,NULL,NULL,NULL,15, NULL),('AB','FULLW','AB1','to Bullfrog',NULL,0,'1',NULL,NULL,NULL,15, NULL),('AB','FULLW','AB2','to Airport',NULL,1,'2',NULL,NULL,NULL,15, NULL),('BFC','FULLW','BFC1','to Furnace Creek Resort',NULL,0,'1',NULL,NULL,NULL,15, NULL),('BFC','FULLW','BFC2','to Bullfrog',NULL,1,'2',NULL,NULL,NULL,15, NULL),('CITY','FULLW','CITY1',NULL,NULL,0,NULL,NULL,NULL,NULL,15, NULL),('CITY','FULLW','CITY2',NULL,NULL,1,NULL,NULL,NULL,NULL,15, NULL),('STBA','FULLW','STBA','Shuttle',NULL,NULL,NULL,NULL,NULL,NULL,15, NULL);/*!40000 ALTER TABLE `trips` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

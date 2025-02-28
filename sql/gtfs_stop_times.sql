@@ -24,13 +24,13 @@ DROP TABLE IF EXISTS `stop_times`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stop_times` (
   `trip_id` varchar(255) NOT NULL,
-  `arrival_time` varchar(8) NOT NULL,
-  `departure_time` varchar(8) NOT NULL,
+  `arrival_time` varchar(8) DEFAULT NULL,
+  `departure_time` varchar(8) DEFAULT NULL,
   `stop_id` varchar(255) NOT NULL,
   `stop_sequence` int NOT NULL,
   `stop_headsign` varchar(255) DEFAULT NULL,
   `pickup_type` tinyint DEFAULT NULL,
-  `drop_off_time` int DEFAULT NULL,
+  `drop_off_type` int DEFAULT NULL,
   `shape_dist_travelled` float DEFAULT NULL,
   `project_id` int DEFAULT NULL,
   `user_id` int DEFAULT NULL,
@@ -47,14 +47,7 @@ CREATE TABLE `stop_times` (
 
 --
 -- Dumping data for table `stop_times`
---
 
-LOCK TABLES `stop_times` WRITE;
-/*!40000 ALTER TABLE `stop_times` DISABLE KEYS */;
-INSERT INTO `stop_times` (`trip_id`, `arrival_time`, `departure_time`, `stop_id`, `stop_sequence`, `stop_headsign`, `pickup_type`, `drop_off_time`, `shape_dist_travelled`, `project_id`, `user_id`) VALUES ('STBA','6:00:00','6:00:00','STAGECOACH',1,NULL,NULL,NULL,NULL,15, NULL);
-/*!40000 ALTER TABLE `stop_times` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

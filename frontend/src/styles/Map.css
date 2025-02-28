@@ -13,7 +13,7 @@
   overflow-y: auto;
   position: fixed;
   left: 0;
-  top: 50px; 
+  top: 50px;
   bottom: 0;
   z-index: 1000;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
@@ -228,7 +228,7 @@
   margin: 0;
 }
 
-.inactive-select{
+.inactive-select {
   opacity: 0.6;
   pointer-events: none;
   background-color: #eee;
@@ -245,7 +245,7 @@
 @media (max-width: 768px) {
   .sidebar {
     width: 300px;
-    top: 50px; 
+    top: 50px;
   }
 
   .sidebar.closed {
@@ -304,4 +304,39 @@
   #map {
     height: 50vh;
   }
+}
+
+.route-dropdown {
+  position: relative;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.route-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.route-option {
+  padding: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: background-color 0.2s ease;
+}
+
+.route-option:hover {
+  background-color: #e6f0ff;
 }

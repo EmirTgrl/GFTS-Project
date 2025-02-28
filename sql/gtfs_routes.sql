@@ -51,12 +51,6 @@ CREATE TABLE `routes` (
 -- Dumping data for table `routes`
 --
 
-LOCK TABLES `routes` WRITE;
-/*!40000 ALTER TABLE `routes` DISABLE KEYS */;
-INSERT INTO `routes` (`route_id`, `agency_id`, `route_short_name`, `route_long_name`, `route_desc`, `route_type`, `route_url`, `route_color`, `route_text_color`, `route_sort_order`, `continuous_pickup`, `continuous_drop_off`, `project_id`, `user_id`) VALUES ('AAMV','DTA','50','Airport - Amargosa Valley',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('AB','DTA','10','Airport - Bullfrog',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('BFC','DTA','20','Bullfrog - Furnace Creek Resort',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('CITY','DTA','40','City',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL),('STBA','DTA','30','Stagecoach - Airport Shuttle',NULL,3,NULL,NULL,NULL,NULL,NULL,NULL,15, NULL);
-/*!40000 ALTER TABLE `routes` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

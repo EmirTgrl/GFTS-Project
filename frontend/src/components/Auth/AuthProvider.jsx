@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { jwtDecode } from "jwt-decode";
 import { AuthContext } from "./AuthContext";
@@ -11,40 +11,41 @@ export const AuthProvider = ({ children }) => {
   const [userId, setUserId] = useState(null);
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
-  useEffect(() => {
-    const updateAuthState = () => {
-      const storedToken = localStorage.getItem("token");
-
-      if (storedToken) {
-        try {
-          const decodedToken = jwtDecode(storedToken);
-
-          if (decodedToken.exp * 1000 > Date.now()) {
-            setToken(storedToken);
-            setIsAuthenticated(true);
-            setUserId(decodedToken.id);
-            setIsLoggedOut(false);
-          } else {
-            handleLogout();
-          }
-        } catch (error) {
-          console.error("Token decode error:", error);
+  const updateAuthState = useCallback((newToken) => {
+    if (newToken) {
+      try {
+        const decodedToken = jwtDecode(newToken);
+        if (decodedToken.exp * 1000 > Date.now()) {
+          localStorage.setItem("token", newToken);
+          setToken(newToken);
+          setIsAuthenticated(true);
+          setUserId(decodedToken.id);
+          setIsLoggedOut(false);
+        } else {
           handleLogout();
         }
+      } catch (error) {
+        console.error("Token decode error:", error);
+        handleLogout();
       }
-    };
+    } else {
+      handleLogout();
+    }
+  }, []);
 
-    updateAuthState();
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    updateAuthState(storedToken);
 
     const handleStorageChange = (e) => {
       if (e.key === "token") {
-        updateAuthState();
+        updateAuthState(e.newValue);
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  }, [updateAuthState]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -55,17 +56,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = (newToken) => {
-    try {
-      const decodedToken = jwtDecode(newToken);
-      localStorage.setItem("token", newToken);
-      setToken(newToken);
-      setUserId(decodedToken.id);
-      setIsAuthenticated(true);
-      setIsLoggedOut(false);
-    } catch (error) {
-      console.error("Login error:", error);
-      handleLogout();
-    }
+    updateAuthState(newToken);
   };
 
   return (

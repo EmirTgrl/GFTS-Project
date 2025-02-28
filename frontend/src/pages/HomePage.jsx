@@ -21,20 +21,22 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
 
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       const projectsData = await fetchProjects(token);
-      setProjects(projectsData);
+      // console.log("Fetched projects:", projectsData);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Failed to load projects:", error);
+      setProjects([]);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (isAuthenticated && token) {
-      loadProjects()
+      loadProjects();
     }
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, loadProjects]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -70,7 +72,7 @@ const HomePage = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        await fetchImports();
+        await loadProjects();
         setFile(null);
         setError("");
       } else {
@@ -150,11 +152,17 @@ const HomePage = () => {
                           <Card.Title className="mb-0 h6">
                             {project.file_name}
                           </Card.Title>
+                          <br />
                           <Card.Subtitle className="text-muted small">
                             {new Date(project.import_date).toLocaleDateString()}
                           </Card.Subtitle>
                         </div>
-                        <Button variant="outline-primary" size="sm" className="stretched-link" onClick={() => navigate(`/map/${project.project_id}`)}>
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          className="stretched-link"
+                          onClick={() => navigate(`/map/${project.project_id}`)}
+                        >
                           View
                         </Button>
                       </Card.Body>
@@ -168,7 +176,7 @@ const HomePage = () => {
               </div>
             </Card.Body>
           </Card>
-          </Col>
+        </Col>
       </Row>
     </Container>
   );

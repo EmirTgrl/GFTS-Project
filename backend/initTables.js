@@ -1,4 +1,3 @@
-// initTables.js
 const { pool } = require("./db.js");
 
 async function tableExists(tableName) {
@@ -185,7 +184,7 @@ async function initializeTables() {
         "SQL:",
         script
       );
-      throw error; // Hataları atlama, açıkça bildir
+      throw error; 
     }
   }
   console.log("✅ All GTFS tables initialized");
