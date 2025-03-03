@@ -10,6 +10,7 @@ const stopTimeController = require("./StopTimeController.js");
 const tripController = require("./TripController.js")
 const projectController = require("./ProjectController.js")
 const importController = require("./ImportController.js");
+const exportController = require("./ExportController.js");
 
 // routes
 router.use("/auth", authController);
@@ -20,5 +21,6 @@ router.use("/stop-times", stopTimeController);
 router.use("/trips", tripController)
 router.use("/projects", projectController);
 router.use("/import", importController);
+router.use("/export", exportController)
 
 module.exports = router;
