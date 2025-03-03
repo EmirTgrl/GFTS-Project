@@ -65,6 +65,47 @@ const MapPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
   const { project_id } = useParams();
+  const [exportLoading, setExportLoading] = useState(false); // Loading state for export
+
+
+  const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/export/${project_id}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = response.headers
+          .get("content-disposition")
+          .split("filename=")[1]
+          .replaceAll('"', "");
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        const data = await response.json();
+        console.error("Export failed:", data.message);
+        // Optionally show an error message to the user
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      // Optionally show an error message to the user
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadRoutes = async () => {
@@ -218,6 +259,20 @@ const MapPage = () => {
         </div>
         {isSidebarOpen && (
           <>
+          <button
+                    className="export-button btn btn-primary m-3"
+                    onClick={handleExport}
+                    disabled={exportLoading}
+                    >
+                    {exportLoading ? (
+                        <>
+                        <span className="spinner-border spinner-border-sm me-1" />
+                        Exporting...
+                        </>
+                    ) : (
+                        "Export Project"
+                    )}
+                </button>
             <div className="route-dropdown" ref={dropdownRef}>
               <div className="route-select" onClick={toggleRouteDropdown}>
                 {selectedRoute
@@ -290,6 +345,7 @@ const MapPage = () => {
                   </p>
                 </div>
               </div>
+
             )}
 
             {stopsAndTimes.length > 0 && (
@@ -304,10 +360,14 @@ const MapPage = () => {
                       >
                         <div className="card-header">
                           <h4 className="card-title">
-                            {stopAndTime ? stopAndTime.stop_name : "Bilinmeyen Durak"}
+                            {stopAndTime
+                              ? stopAndTime.stop_name
+                              : "Bilinmeyen Durak"}
                           </h4>
                           <div className="card-actions">
-                            <button className="action-btn edit-btn">✏️</button>
+                            <button className="action-btn edit-btn">
+                              ✏️
+                            </button>
                             <button className="action-btn delete-btn">
                               🗑️
                             </button>
@@ -321,7 +381,7 @@ const MapPage = () => {
                           </p>
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -358,9 +418,9 @@ const MapPage = () => {
                 );
               }
               return null;
-            })} 
+            })}
 
-         {stopsAndTimes.length > 1 && (
+        {stopsAndTimes.length > 1 && (
           <Polyline
             positions={stopsAndTimes
               .sort((a, b) => a.stop_sequence - b.stop_sequence)
@@ -373,7 +433,7 @@ const MapPage = () => {
             color="#007bff"
             weight={5}
           />
-        )} 
+        )}
       </MapContainer>
     </div>
   );
