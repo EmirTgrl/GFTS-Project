@@ -228,8 +228,8 @@ const handleInputChange = (e) => {
         </Col>
       </Row>
       {showModal && ( 
-        <div className={`modal ${showModal ? 'show' : ''}`}>
-          <div className="modal-content">
+        <div className={`popup  ${showModal ? 'show' : ''}`}>
+          <div className="popup-content">
             <span className="close" onClick={handleCloseModal}>&times;</span>
             <h2>Enter Project Name</h2>
             <input

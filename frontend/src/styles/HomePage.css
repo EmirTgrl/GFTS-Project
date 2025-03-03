@@ -109,7 +109,7 @@
     font-size: 1.25rem;
   }
 }
-.modal {
+.popup {
   position: fixed;
   top: 0;
   left: 0;
@@ -123,11 +123,11 @@
   display: none; /* Hidden by default */
 }
 
-.modal-content {
+.popup-content {
   background-color: white;
   padding: 20px;
   border-radius: 5px;
-  width: 100px;
+  width: 50%;
   position: relative;
 }
 
@@ -146,9 +146,10 @@ input[type="text"] {
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  
 }
 
 /* Class to show the modal */
-.modal.show {
+.popup.show {
   display: flex; /* Override display: none to show the modal */
 }
