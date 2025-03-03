@@ -6,8 +6,9 @@ const stopService = {
       const user_id = req.user.id;
       const { project_id } = req.params;
       const [rows] = await pool.execute(
-        `SELECT * FROM stops
-        WHERE user_id = ? AND project_id = ?`,
+        `SELECT stop_id, stop_name, stop_lat, stop_lon 
+         FROM stops
+         WHERE user_id = ? AND project_id = ?`,
         [user_id, project_id]
       );
       res.json(rows);
@@ -123,49 +124,37 @@ const stopService = {
   saveStop: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        stop_code,
-        stop_name,
-        stop_desc,
-        stop_lat,
-        stop_lon,
-        zone_id,
-        stop_url,
-        location_type,
-        parent_station,
-        stop_timezone,
-        wheelchair_boarding,
-        platform_code,
-        project_id,
-      } = req.body;
+      const { stop_name, stop_desc, stop_lat, stop_lon, project_id } = req.body;
+
+      const [rows] = await pool.execute(
+        "SELECT MAX(CAST(stop_id AS UNSIGNED)) as max_id FROM stops WHERE project_id = ? AND user_id = ?",
+        [project_id, user_id]
+      );
+      const lastId = rows[0].max_id || 0;
+      const newId = parseInt(lastId, 10) + 1;
+      const stop_id = String(newId).padStart(5, "0");
 
       const query = `
-        INSERT INTO stops(stop_code,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,stop_timezone,wheelchair_boarding,platform_code,project_id,user_id)
-        VALUES( ?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+        INSERT INTO stops (stop_id, stop_name, stop_desc, stop_lat, stop_lon, user_id, project_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
       const [result] = await pool.execute(query, [
-        stop_code,
-        stop_name,
-        stop_desc,
-        stop_lat,
-        stop_lon,
-        zone_id,
-        stop_url,
-        location_type,
-        parent_station,
-        stop_timezone,
-        wheelchair_boarding,
-        platform_code,
-        project_id,
+        stop_id,
+        stop_name || "Yeni Durak",
+        stop_desc || null,
+        stop_lat || null,
+        stop_lon || null,
         user_id,
+        project_id,
       ]);
 
       res.status(201).json({
         message: "Stop saved successfully",
-        stop_id: result.insertId,
+        stop_id: stop_id,
       });
     } catch (error) {
       console.error(`Error in saveStop:`, error);
-      res.status(500).json({ error: "Server Error" });
+      res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
 };

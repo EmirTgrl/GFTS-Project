@@ -9,6 +9,10 @@ import { AuthProvider } from "./components/Auth/AuthProvider";
 import { AuthContext } from "./components/Auth/AuthContext";
 import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
 import MapPage from "./pages/MapPage";
+import StopTimeEditPage from "./pages/StopTimeEditPage";
+import StopTimeAddPage from "./pages/StopTimeAddPage";
+import TripAddPage from "./pages/TripAddPage"; // Yeni eklenen
+import TripEditPage from "./pages/TripEditPage"; // Yeni eklenen
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import Header from "./components/Header";
@@ -20,7 +24,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <AppContent /> 
+        <AppContent />
       </Router>
     </AuthProvider>
   );
@@ -58,7 +62,40 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/edit-stop-time/:project_id/:trip_id/:stop_id"
+            element={
+              <ProtectedRoute>
+                <StopTimeEditPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/add-stop-time/:project_id/:trip_id"
+            element={
+              <ProtectedRoute>
+                <StopTimeAddPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/add-trip/:project_id"
+            element={
+              <ProtectedRoute>
+                <TripAddPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-trip/:project_id/:trip_id"
+            element={
+              <ProtectedRoute>
+                <TripEditPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/" element={<Navigate to="/auth" replace />} />
+          <Route path="*" element={<div>404 - Sayfa Bulunamadı</div>} />{" "}
         </Routes>
       </main>
     </div>
