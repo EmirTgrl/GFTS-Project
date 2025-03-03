@@ -63,7 +63,7 @@ const HomePage = () => {
     formData.append("file", file);
 
     try {
-      const response = await fetch("http://localhost:5000/api/import", {
+      const response = await fetch("http://localhost:5000/api/io/import", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

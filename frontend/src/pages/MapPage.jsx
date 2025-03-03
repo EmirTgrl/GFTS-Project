@@ -74,7 +74,7 @@ const MapPage = () => {
     setExportLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/export/${project_id}`,
+        `http://localhost:5000/api/io/export/${project_id}`,
         {
           method: "GET",
           headers: {
