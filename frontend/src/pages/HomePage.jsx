@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../components/Auth/AuthContext";
-import { fetchProjects } from "../api";
+import { fetchProjects } from "../api/projectApi.js";
 import {
   Container,
   Form,

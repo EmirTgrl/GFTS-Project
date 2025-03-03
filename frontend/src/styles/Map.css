@@ -340,3 +340,11 @@
 .route-option:hover {
   background-color: #e6f0ff;
 }
+
+.action-btn.add-btn {
+  color: #28a745; /* Yeşil renk örneği */
+}
+
+.action-btn.add-btn:hover {
+  background-color: #d4edda;
+}
