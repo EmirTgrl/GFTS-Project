@@ -142,7 +142,7 @@ const HomePage = () => {
         <Col md={6}>
           <Card className="imports-card shadow-sm">
             <Card.Body className="p-3">
-              <h2 className="card-title h5 mb-2">Recent Imports</h2>
+              <h2 className="card-title h5 mb-2">Projects</h2>
               <div className="imports-list">
                 {projects.length > 0 ? (
                   projects.map((project) => (
