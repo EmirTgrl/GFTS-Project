@@ -14,6 +14,8 @@ import {
 import "../styles/HomePage.css";
 
 const HomePage = () => {
+  const [projectName, setProjectName] = useState('');
+  const [showModal, setShowModal] = useState(false);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -86,6 +88,49 @@ const HomePage = () => {
     }
   };
 
+
+  const handleCreateProject = async () => {
+    try {
+        const response = await fetch('http://localhost:5000/api/projects/', {
+            method: 'POST',
+            headers: {
+              'Content-Type':'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ file_name: projectName }) // Use file_name from state
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Project created successfully', data);
+            const projectId = data.project_id;
+            navigate(`/map/${projectId}`);
+            setShowModal(false); // Close the modal after success
+
+        } else {
+            console.error('Failed to create project:', response.status);
+            setShowModal(false); // Close the modal after failure, if needed
+            // Handle error appropriately
+        }
+    } catch (error) {
+        console.error('Error creating project:', error);
+        setShowModal(false); // Close the modal after error, if needed
+        // Handle error appropriately
+    }
+};
+
+const handleOpenModal = () => {
+    setShowModal(true);
+};
+
+const handleCloseModal = () => {
+    setShowModal(false);
+};
+
+const handleInputChange = (e) => {
+    setProjectName(e.target.value);
+};
+
   return (
     <Container fluid className="py-3">
       <Row className="g-3">
@@ -142,7 +187,11 @@ const HomePage = () => {
         <Col md={6}>
           <Card className="imports-card shadow-sm">
             <Card.Body className="p-3">
-              <h2 className="card-title h5 mb-2">Projects</h2>
+              <div className="d-flex justify-content-between">
+                <h2 className="card-title h5 mb-2">Projects</h2>
+                <button className="btn btn-primary" onClick={handleOpenModal}>Create Blank Project</button>
+                
+              </div>
               <div className="imports-list">
                 {projects.length > 0 ? (
                   projects.map((project) => (
@@ -178,6 +227,21 @@ const HomePage = () => {
           </Card>
         </Col>
       </Row>
+      {showModal && ( 
+        <div className={`modal ${showModal ? 'show' : ''}`}>
+          <div className="modal-content">
+            <span className="close" onClick={handleCloseModal}>&times;</span>
+            <h2>Enter Project Name</h2>
+            <input
+              type="text"
+              placeholder="Project Name"
+              value={projectName}
+              onChange={handleInputChange}
+            />
+            <Button variant="primary" onClick={handleCreateProject}>Create</Button>
+          </div>
+        </div>
+      )}
     </Container>
   );
 };

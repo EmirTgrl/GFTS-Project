@@ -70,7 +70,7 @@ const projectService = {
         const user_id = req.user.id;
         const {file_name} = req.body;
         const [result] = await pool.execute(`
-            INSERT INTO projets(user_id, file_name)
+            INSERT INTO projects(user_id, file_name)
             VALUES(?, ?)`
         ,[user_id, file_name]);
         res.status(201).json({message: "project successfully saved", project_id: result.insertId});
