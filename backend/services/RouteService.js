@@ -22,9 +22,8 @@ const routeService = {
       const { route_id, project_id } = req.params;
       const [rows] = await pool.execute(
         `SELECT * FROM routes 
-        WHERE user_id = ?  AND route_id = ? AND project_id = ?`[
-          (user_id, route_id, project_id)
-        ]
+         WHERE user_id = ? AND route_id = ? AND project_id = ?`,
+        [user_id, route_id, project_id] 
       );
       res.json(rows.length > 0 ? rows[0] : null);
     } catch (error) {
@@ -70,22 +69,22 @@ const routeService = {
         continuous_drop_off,
       } = req.body;
       const query = `
-                UPDATE routes
-                SET
-                  agency_id = ?, 
-                  route_short_name = ?, 
-                  route_long_name = ?, 
-                  route_desc = ?, 
-                  route_type = ?, 
-                  route_url = ?, 
-                  route_color = ?, 
-                  route_text_color = ?, 
-                  route_sort_order = ?
-                  continuous_pickup = ?,
-                  continuous_drop_off = ?
-                WHERE route_id = ? AND user_id = ? AND project_id = ?
-              `;
-      const result = await pool.execute(query, [
+        UPDATE routes
+        SET
+          agency_id = ?, 
+          route_short_name = ?, 
+          route_long_name = ?, 
+          route_desc = ?, 
+          route_type = ?, 
+          route_url = ?, 
+          route_color = ?, 
+          route_text_color = ?, 
+          route_sort_order = ?,
+          continuous_pickup = ?,
+          continuous_drop_off = ?
+        WHERE route_id = ? AND user_id = ? AND project_id = ?
+      `;
+      const [result] = await pool.execute(query, [
         agency_id,
         route_short_name,
         route_long_name,
@@ -101,10 +100,9 @@ const routeService = {
         user_id,
         project_id,
       ]);
-      if (result.affectedRows == 0) {
+      if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Route not found" });
       }
-
       return res.status(200).json({ message: "Route successfully updated" });
     } catch (e) {
       console.error(e);
@@ -128,11 +126,20 @@ const routeService = {
         continuous_pickup,
         continuous_drop_off,
       } = req.body;
+
+      const [rows] = await pool.execute(
+        "SELECT MAX(CAST(route_id AS UNSIGNED)) as max_id FROM routes WHERE project_id = ? AND user_id = ?",
+        [project_id, user_id]
+      );
+      const lastId = rows[0].max_id || 0;
+      const route_id = String(parseInt(lastId, 10) + 1).padStart(5, "0");
+
       const query = `
-              INSERT INTO routes(user_id, agency_id, project_id, route_short_name, route_long_name, route_desc, route_type, route_url, route_color, route_text_color, route_sort_order, continuous_pickup, continuous_drop_off)
-              VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-              `;
+        INSERT INTO routes(route_id, user_id, agency_id, project_id, route_short_name, route_long_name, route_desc, route_type, route_url, route_color, route_text_color, route_sort_order, continuous_pickup, continuous_drop_off)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
       const [result] = await pool.execute(query, [
+        route_id,
         user_id,
         agency_id,
         project_id,
@@ -149,7 +156,7 @@ const routeService = {
       ]);
       res.status(201).json({
         message: "Route saved successfully",
-        route_id: result.insertId,
+        route_id: route_id,
       });
     } catch (error) {
       console.error(error);

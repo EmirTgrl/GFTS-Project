@@ -7,20 +7,22 @@ const calendarController = require("./CalendarController.js");
 const routeController = require("./RouteController.js");
 const stopController = require("./StopController.js");
 const stopTimeController = require("./StopTimeController.js");
-const tripController = require("./TripController.js")
-const projectController = require("./ProjectController.js")
+const tripController = require("./TripController.js");
+const projectController = require("./ProjectController.js");
 const importController = require("./ImportController.js");
 const exportController = require("./ExportController.js");
+const agencyController = require("./AgencyController.js");
 
 // routes
 router.use("/auth", authController);
 router.use("/calendars", calendarController);
-router.use("/routes",routeController);
+router.use("/routes", routeController);
 router.use("/stops", stopController);
 router.use("/stop-times", stopTimeController);
-router.use("/trips", tripController)
+router.use("/trips", tripController);
 router.use("/projects", projectController);
 router.use("/import", importController);
-router.use("/export", exportController)
+router.use("/export", exportController);
+router.use("/agencies", agencyController);
 
 module.exports = router;

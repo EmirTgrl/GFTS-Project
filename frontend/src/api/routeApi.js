@@ -60,3 +60,22 @@ export const saveRoute = async (routeData, token) => {
   if (!response.ok) throw new Error("Failed to save route");
   return response.json();
 };
+
+export const fetchAgenciesByProjectId = async (projectId, token) => {
+  const response = await fetch(
+    `http://localhost:5000/api/agencies/project/${projectId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(
+      "HTTP error in fetchAgenciesByProjectId!",
+      response.status,
+      errorText
+    );
+    throw new Error(`Fetch agencies failed: ${errorText}`);
+  }
+  return response.json();
+};
