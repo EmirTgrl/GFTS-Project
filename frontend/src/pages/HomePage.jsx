@@ -131,6 +131,29 @@ const handleInputChange = (e) => {
     setProjectName(e.target.value);
 };
 
+const handleDeleteProject = async (project_id) => {
+  try {
+    const response = await fetch(`http://localhost:5000/api/projects/${project_id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type':'application/json',
+        Authorization: `Bearer ${token}`,
+      }
+    });
+
+    if (response.ok) {
+      setProjects(projects.filter(project => project.project_id !== project_id));
+      console.log("Project deleted successfully"); // Optional: Log a success message
+    } else {
+      console.error("Error deleting project:", response.status);
+      // Handle the error (e.g., display an error message to the user)
+    }
+  } catch (error) {
+    console.error("Error deleting project:", error);
+    // Handle the error (e.g., display an error message to the user)
+  }
+}
+
   return (
     <Container fluid className="py-3">
       <Row className="g-3">
@@ -196,7 +219,7 @@ const handleInputChange = (e) => {
                 {projects.length > 0 ? (
                   projects.map((project) => (
                     <Card key={project.project_id} className="import-item mb-2">
-                      <Card.Body className="py-2 px-3 d-flex justify-content-between align-items-center">
+                      <Card.Body className="py-2 px-3 d-flex  align-items-center">
                         <div>
                           <Card.Title className="mb-0 h6">
                             {project.file_name}
@@ -208,11 +231,16 @@ const handleInputChange = (e) => {
                         </div>
                         <Button
                           variant="outline-primary"
+                          className="ms-auto"
                           size="sm"
-                          className="stretched-link"
                           onClick={() => navigate(`/map/${project.project_id}`)}
                         >
                           View
+                        </Button>
+                        <Button
+                          variant="btn btn-close"
+                          className="text-danger"
+                          onClick={()=>handleDeleteProject(project.project_id)}>
                         </Button>
                       </Card.Body>
                     </Card>
