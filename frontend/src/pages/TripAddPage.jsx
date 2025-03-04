@@ -16,7 +16,6 @@ const TripAddPage = () => {
 
   const [tripData, setTripData] = useState({
     service_id: "",
-    shape_id: "",
     route_id: selectedRoute || "",
     project_id: project_id,
     trip_headsign: "",
@@ -59,6 +58,49 @@ const TripAddPage = () => {
             : parseInt(value, 10) || null
           : value,
     }));
+  };
+
+  // Servis adını veritabanındaki gün bilgilerine göre dinamik olarak belirleme
+  const getServiceName = (calendar) => {
+    const days = [
+      { name: "Pzt", value: calendar.monday },
+      { name: "Sal", value: calendar.tuesday },
+      { name: "Çar", value: calendar.wednesday },
+      { name: "Per", value: calendar.thursday },
+      { name: "Cum", value: calendar.friday },
+      { name: "Cmt", value: calendar.saturday },
+      { name: "Paz", value: calendar.sunday },
+    ];
+
+    const weekDays = days.slice(0, 5); // Hafta içi (Pzt-Cum)
+    const saturday = days[5];
+    const sunday = days[6];
+
+    const isWeekdaysOnly =
+      weekDays.every((day) => day.value === 1) &&
+      saturday.value === 0 &&
+      sunday.value === 0;
+    const isSaturdayOnly =
+      weekDays.every((day) => day.value === 0) &&
+      saturday.value === 1 &&
+      sunday.value === 0;
+    const isSundayOnly =
+      weekDays.every((day) => day.value === 0) &&
+      saturday.value === 0 &&
+      sunday.value === 1;
+
+    if (isWeekdaysOnly) return `${calendar.service_id} - Hafta İçi`;
+    if (isSaturdayOnly) return `${calendar.service_id} - Cumartesi`;
+    if (isSundayOnly) return `${calendar.service_id} - Pazar`;
+
+    // Diğer kombinasyonlar için aktif günleri listele
+    const activeDays = days
+      .filter((day) => day.value === 1)
+      .map((day) => day.name)
+      .join(", ");
+    return activeDays
+      ? `${calendar.service_id} - ${activeDays}`
+      : calendar.service_id;
   };
 
   const handleSubmit = async (e) => {
@@ -133,7 +175,7 @@ const TripAddPage = () => {
               <option value="">Bir servis seçin</option>
               {calendars.map((calendar) => (
                 <option key={calendar.service_id} value={calendar.service_id}>
-                  {calendar.service_id}
+                  {getServiceName(calendar)}
                 </option>
               ))}
             </select>
@@ -184,19 +226,6 @@ const TripAddPage = () => {
               <option value="0">0 - Gidiş</option>
               <option value="1">1 - Dönüş</option>
             </select>
-          </div>
-          <div className="col-md-6 mb-3">
-            <label htmlFor="shape_id" className="form-label">
-              Şekil ID:
-            </label>
-            <input
-              type="text"
-              id="shape_id"
-              name="shape_id"
-              className="form-control"
-              value={tripData.shape_id}
-              onChange={handleChange}
-            />
           </div>
         </div>
         <div className="d-flex gap-2">
