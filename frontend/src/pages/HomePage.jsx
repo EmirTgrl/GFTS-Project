@@ -22,6 +22,8 @@ const HomePage = () => {
   const [projects, setProjects] = useState([]);
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
+  const [showDeleteModal, setDeleteModal] = useState(false);
+  const [deletedProjectId, setDeletedProjectID] = useState("");
 
   const loadProjects = useCallback(async () => {
     try {
@@ -131,9 +133,9 @@ const handleInputChange = (e) => {
     setProjectName(e.target.value);
 };
 
-const handleDeleteProject = async (project_id) => {
+const handleDeleteProject = async () => {
   try {
-    const response = await fetch(`http://localhost:5000/api/projects/${project_id}`, {
+    const response = await fetch(`http://localhost:5000/api/projects/${deletedProjectId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type':'application/json',
@@ -142,7 +144,7 @@ const handleDeleteProject = async (project_id) => {
     });
 
     if (response.ok) {
-      setProjects(projects.filter(project => project.project_id !== project_id));
+      setProjects(projects.filter(project => project.project_id !== deletedProjectId));
       console.log("Project deleted successfully"); // Optional: Log a success message
     } else {
       console.error("Error deleting project:", response.status);
@@ -151,6 +153,8 @@ const handleDeleteProject = async (project_id) => {
   } catch (error) {
     console.error("Error deleting project:", error);
     // Handle the error (e.g., display an error message to the user)
+  }finally{
+    setDeleteModal(false);
   }
 }
 
@@ -240,7 +244,7 @@ const handleDeleteProject = async (project_id) => {
                         <Button
                           variant="btn btn-close"
                           className="text-danger"
-                          onClick={()=>handleDeleteProject(project.project_id)}>
+                          onClick={()=>{setDeleteModal(true);setDeletedProjectID(project.project_id)}}>
                         </Button>
                       </Card.Body>
                     </Card>
@@ -255,6 +259,18 @@ const handleDeleteProject = async (project_id) => {
           </Card>
         </Col>
       </Row>
+      {showDeleteModal && ( 
+        <div className={`popup  ${showDeleteModal ? 'show' : ''}`}>
+          <div className="popup-content">
+            <span className="close" onClick={()=> setDeleteModal(false)}>&times;</span>
+            <h2>Are you sure</h2>
+            <div className="d-flex justify-content-between">
+            <Button variant="danger" onClick={handleDeleteProject}>Delete</Button>
+            <Button variant="secondary" onClick={()=> setDeleteModal(false)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
       {showModal && ( 
         <div className={`popup  ${showModal ? 'show' : ''}`}>
           <div className="popup-content">
