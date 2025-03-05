@@ -67,8 +67,9 @@ const calendarService = {
   updateCalendar: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { service_id, ...updates } = req.body;
-      const allowedFields = [
+      const { service_id, ...params } = req.body;
+      const validFields = [
+        "service_id",
         "monday",
         "tuesday",
         "wednesday",
@@ -80,25 +81,25 @@ const calendarService = {
         "end_date",
         "project_id"
       ];
-      const updateFields = [];
-      const updateValues = [];
+      const fields = [];
+      const values = [];
 
-      for (const key in updates) {
-        if (allowedFields.includes(key)) {
-          updateFields.push(`${key} = ?`);
-          updateValues.push(updates[key]);
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(`${param} = ?`);
+          values.push(params[param]);
         } else {
-          console.warn(`unexpected fiedl in updateCalendar ${key}`);
+          console.warn(`unexpected field in ${param}`);
         }
       }
 
       const query = `
         UPDATE calendar
-        SET ${updateFields.join(", ")}
+        SET ${fields.join(", ")}
         WHERE service_id = ? AND user_id = ?
       `;
 
-      const [result] = await pool.execute(query, [...updateValues, service_id, user_id]);
+      const [result] = await pool.execute(query, [...values, service_id, user_id]);
 
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Calendar not found" });
@@ -114,7 +115,8 @@ const calendarService = {
   saveCalendar: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const allowedFields = [
+      const validFields = [
+        "service_id",
         "monday",
         "tuesday",
         "wednesday",
@@ -127,33 +129,33 @@ const calendarService = {
         "project_id"];
       const { ...params } = req.body;
 
-      const saveValues = [];
-      const saveFields = [];
+      const values = [];
+      const fields = [];
       const placeholders = [];
 
       for(const param in params){
-        if(allowedFields.includes(param)){
-          saveFields.push(param);
-          saveValues.push(params[param]);
+        if(validFields.includes(param)){
+          fields.push(param);
+          values.push(params[param]);
           placeholders.push("?");
         }else{
-          console.warn(`unexpected field in saveCalendar ${param}`);
+          console.warn(`unexpected field ${param}`);
         }
       }
 
-      saveFields.push("user_id");
+      fields.push("user_id");
       placeholders.push("?");
-      saveValues.push(user_id);
+      values.push(user_id);
 
       const query = `
-        INSERT INTO calendar(${saveFields.join(", ")})
+        INSERT INTO calendar(${fields.join(", ")})
         VALUES(${placeholders.join(", ")})
       `;
-      const [result] = await pool.execute(query, saveValues);
+      const [result] = await pool.execute(query, values);
       res.status(201).json({
         message: "Calendar saved successfully",
-        calendar_id: result.insertId, // Otomatik artan ID (eğer varsa)
-        service_id: newServiceId, // Oluşturulan service_id
+        service_id: result.insertId, // Otomatik artan ID (eğer varsa)
+       
       });
     } catch (error) {
       console.error(`Error in saveCalendar:`, error);
