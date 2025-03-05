@@ -1,0 +1,23 @@
+.import-page {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.import-card {
+  border: none;
+  border-radius: 10px;
+}
+
+.custom-file-input {
+  padding: 0.5rem;
+}
+
+.upload-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.progress {
+  height: 1.5rem; 
+  border-radius: 5px;
+}

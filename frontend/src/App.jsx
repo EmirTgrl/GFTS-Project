@@ -13,9 +13,10 @@ import StopTimeEditPage from "./pages/StopTimeEditPage";
 import StopTimeAddPage from "./pages/StopTimeAddPage";
 import TripAddPage from "./pages/TripAddPage";
 import TripEditPage from "./pages/TripEditPage";
-import RouteAddPage from "./pages/RouteAddPage"; 
-import RouteEditPage from "./pages/RouteEditPage"; 
-import HomePage from "./pages/HomePage";
+import RouteAddPage from "./pages/RouteAddPage";
+import RouteEditPage from "./pages/RouteEditPage";
+import ImportPage from "./pages/ImportPage"; // Yeni eklenen sayfa
+import ProjectsPage from "./pages/ProjectsPage"; // Yeni eklenen sayfa
 import AuthPage from "./pages/AuthPage";
 import Header from "./components/Header";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -49,10 +50,18 @@ const AppContent = () => {
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
           <Route
-            path="/home"
+            path="/import"
             element={
               <ProtectedRoute>
-                <HomePage />
+                <ImportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <ProtectedRoute>
+                <ProjectsPage />
               </ProtectedRoute>
             }
           />
@@ -112,7 +121,7 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/auth" replace />} />
+          <Route path="/" element={<Navigate to="/projects" replace />} />
           <Route path="*" element={<div>404 - Sayfa Bulunamadı</div>} />
         </Routes>
       </main>

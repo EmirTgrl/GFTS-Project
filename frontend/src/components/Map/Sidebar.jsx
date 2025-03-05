@@ -457,7 +457,6 @@ const Sidebar = ({
                     activeTab === "calendar" ? "active" : ""
                   }`}
                   onClick={() => setActiveTab("calendar")}
-                  disabled={!calendar}
                 >
                   Takvim
                 </button>
@@ -565,7 +564,9 @@ const Sidebar = ({
                                 onClick={() =>
                                   navigate(
                                     `/edit-trip/${project_id}/${trip.trip_id}`,
-                                    { state: { selectedRoute } }
+                                    {
+                                      state: { selectedRoute },
+                                    }
                                   )
                                 }
                               >
@@ -596,7 +597,9 @@ const Sidebar = ({
                       onClick={() =>
                         navigate(
                           `/add-stop-time/${project_id}/${selectedTrip}`,
-                          { state: { selectedRoute, selectedTrip } }
+                          {
+                            state: { selectedRoute, selectedTrip },
+                          }
                         )
                       }
                     >
@@ -707,7 +710,7 @@ const Sidebar = ({
                       </div>
                     </>
                   ) : (
-                    <p>Seçili trip için takvim bilgisi bulunmamaktadır.</p>
+                    <p>Henüz takvim bilgisi bulunmamaktadır.</p>
                   )}
                 </div>
               )}
