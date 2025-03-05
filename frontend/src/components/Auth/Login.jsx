@@ -19,13 +19,16 @@ const Login = ({ switchToRegister }) => {
       navigate("/home", { replace: true });
     }
   }, [isAuthenticated, isLoggingIn, navigate]);
+
   useEffect(() => {
-    if (isLoggedOut) {
+    if (isLoggedOut && !location.state?.isRegister) {
       setError("You have been logged out.");
     } else if (location.state?.isRegister) {
       setError("Registration successful! You can login.");
     } else if (location.state?.isLogout) {
       setError("You have been logged out.");
+    } else {
+      setError("");
     }
   }, [isLoggedOut, location.state]);
 
@@ -45,7 +48,7 @@ const Login = ({ switchToRegister }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        login(data.token); 
+        login(data.token);
       } else {
         setError("Invalid email or password!");
       }
