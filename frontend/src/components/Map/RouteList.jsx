@@ -111,10 +111,9 @@ const RouteList = ({
 
   const toggleRouteDropdown = () => setIsRouteDropdownOpen((prev) => !prev);
 
-  // Rota için stil oluşturma fonksiyonu (undefined kontrolü eklendi)
   const getRouteStyle = (route) => {
     if (!route) {
-      return { backgroundColor: "#ffffff", color: "#000000" }; // Varsayılan stil
+      return { backgroundColor: "#ffffff", color: "#000000" };
     }
     return {
       backgroundColor: route.route_color ? `#${route.route_color}` : "#ffffff",

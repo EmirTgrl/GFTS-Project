@@ -97,7 +97,7 @@ const HomePage = () => {
               'Content-Type':'application/json',
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ file_name: projectName }) // Use file_name from state
+            body: JSON.stringify({ file_name: projectName })
         });
 
         if (response.ok) {
@@ -105,17 +105,15 @@ const HomePage = () => {
             console.log('Project created successfully', data);
             const projectId = data.project_id;
             navigate(`/map/${projectId}`);
-            setShowModal(false); // Close the modal after success
+            setShowModal(false); 
 
         } else {
             console.error('Failed to create project:', response.status);
-            setShowModal(false); // Close the modal after failure, if needed
-            // Handle error appropriately
+            setShowModal(false);
         }
     } catch (error) {
         console.error('Error creating project:', error);
-        setShowModal(false); // Close the modal after error, if needed
-        // Handle error appropriately
+        setShowModal(false);
     }
 };
 
@@ -192,6 +190,7 @@ const handleInputChange = (e) => {
                 <button className="btn btn-primary" onClick={handleOpenModal}>Create Blank Project</button>
                 
               </div>
+              <hr />
               <div className="imports-list">
                 {projects.length > 0 ? (
                   projects.map((project) => (

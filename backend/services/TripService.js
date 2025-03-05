@@ -152,6 +152,12 @@ const tripService = {
         bikes_allowed,
       } = req.body;
 
+      // Zorunlu alanları kontrol et
+      if (!route_id || !service_id || !project_id) {
+        return res.status(400).json({ error: "route_id, service_id, and project_id are required" });
+      }
+
+      // En yüksek trip_id'yi bul ve yeni bir trip_id oluştur
       const [rows] = await pool.execute(
         "SELECT MAX(CAST(trip_id AS UNSIGNED)) as max_id FROM trips WHERE project_id = ? AND user_id = ?",
         [project_id, user_id]
@@ -159,32 +165,34 @@ const tripService = {
       const lastId = rows[0].max_id || 0;
       const trip_id = String(parseInt(lastId, 10) + 1).padStart(7, "0");
 
+      // Undefined değerleri null ile değiştir
+      const safeParams = [
+        trip_id,
+        service_id, // Zorunlu, zaten kontrol edildi
+        shape_id ?? null,
+        route_id, // Zorunlu, zaten kontrol edildi
+        user_id,
+        project_id, // Zorunlu, zaten kontrol edildi
+        trip_headsign ?? null,
+        trip_short_name ?? null,
+        direction_id ?? null,
+        block_id ?? null,
+        wheelchair_accessible ?? null,
+        bikes_allowed ?? null,
+      ];
+
       const query = `
         INSERT INTO trips (trip_id, service_id, shape_id, route_id, user_id, project_id, trip_headsign, trip_short_name, direction_id, block_id, wheelchair_accessible, bikes_allowed)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
-      const [result] = await pool.execute(query, [
-        trip_id,
-        service_id,
-        shape_id,
-        route_id,
-        user_id,
-        project_id,
-        trip_headsign,
-        trip_short_name,
-        direction_id,
-        block_id,
-        wheelchair_accessible,
-        bikes_allowed,
-        agency_email,
-      ]);
+      const [result] = await pool.execute(query, safeParams);
 
       res.status(201).json({
         message: "Trip successfully created",
         trip_id: trip_id,
       });
     } catch (error) {
-      console.error(error);
+      console.error("Error in saveTrip:", error);
       res.status(500).json({ error: "Server error" });
     }
   },

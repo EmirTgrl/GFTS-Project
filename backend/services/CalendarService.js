@@ -120,6 +120,7 @@ const calendarService = {
   saveCalendar: async (req, res) => {
     try {
       const user_id = req.user.id;
+      const { project_id } = req.body; // project_id'yi body'den alıyoruz
       const {
         monday,
         tuesday,
@@ -131,11 +132,27 @@ const calendarService = {
         start_date,
         end_date,
       } = req.body;
+
+      if (!project_id) {
+        return res.status(400).json({ error: "project_id is required" });
+      }
+
+      // O projeye ait en yüksek sayısal service_id değerini bul
+      const [rows] = await pool.execute(
+        `SELECT MAX(CAST(service_id AS UNSIGNED)) as max_id 
+         FROM calendar 
+         WHERE project_id = ? AND service_id REGEXP '^[0-9]+$'`,
+        [project_id]
+      );
+      const maxId = rows[0].max_id || 0; // Eğer projede kayıt yoksa 0'dan başla
+      const newServiceId = (maxId + 1).toString(); // Bir sonraki değeri string'e çevir
+
       const query = `
-        INSERT INTO calendar(monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date,user_id)
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO calendar(service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date, user_id, project_id)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       const [result] = await pool.execute(query, [
+        newServiceId,
         monday,
         tuesday,
         wednesday,
@@ -146,14 +163,38 @@ const calendarService = {
         start_date,
         end_date,
         user_id,
+        project_id,
       ]);
+
       res.status(201).json({
         message: "Calendar saved successfully",
-        calendar_id: result.insertId,
+        calendar_id: result.insertId, // Otomatik artan ID (eğer varsa)
+        service_id: newServiceId, // Oluşturulan service_id
       });
     } catch (error) {
       console.error(`Error in saveCalendar:`, error);
       res.status(500).json({ error: "Server Error" });
+    }
+  },
+
+  getCalendarsByProjectId: async (req, res) => {
+    try {
+      const user_id = req.user.id;
+      const { project_id } = req.params;
+      const [rows] = await pool.execute(
+        `
+        SELECT * FROM calendar  
+        WHERE user_id = ? AND project_id = ?
+        `,
+        [user_id, project_id]
+      );
+      res.json(rows);
+    } catch (error) {
+      console.error(
+        `Error in getCalendarsByProjectId for project_id: ${req.params.project_id}:`,
+        error
+      );
+      res.status(500).json({ error: "Server error" });
     }
   },
 };

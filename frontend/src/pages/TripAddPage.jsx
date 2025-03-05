@@ -60,7 +60,6 @@ const TripAddPage = () => {
     }));
   };
 
-  // Servis adını veritabanındaki gün bilgilerine göre dinamik olarak belirleme
   const getServiceName = (calendar) => {
     const days = [
       { name: "Pzt", value: calendar.monday },
@@ -72,7 +71,7 @@ const TripAddPage = () => {
       { name: "Paz", value: calendar.sunday },
     ];
 
-    const weekDays = days.slice(0, 5); // Hafta içi (Pzt-Cum)
+    const weekDays = days.slice(0, 5); 
     const saturday = days[5];
     const sunday = days[6];
 
@@ -93,7 +92,6 @@ const TripAddPage = () => {
     if (isSaturdayOnly) return `${calendar.service_id} - Cumartesi`;
     if (isSundayOnly) return `${calendar.service_id} - Pazar`;
 
-    // Diğer kombinasyonlar için aktif günleri listele
     const activeDays = days
       .filter((day) => day.value === 1)
       .map((day) => day.name)

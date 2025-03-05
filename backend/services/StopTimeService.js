@@ -191,6 +191,26 @@ const stopTimeService = {
         timepoint,
       } = req.body;
 
+      // Zorunlu alanları kontrol et
+      if (!trip_id || !stop_id || !project_id) {
+        return res
+          .status(400)
+          .json({ error: "trip_id, stop_id, and project_id are required" });
+      }
+
+      // stop_id'nin stops tablosunda mevcut olup olmadığını kontrol et
+      const [stopRows] = await pool.execute(
+        `SELECT stop_id FROM stops WHERE stop_id = ? AND user_id = ? AND project_id = ?`,
+        [stop_id, user_id, project_id]
+      );
+      if (stopRows.length === 0) {
+        return res.status(400).json({
+          error:
+            "Invalid stop_id: Stop does not exist for this user and project",
+        });
+      }
+
+      // stop_sequence varsa, mevcut kayıtları güncelle
       if (stop_sequence !== undefined && stop_sequence !== null) {
         await pool.execute(
           `

@@ -65,8 +65,6 @@ const routeService = {
         route_color,
         route_text_color,
         route_sort_order,
-        continuous_pickup,
-        continuous_drop_off,
       } = req.body;
       const query = `
         UPDATE routes
@@ -80,8 +78,6 @@ const routeService = {
           route_color = ?, 
           route_text_color = ?, 
           route_sort_order = ?,
-          continuous_pickup = ?,
-          continuous_drop_off = ?
         WHERE route_id = ? AND user_id = ? AND project_id = ?
       `;
       const [result] = await pool.execute(query, [
@@ -94,8 +90,6 @@ const routeService = {
         route_color,
         route_text_color,
         route_sort_order,
-        continuous_pickup,
-        continuous_drop_off,
         route_id,
         user_id,
         project_id,
@@ -123,8 +117,6 @@ const routeService = {
         route_color,
         route_text_color,
         route_sort_order,
-        continuous_pickup,
-        continuous_drop_off,
       } = req.body;
 
       const [rows] = await pool.execute(
@@ -135,8 +127,8 @@ const routeService = {
       const route_id = String(parseInt(lastId, 10) + 1).padStart(5, "0");
 
       const query = `
-        INSERT INTO routes(route_id, user_id, agency_id, project_id, route_short_name, route_long_name, route_desc, route_type, route_url, route_color, route_text_color, route_sort_order, continuous_pickup, continuous_drop_off)
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO routes(route_id, user_id, agency_id, project_id, route_short_name, route_long_name, route_desc, route_type, route_url, route_color, route_text_color, route_sort_order)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       const [result] = await pool.execute(query, [
         route_id,
@@ -151,8 +143,6 @@ const routeService = {
         route_color,
         route_text_color,
         route_sort_order,
-        continuous_pickup,
-        continuous_drop_off,
       ]);
       res.status(201).json({
         message: "Route saved successfully",

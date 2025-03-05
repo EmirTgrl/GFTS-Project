@@ -13,8 +13,8 @@ import StopTimeEditPage from "./pages/StopTimeEditPage";
 import StopTimeAddPage from "./pages/StopTimeAddPage";
 import TripAddPage from "./pages/TripAddPage";
 import TripEditPage from "./pages/TripEditPage";
-import RouteAddPage from "./pages/RouteAddPage"; // Yeni eklenen
-import RouteEditPage from "./pages/RouteEditPage"; // Yeni eklenen
+import RouteAddPage from "./pages/RouteAddPage"; 
+import RouteEditPage from "./pages/RouteEditPage"; 
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import Header from "./components/Header";

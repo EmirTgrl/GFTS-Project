@@ -21,6 +21,7 @@ const authService = {
       res.status(500).json({ message: "Server Error", error });
     }
   },
+
   login: async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -45,18 +46,29 @@ const authService = {
       res.status(500).json({ message: "Server Error", error });
     }
   },
+
   auth: async (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
       return res.status(401).json({ message: "No token provided!" });
     }
+
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Malformed token: No token after Bearer" });
+    }
+
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = { id: decoded.id };
       next();
     } catch (err) {
       console.error("JWT Error:", err);
-      return res.status(400).json({ message: "Invalid token!" });
+      return res
+        .status(400)
+        .json({ message: "Invalid token!", details: err.message });
     }
   },
 };
