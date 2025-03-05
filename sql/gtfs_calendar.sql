@@ -23,23 +23,23 @@ DROP TABLE IF EXISTS `calendar`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `calendar` (
-  `service_id` varchar(255) NOT NULL,
-  `project_id` int DEFAULT NULL,
-  `user_id` int DEFAULT NULL,
-  `monday` tinyint(1) NOT NULL,
-  `tuesday` tinyint(1) NOT NULL,
-  `wednesday` tinyint(1) NOT NULL,
-  `thursday` tinyint(1) NOT NULL,
-  `friday` tinyint(1) NOT NULL,
-  `saturday` tinyint(1) NOT NULL,
-  `sunday` tinyint(1) NOT NULL,
+  `service_id` int NOT NULL AUTO_INCREMENT,
+  `monday` tinyint NOT NULL,
+  `tuesday` tinyint NOT NULL,
+  `wednesday` tinyint NOT NULL,
+  `thursday` tinyint NOT NULL,
+  `friday` tinyint NOT NULL,
+  `saturday` tinyint NOT NULL,
+  `sunday` tinyint NOT NULL,
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
-  PRIMARY KEY (`service_id`),
-  KEY `fk_calendar_projects` (`project_id`),
-  CONSTRAINT `fk_calendar_projects` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE,
-  KEY `fk_calendar_users` (`user_id`),
-  CONSTRAINT `fk_calendar_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  `user_id` int NOT NULL,
+  `project_id` int NOT NULL,
+  PRIMARY KEY (`service_id`,`user_id`,`project_id`),
+  KEY `user_id` (`user_id`),
+  KEY `project_id` (`project_id`),
+  CONSTRAINT `calendar_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `calendar_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -47,7 +47,11 @@ CREATE TABLE `calendar` (
 -- Dumping data for table `calendar`
 --
 
-
+LOCK TABLES `calendar` WRITE;
+/*!40000 ALTER TABLE `calendar` DISABLE KEYS */;
+/*!40000 ALTER TABLE `calendar` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
@@ -57,4 +61,4 @@ CREATE TABLE `calendar` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-20 16:57:56
+-- Dump completed on 2025-03-05 14:20:35
