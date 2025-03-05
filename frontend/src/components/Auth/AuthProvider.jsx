@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUserId(null);
     setIsAuthenticated(false);
-    setIsLoggedOut(true); 
+    setIsLoggedOut(true);
   }, []);
 
   const updateAuthState = useCallback(
@@ -56,24 +56,30 @@ export const AuthProvider = ({ children }) => {
           const decodedToken = jwtDecode(storedToken);
           if (decodedToken.exp * 1000 < Date.now()) {
             handleLogout();
+          } else {
+            setIsAuthenticated(true);
+            setUserId(decodedToken.id);
+            setToken(storedToken);
+            setIsLoggedOut(false);
           }
         } catch (error) {
           console.error("Token decode error in interval:", error);
           handleLogout();
         }
+      } else {
+        setIsAuthenticated(false);
+        setUserId(null);
+        setToken(null);
       }
     };
 
-    const interval = setInterval(checkTokenExpiration, 10000);
     checkTokenExpiration();
+    const interval = setInterval(checkTokenExpiration, 10000);
 
     return () => clearInterval(interval);
   }, [handleLogout]);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    updateAuthState(storedToken);
-
     const handleStorageChange = (e) => {
       if (e.key === "token") {
         updateAuthState(e.newValue);

@@ -16,6 +16,7 @@ import AgencyEdit from "../../pages/AgencyEditPage";
 import CalendarAdd from "../../pages/CalendarAddPage";
 import CalendarEdit from "../../pages/CalendarEditPage";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 const Sidebar = ({
   token,
@@ -47,6 +48,7 @@ const Sidebar = ({
   const [showCalendarEdit, setShowCalendarEdit] = useState(false);
   const navigate = useNavigate();
 
+  // Ajansları yükle
   useEffect(() => {
     const loadAgencies = async () => {
       try {
@@ -60,6 +62,7 @@ const Sidebar = ({
     if (token && project_id) loadAgencies();
   }, [token, project_id]);
 
+  // Rotaları yükle
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -73,6 +76,7 @@ const Sidebar = ({
     if (token && project_id) loadInitialData();
   }, [token, project_id, setRoutes]);
 
+  // Refresh kontrolü
   useEffect(() => {
     const { refresh } = location.state || {};
     if (refresh) {
@@ -107,6 +111,7 @@ const Sidebar = ({
     setStopsAndTimes,
   ]);
 
+  // Trip seçimi
   const handleTripSelect = useCallback(
     async (tripId) => {
       setSelectedTrip(tripId);
@@ -125,7 +130,10 @@ const Sidebar = ({
             selectedTripData.service_id,
             token
           );
+          console.log("Fetched calendar data:", calendarData);
           setCalendar(calendarData || null);
+        } else {
+          console.log("No service_id found for trip:", selectedTripData);
         }
 
         if (stopsAndTimesData.length > 0) {
@@ -168,6 +176,7 @@ const Sidebar = ({
     ]
   );
 
+  // Rota seçimi
   const handleRouteSelect = useCallback(
     async (routeId) => {
       setSelectedRoute(routeId);
@@ -184,6 +193,7 @@ const Sidebar = ({
     [token, setSelectedRoute, setSelectedTrip, setTrips, setActiveTab]
   );
 
+  // Export işlemi
   const handleExport = async () => {
     setExportLoading(true);
     try {
@@ -217,13 +227,25 @@ const Sidebar = ({
     }
   };
 
+  // Tarih formatını düzenleme fonksiyonu (ISO 8601 desteği)
   const formatDate = (dateString) => {
     if (!dateString) return "Belirtilmemiş";
-    const [year, month, day] = dateString.split("-");
-    return `${day}.${month}.${year}`; // DD.MM.YYYY formatı
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) throw new Error("Geçersiz tarih");
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}.${month}.${year}`;
+    } catch (error) {
+      console.error("Error formatting date:", dateString, error);
+      return "Hatalı Tarih";
+    }
   };
 
+  // Gün isimlerini Türkçe yapma ve esnek format desteği
   const formatDays = (calendar) => {
+    if (!calendar) return "Yok";
     const dayMap = {
       monday: "Pazartesi",
       tuesday: "Salı",
@@ -234,72 +256,124 @@ const Sidebar = ({
       sunday: "Pazar",
     };
     const activeDays = Object.keys(calendar)
-      .filter(
-        (k) =>
-          [
-            "monday",
-            "tuesday",
-            "wednesday",
-            "thursday",
-            "friday",
-            "saturday",
-            "sunday",
-          ].includes(k) && calendar[k] === "1"
+      .filter((k) =>
+        [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday",
+        ].includes(k)
       )
+      .filter((k) => {
+        const value = calendar[k];
+        return value === "1" || value === 1 || value === true;
+      })
       .map((k) => dayMap[k]);
     return activeDays.length > 0 ? activeDays.join(", ") : "Yok";
   };
 
+  // CRUD İşlemleri (Swal ile)
   const handleDeleteRoute = async (routeId) => {
-    if (window.confirm("Bu rotayı silmek istediğinize emin misiniz?")) {
+    const result = await Swal.fire({
+      title: "Emin misiniz?",
+      text: "Bu rotayı silmek istediğinize emin misiniz?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Evet, sil!",
+      cancelButtonText: "Hayır, iptal et",
+    });
+
+    if (result.isConfirmed) {
       try {
         await deleteRouteById(routeId, project_id, token);
         setRoutes((prev) => prev.filter((route) => route.route_id !== routeId));
         if (selectedRoute === routeId) setSelectedRoute(null);
+        Swal.fire("Silindi!", "Rota başarıyla silindi.", "success");
       } catch (error) {
         console.error("Error deleting route:", error);
-        alert("Rota silinirken bir hata oluştu.");
+        Swal.fire("Hata!", "Rota silinirken bir hata oluştu.", "error");
       }
     }
   };
 
   const handleDeleteTrip = async (tripId) => {
-    if (window.confirm("Bu tripi silmek istediğinize emin misiniz?")) {
+    const result = await Swal.fire({
+      title: "Emin misiniz?",
+      text: "Bu tripi silmek istediğinize emin misiniz?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Evet, sil!",
+      cancelButtonText: "Hayır, iptal et",
+    });
+
+    if (result.isConfirmed) {
       try {
         await deleteTripById(tripId, token);
         setTrips((prev) => prev.filter((trip) => trip.trip_id !== tripId));
         if (selectedTrip === tripId) setSelectedTrip(null);
+        Swal.fire("Silindi!", "Trip başarıyla silindi.", "success");
       } catch (error) {
         console.error("Error deleting trip:", error);
-        alert("Trip silinirken bir hata oluştu.");
+        Swal.fire("Hata!", "Trip silinirken bir hata oluştu.", "error");
       }
     }
   };
 
   const handleDeleteStop = async (tripId, stopId) => {
-    if (window.confirm("Bu durağı silmek istediğinize emin misiniz?")) {
+    const result = await Swal.fire({
+      title: "Emin misiniz?",
+      text: "Bu durağı silmek istediğinize emin misiniz?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Evet, sil!",
+      cancelButtonText: "Hayır, iptal et",
+    });
+
+    if (result.isConfirmed) {
       try {
         await deleteStopTimeById(tripId, stopId, project_id, token);
         setStopsAndTimes((prev) =>
           prev.filter((stop) => stop.stop_id !== stopId)
         );
+        Swal.fire("Silindi!", "Durak başarıyla silindi.", "success");
       } catch (error) {
         console.error("Error deleting stop time:", error);
-        alert("Durak zamanı silinirken bir hata oluştu.");
+        Swal.fire("Hata!", "Durak silinirken bir hata oluştu.", "error");
       }
     }
   };
 
   const handleDeleteAgency = async (agencyId) => {
-    if (window.confirm("Bu ajansı silmek istediğinize emin misiniz?")) {
+    const result = await Swal.fire({
+      title: "Emin misiniz?",
+      text: "Bu ajansı silmek istediğinize emin misiniz?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Evet, sil!",
+      cancelButtonText: "Hayır, iptal et",
+    });
+
+    if (result.isConfirmed) {
       try {
         await deleteAgencyById(agencyId, project_id, token);
         setAgencies((prev) =>
           prev.filter((agency) => agency.agency_id !== agencyId)
         );
+        Swal.fire("Silindi!", "Ajans başarıyla silindi.", "success");
       } catch (error) {
         console.error("Error deleting agency:", error);
-        alert("Ajans silinirken bir hata oluştu.");
+        Swal.fire("Hata!", "Ajans silinirken bir hata oluştu.", "error");
       }
     }
   };
@@ -581,7 +655,7 @@ const Sidebar = ({
                   </div>
                 </div>
               )}
-              {activeTab === "calendar" && calendar && (
+              {activeTab === "calendar" && (
                 <div className="p-2">
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <h5 className="mb-0">Takvim</h5>
@@ -592,12 +666,14 @@ const Sidebar = ({
                       >
                         Yeni
                       </button>
-                      <button
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={() => setShowCalendarEdit(true)}
-                      >
-                        ✏️
-                      </button>
+                      {calendar && (
+                        <button
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => setShowCalendarEdit(true)}
+                        >
+                          ✏️
+                        </button>
+                      )}
                     </div>
                   </div>
                   {showCalendarAdd && (
@@ -608,7 +684,7 @@ const Sidebar = ({
                       onClose={() => setShowCalendarAdd(false)}
                     />
                   )}
-                  {showCalendarEdit && (
+                  {showCalendarEdit && calendar && (
                     <CalendarEdit
                       token={token}
                       project_id={project_id}
@@ -617,17 +693,23 @@ const Sidebar = ({
                       onClose={() => setShowCalendarEdit(false)}
                     />
                   )}
-                  <div className="mb-2">
-                    <strong>Aktif Günler:</strong> {formatDays(calendar)}
-                  </div>
-                  <div className="mb-2">
-                    <strong>Başlangıç Tarihi:</strong>{" "}
-                    {formatDate(calendar.start_date)}
-                  </div>
-                  <div>
-                    <strong>Bitiş Tarihi:</strong>{" "}
-                    {formatDate(calendar.end_date)}
-                  </div>
+                  {calendar ? (
+                    <>
+                      <div className="mb-2">
+                        <strong>Aktif Günler:</strong> {formatDays(calendar)}
+                      </div>
+                      <div className="mb-2">
+                        <strong>Başlangıç Tarihi:</strong>{" "}
+                        {formatDate(calendar.start_date)}
+                      </div>
+                      <div>
+                        <strong>Bitiş Tarihi:</strong>{" "}
+                        {formatDate(calendar.end_date)}
+                      </div>
+                    </>
+                  ) : (
+                    <p>Seçili trip için takvim bilgisi bulunmamaktadır.</p>
+                  )}
                 </div>
               )}
               {activeTab === "agencies" && (
