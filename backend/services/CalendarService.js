@@ -67,45 +67,39 @@ const calendarService = {
   updateCalendar: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        service_id,
-        monday,
-        tuesday,
-        wednesday,
-        thursday,
-        friday,
-        saturday,
-        sunday,
-        start_date,
-        end_date,
-      } = req.body;
+      const { service_id, ...updates } = req.body;
+      const allowedFields = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+        "start_date",
+        "end_date",
+        "project_id"
+      ];
+      const updateFields = [];
+      const updateValues = [];
+
+      for (const key in updates) {
+        if (allowedFields.includes(key)) {
+          updateFields.push(`${key} = ?`);
+          updateValues.push(updates[key]);
+        } else {
+          console.warn(`unexpected fiedl in updateCalendar ${key}`);
+        }
+      }
+
       const query = `
         UPDATE calendar
-        SET
-          monday = ?,
-          tuesday = ?,
-          wednesday = ?,
-          thursday = ?,
-          friday = ?,
-          saturday = ?,
-          sunday = ?,
-          start_date = ?,
-          end_date = ?
+        SET ${updateFields.join(", ")}
         WHERE service_id = ? AND user_id = ?
       `;
-      const [result] = await pool.execute(query, [
-        monday,
-        tuesday,
-        wednesday,
-        thursday,
-        friday,
-        saturday,
-        sunday,
-        start_date,
-        end_date,
-        service_id,
-        user_id,
-      ]);
+
+      const [result] = await pool.execute(query, [...updateValues, service_id, user_id]);
+
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Calendar not found" });
       }
@@ -120,33 +114,42 @@ const calendarService = {
   saveCalendar: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        monday,
-        tuesday,
-        wednesday,
-        thursday,
-        friday,
-        saturday,
-        sunday,
-        start_date,
-        end_date,
-      } = req.body;
+      const allowedFields = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+        "start_date",
+        "end_date",
+        "project_id"];
+      const { ...params } = req.body;
+
+      const saveValues = [];
+      const saveFields = [];
+      const placeholders = [];
+
+      for(const param in params){
+        if(allowedFields.includes(param)){
+          saveFields.push(param);
+          saveValues.push(params[param]);
+          placeholders.push("?");
+        }else{
+          console.warn(`unexpected field in saveCalendar ${param}`);
+        }
+      }
+
+      saveFields.push("user_id");
+      placeholders.push("?");
+      saveValues.push(user_id);
+
       const query = `
-        INSERT INTO calendar(monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date,user_id)
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO calendar(${saveFields.join(", ")})
+        VALUES(${placeholders.join(", ")})
       `;
-      const [result] = await pool.execute(query, [
-        monday,
-        tuesday,
-        wednesday,
-        thursday,
-        friday,
-        saturday,
-        sunday,
-        start_date,
-        end_date,
-        user_id,
-      ]);
+      const [result] = await pool.execute(query, saveValues);
       res.status(201).json({
         message: "Calendar saved successfully",
         calendar_id: result.insertId,
