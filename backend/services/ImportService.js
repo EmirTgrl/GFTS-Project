@@ -62,10 +62,10 @@ class ImportService {
   async processBatch(tableName, batch) {
     if (batch.length === 0) return;
 
-    if (!(await tableExists(tableName))) {
-      console.error(`❌ Table ${tableName} does not exist and is not expected`);
-      return;
-    }
+    // if (!(await tableExists(tableName))) {
+    //   console.error(`❌ Table ${tableName} does not exist and is not expected`);
+    //   return;
+    // }
 
     const validColumns = await this.getTableColumns(tableName);
     const columns = Object.keys(batch[0]).filter((col) =>
@@ -215,7 +215,7 @@ class ImportService {
       );
       console.log("🚀 Starting file imports with projectId:", projectId);
 
-      await initializeTables();
+      //await initializeTables();
 
       for (const tableName of this.tableOrder) {
         const filename = `${tableName}.txt`;
