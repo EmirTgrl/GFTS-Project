@@ -83,7 +83,7 @@ const routeService = {
       const query = `
         UPDATE routes
         SET
-          ${fields.includes(param)}
+          ${fields.join(", ")}
         WHERE route_id = ? AND user_id = ?
       `;
       const [result] = await pool.execute(query, [...values, route_id, user_id]);
