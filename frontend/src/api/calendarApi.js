@@ -70,6 +70,9 @@ export const saveCalendar = async (calendarData, token) => {
     },
     body: JSON.stringify(calendarData),
   });
-  if (!response.ok) throw new Error("Failed to save calendar");
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to save calendar: ${errorText}`);
+  }
   return response.json();
 };

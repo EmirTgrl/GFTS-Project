@@ -1,21 +1,27 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
-import RouteList from "./RouteList";
-import TripList from "./TripList";
-import StopList from "./StopList";
-import CalendarInfo from "./CalendarInfo";
-import { fetchRoutesByProjectId } from "../../api/routeApi";
-import { fetchTripsByRouteId } from "../../api/tripApi";
-import { fetchStopsAndStopTimesByTripId } from "../../api/stopTimeApi";
+import { fetchRoutesByProjectId, deleteRouteById } from "../../api/routeApi";
+import { fetchTripsByRouteId, deleteTripById } from "../../api/tripApi";
+import {
+  fetchStopsAndStopTimesByTripId,
+  deleteStopTimeById,
+} from "../../api/stopTimeApi";
 import { fetchCalendarByServiceId } from "../../api/calendarApi";
+import {
+  fetchAgenciesByProjectId,
+  deleteAgencyById,
+} from "../../api/agencyApi";
+import AgencyAdd from "../../pages/AgencyAddPage";
+import AgencyEdit from "../../pages/AgencyEditPage";
+import CalendarAdd from "../../pages/CalendarAddPage";
+import CalendarEdit from "../../pages/CalendarEditPage";
+import { useNavigate } from "react-router-dom";
 
 const Sidebar = ({
   token,
   project_id,
   routes,
   setRoutes,
-  filteredRoutes,
-  setFilteredRoutes,
   selectedRoute,
   setSelectedRoute,
   trips,
@@ -28,21 +34,83 @@ const Sidebar = ({
   setCalendar,
   setMapCenter,
   setZoom,
-  navigate,
+  navigate: propNavigate,
   location,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isRouteDropdownOpen, setIsRouteDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("routes");
-  const dropdownRef = useRef(null);
+  const [agencies, setAgencies] = useState([]);
+  const [showAgencyAdd, setShowAgencyAdd] = useState(false);
+  const [showAgencyEdit, setShowAgencyEdit] = useState(null);
+  const [showCalendarAdd, setShowCalendarAdd] = useState(false);
+  const [showCalendarEdit, setShowCalendarEdit] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadAgencies = async () => {
+      try {
+        const data = await fetchAgenciesByProjectId(project_id, token);
+        setAgencies(data);
+      } catch (error) {
+        console.error("Error fetching agencies:", error);
+        setAgencies([]);
+      }
+    };
+    if (token && project_id) loadAgencies();
+  }, [token, project_id]);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const data = await fetchRoutesByProjectId(project_id, token);
+        setRoutes(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Error fetching routes:", error);
+        setRoutes([]);
+      }
+    };
+    if (token && project_id) loadInitialData();
+  }, [token, project_id, setRoutes]);
+
+  useEffect(() => {
+    const { refresh } = location.state || {};
+    if (refresh) {
+      if (activeTab === "routes") {
+        fetchRoutesByProjectId(project_id, token)
+          .then(setRoutes)
+          .catch(console.error);
+      } else if (activeTab === "trips" && selectedRoute) {
+        fetchTripsByRouteId(selectedRoute, token)
+          .then(setTrips)
+          .catch(console.error);
+      } else if (activeTab === "stops" && selectedTrip) {
+        fetchStopsAndStopTimesByTripId(selectedTrip, project_id, token)
+          .then(setStopsAndTimes)
+          .catch(console.error);
+      }
+      navigate(`/map/${project_id}`, {
+        replace: true,
+        state: { selectedRoute, selectedTrip },
+      });
+    }
+  }, [
+    location.state,
+    activeTab,
+    selectedRoute,
+    selectedTrip,
+    project_id,
+    token,
+    navigate,
+    setRoutes,
+    setTrips,
+    setStopsAndTimes,
+  ]);
 
   const handleTripSelect = useCallback(
     async (tripId) => {
       setSelectedTrip(tripId);
       setCalendar(null);
-
       try {
         const stopsAndTimesData = await fetchStopsAndStopTimesByTripId(
           tripId,
@@ -52,7 +120,7 @@ const Sidebar = ({
         setStopsAndTimes(stopsAndTimesData);
 
         const selectedTripData = trips.find((trip) => trip.trip_id === tripId);
-        if (selectedTripData && selectedTripData.service_id) {
+        if (selectedTripData?.service_id) {
           const calendarData = await fetchCalendarByServiceId(
             selectedTripData.service_id,
             token
@@ -84,7 +152,7 @@ const Sidebar = ({
           }
         }
       } catch (error) {
-        console.error("Error fetching trip details:", error);
+        console.error("Error in handleTripSelect:", error);
         setStopsAndTimes([]);
       }
     },
@@ -101,134 +169,31 @@ const Sidebar = ({
   );
 
   const handleRouteSelect = useCallback(
-    async (routeId, prevTrip = null) => {
+    async (routeId) => {
       setSelectedRoute(routeId);
-      setSearchTerm("");
-      setIsRouteDropdownOpen(false);
-      setSelectedTrip(null); // Trip sıfırlanıyor
-      setActiveTab("trips"); // Tripler sekmesine geç
-
+      setSelectedTrip(null);
+      setActiveTab("trips");
       try {
         const tripsData = await fetchTripsByRouteId(routeId, token);
         setTrips(Array.isArray(tripsData) ? tripsData : []);
-        // Otomatik trip seçimi ve handleTripSelect çağrısı kaldırıldı
-        if (prevTrip && tripsData.some((trip) => trip.trip_id === prevTrip)) {
-          handleTripSelect(prevTrip); // Sadece önceki trip varsa seç
-        }
       } catch (error) {
         console.error("Error fetching trips:", error);
         setTrips([]);
       }
     },
-    [
-      token,
-      handleTripSelect,
-      setSelectedRoute,
-      setSearchTerm,
-      setIsRouteDropdownOpen,
-      setSelectedTrip,
-      setTrips,
-      setActiveTab,
-    ]
+    [token, setSelectedRoute, setSelectedTrip, setTrips, setActiveTab]
   );
-
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        const data = await fetchRoutesByProjectId(project_id, token);
-        const routeList = Array.isArray(data) ? data : [];
-        setRoutes(routeList);
-        setFilteredRoutes(routeList);
-
-        const { selectedRoute: prevRoute, selectedTrip: prevTrip } =
-          location.state || {};
-        if (prevRoute && !selectedRoute) {
-          setSelectedRoute(prevRoute);
-          await handleRouteSelect(prevRoute, prevTrip);
-        } else if (prevTrip && !selectedTrip) {
-          setSelectedTrip(prevTrip);
-          await handleTripSelect(prevTrip);
-        }
-      } catch (error) {
-        console.error("Error fetching routes:", error);
-        setRoutes([]);
-        setFilteredRoutes([]);
-      }
-    };
-    if (token && project_id) {
-      loadInitialData();
-    }
-  }, [
-    token,
-    project_id,
-    location.state,
-    selectedRoute,
-    selectedTrip,
-    handleRouteSelect,
-    handleTripSelect,
-    setRoutes,
-    setFilteredRoutes,
-    setSelectedRoute,
-    setSelectedTrip,
-  ]);
-
-  useEffect(() => {
-    const { refresh } = location.state || {};
-    if (refresh && selectedRoute) {
-      handleRouteSelect(selectedRoute, selectedTrip);
-      navigate(`/map/${project_id}`, {
-        replace: true,
-        state: { selectedRoute, selectedTrip },
-      });
-    }
-  }, [
-    location.state,
-    selectedRoute,
-    selectedTrip,
-    project_id,
-    navigate,
-    handleRouteSelect,
-  ]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsRouteDropdownOpen(false);
-        setSearchTerm("");
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [setIsRouteDropdownOpen, setSearchTerm]);
-
-  const handleKeyDown = (e) => {
-    const key = e.key.toLowerCase();
-    if (/^[a-zA-Z]$/.test(key)) {
-      e.preventDefault();
-      setSearchTerm((prev) => prev + key);
-      setIsRouteDropdownOpen(true);
-    } else if (e.key === "Backspace") {
-      setSearchTerm((prev) => prev.slice(0, -1));
-      setIsRouteDropdownOpen(true);
-    } else if (e.key === "Enter" && filteredRoutes.length > 0) {
-      handleRouteSelect(filteredRoutes[0].route_id);
-    } else if (e.key === "Escape") {
-      setIsRouteDropdownOpen(false);
-      setSearchTerm("");
-    }
-  };
 
   const handleExport = async () => {
     setExportLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/io/export/${project_id}`,
+        `http://localhost:5000/api/export/${project_id}`,
         {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -243,13 +208,99 @@ const Sidebar = ({
         a.remove();
         window.URL.revokeObjectURL(url);
       } else {
-        const data = await response.json();
-        console.error("Export failed:", data.message);
+        console.error("Export failed:", await response.json().message);
       }
     } catch (error) {
       console.error("Export error:", error);
     } finally {
       setExportLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Belirtilmemiş";
+    const [year, month, day] = dateString.split("-");
+    return `${day}.${month}.${year}`; // DD.MM.YYYY formatı
+  };
+
+  const formatDays = (calendar) => {
+    const dayMap = {
+      monday: "Pazartesi",
+      tuesday: "Salı",
+      wednesday: "Çarşamba",
+      thursday: "Perşembe",
+      friday: "Cuma",
+      saturday: "Cumartesi",
+      sunday: "Pazar",
+    };
+    const activeDays = Object.keys(calendar)
+      .filter(
+        (k) =>
+          [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+          ].includes(k) && calendar[k] === "1"
+      )
+      .map((k) => dayMap[k]);
+    return activeDays.length > 0 ? activeDays.join(", ") : "Yok";
+  };
+
+  const handleDeleteRoute = async (routeId) => {
+    if (window.confirm("Bu rotayı silmek istediğinize emin misiniz?")) {
+      try {
+        await deleteRouteById(routeId, project_id, token);
+        setRoutes((prev) => prev.filter((route) => route.route_id !== routeId));
+        if (selectedRoute === routeId) setSelectedRoute(null);
+      } catch (error) {
+        console.error("Error deleting route:", error);
+        alert("Rota silinirken bir hata oluştu.");
+      }
+    }
+  };
+
+  const handleDeleteTrip = async (tripId) => {
+    if (window.confirm("Bu tripi silmek istediğinize emin misiniz?")) {
+      try {
+        await deleteTripById(tripId, token);
+        setTrips((prev) => prev.filter((trip) => trip.trip_id !== tripId));
+        if (selectedTrip === tripId) setSelectedTrip(null);
+      } catch (error) {
+        console.error("Error deleting trip:", error);
+        alert("Trip silinirken bir hata oluştu.");
+      }
+    }
+  };
+
+  const handleDeleteStop = async (tripId, stopId) => {
+    if (window.confirm("Bu durağı silmek istediğinize emin misiniz?")) {
+      try {
+        await deleteStopTimeById(tripId, stopId, project_id, token);
+        setStopsAndTimes((prev) =>
+          prev.filter((stop) => stop.stop_id !== stopId)
+        );
+      } catch (error) {
+        console.error("Error deleting stop time:", error);
+        alert("Durak zamanı silinirken bir hata oluştu.");
+      }
+    }
+  };
+
+  const handleDeleteAgency = async (agencyId) => {
+    if (window.confirm("Bu ajansı silmek istediğinize emin misiniz?")) {
+      try {
+        await deleteAgencyById(agencyId, project_id, token);
+        setAgencies((prev) =>
+          prev.filter((agency) => agency.agency_id !== agencyId)
+        );
+      } catch (error) {
+        console.error("Error deleting agency:", error);
+        alert("Ajans silinirken bir hata oluştu.");
+      }
     }
   };
 
@@ -265,7 +316,6 @@ const Sidebar = ({
       </button>
       <div
         className={`sidebar ${isSidebarOpen ? "open" : "closed"}`}
-        onKeyDown={handleKeyDown}
         tabIndex={0}
       >
         <div className="sidebar-header mb-3">
@@ -339,6 +389,16 @@ const Sidebar = ({
                   Takvim
                 </button>
               </li>
+              <li className="nav-item">
+                <button
+                  className={`nav-link ${
+                    activeTab === "agencies" ? "active" : ""
+                  }`}
+                  onClick={() => setActiveTab("agencies")}
+                >
+                  Ajanslar
+                </button>
+              </li>
             </ul>
 
             <div
@@ -346,56 +406,294 @@ const Sidebar = ({
               style={{ overflowY: "auto" }}
             >
               {activeTab === "routes" && (
-                <RouteList
-                  token={token}
-                  project_id={project_id}
-                  routes={routes}
-                  setRoutes={setRoutes}
-                  filteredRoutes={filteredRoutes}
-                  setFilteredRoutes={setFilteredRoutes}
-                  selectedRoute={selectedRoute}
-                  setSelectedRoute={setSelectedRoute}
-                  setTrips={setTrips}
-                  setStopsAndTimes={setStopsAndTimes}
-                  setMapCenter={setMapCenter}
-                  setZoom={setZoom}
-                  navigate={navigate}
-                  dropdownRef={dropdownRef}
-                  isRouteDropdownOpen={isRouteDropdownOpen}
-                  setIsRouteDropdownOpen={setIsRouteDropdownOpen}
-                  searchTerm={searchTerm}
-                  setActiveTab={setActiveTab}
-                  handleRouteSelect={handleRouteSelect}
-                />
+                <div className="p-2">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="mb-0">Rotalar</h5>
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={() => navigate(`/add-route/${project_id}`)}
+                    >
+                      Yeni
+                    </button>
+                  </div>
+                  <div>
+                    {routes.length > 0 ? (
+                      routes.map((route) => (
+                        <div key={route.route_id} className="card mb-2">
+                          <div className="card-body d-flex justify-content-between align-items-center p-2">
+                            <span
+                              className="text-truncate"
+                              style={{ maxWidth: "60%" }}
+                              title={route.route_long_name}
+                              onClick={() => handleRouteSelect(route.route_id)}
+                            >
+                              {route.route_long_name || route.route_id}
+                            </span>
+                            <div>
+                              <button
+                                className="btn btn-outline-primary btn-sm me-1"
+                                onClick={() =>
+                                  navigate(
+                                    `/edit-route/${project_id}/${route.route_id}`
+                                  )
+                                }
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() =>
+                                  handleDeleteRoute(route.route_id)
+                                }
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p>Henüz rota bulunmamaktadır.</p>
+                    )}
+                  </div>
+                </div>
               )}
               {activeTab === "trips" && selectedRoute && (
-                <TripList
-                  token={token}
-                  project_id={project_id}
-                  trips={trips}
-                  setTrips={setTrips}
-                  selectedTrip={selectedTrip}
-                  setSelectedTrip={setSelectedTrip}
-                  setStopsAndTimes={setStopsAndTimes}
-                  setCalendar={setCalendar}
-                  setMapCenter={setMapCenter}
-                  setZoom={setZoom}
-                  navigate={navigate}
-                  handleTripSelect={handleTripSelect}
-                />
+                <div className="p-2">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="mb-0">Tripler</h5>
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={() =>
+                        navigate(`/add-trip/${project_id}`, {
+                          state: { selectedRoute },
+                        })
+                      }
+                    >
+                      Yeni
+                    </button>
+                  </div>
+                  <div>
+                    {trips.length > 0 ? (
+                      trips.map((trip) => (
+                        <div key={trip.trip_id} className="card mb-2">
+                          <div className="card-body d-flex justify-content-between align-items-center p-2">
+                            <span
+                              className="text-truncate"
+                              style={{ maxWidth: "60%" }}
+                              title={trip.trip_headsign}
+                              onClick={() => handleTripSelect(trip.trip_id)}
+                            >
+                              {trip.trip_headsign || trip.trip_id}
+                            </span>
+                            <div>
+                              <button
+                                className="btn btn-outline-primary btn-sm me-1"
+                                onClick={() =>
+                                  navigate(
+                                    `/edit-trip/${project_id}/${trip.trip_id}`,
+                                    { state: { selectedRoute } }
+                                  )
+                                }
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => handleDeleteTrip(trip.trip_id)}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p>Henüz trip bulunmamaktadır.</p>
+                    )}
+                  </div>
+                </div>
               )}
               {activeTab === "stops" && selectedTrip && (
-                <StopList
-                  token={token}
-                  project_id={project_id}
-                  stopsAndTimes={stopsAndTimes}
-                  setStopsAndTimes={setStopsAndTimes}
-                  selectedTrip={selectedTrip}
-                  navigate={navigate}
-                />
+                <div className="p-2">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="mb-0">Duraklar</h5>
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={() =>
+                        navigate(
+                          `/add-stop-time/${project_id}/${selectedTrip}`,
+                          { state: { selectedRoute, selectedTrip } }
+                        )
+                      }
+                    >
+                      Yeni
+                    </button>
+                  </div>
+                  <div>
+                    {stopsAndTimes.length > 0 ? (
+                      stopsAndTimes.map((stop) => (
+                        <div key={stop.stop_id} className="card mb-2">
+                          <div className="card-body d-flex justify-content-between align-items-center p-2">
+                            <span
+                              className="text-truncate"
+                              style={{ maxWidth: "60%" }}
+                              title={stop.stop_name}
+                              onClick={() => {
+                                if (stop.stop_lat && stop.stop_lon) {
+                                  setMapCenter([
+                                    parseFloat(stop.stop_lat),
+                                    parseFloat(stop.stop_lon),
+                                  ]);
+                                  setZoom(16);
+                                }
+                              }}
+                            >
+                              {stop.stop_name || stop.stop_id}
+                            </span>
+                            <div>
+                              <button
+                                className="btn btn-outline-primary btn-sm me-1"
+                                onClick={() =>
+                                  navigate(
+                                    `/edit-stop-time/${project_id}/${selectedTrip}/${stop.stop_id}`,
+                                    { state: { selectedRoute, selectedTrip } }
+                                  )
+                                }
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() =>
+                                  handleDeleteStop(selectedTrip, stop.stop_id)
+                                }
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p>Henüz durak bulunmamaktadır.</p>
+                    )}
+                  </div>
+                </div>
               )}
               {activeTab === "calendar" && calendar && (
-                <CalendarInfo calendar={calendar} />
+                <div className="p-2">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="mb-0">Takvim</h5>
+                    <div>
+                      <button
+                        className="btn btn-success btn-sm me-1"
+                        onClick={() => setShowCalendarAdd(true)}
+                      >
+                        Yeni
+                      </button>
+                      <button
+                        className="btn btn-outline-primary btn-sm"
+                        onClick={() => setShowCalendarEdit(true)}
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                  </div>
+                  {showCalendarAdd && (
+                    <CalendarAdd
+                      token={token}
+                      project_id={project_id}
+                      setCalendar={setCalendar}
+                      onClose={() => setShowCalendarAdd(false)}
+                    />
+                  )}
+                  {showCalendarEdit && (
+                    <CalendarEdit
+                      token={token}
+                      project_id={project_id}
+                      calendar={calendar}
+                      setCalendar={setCalendar}
+                      onClose={() => setShowCalendarEdit(false)}
+                    />
+                  )}
+                  <div className="mb-2">
+                    <strong>Aktif Günler:</strong> {formatDays(calendar)}
+                  </div>
+                  <div className="mb-2">
+                    <strong>Başlangıç Tarihi:</strong>{" "}
+                    {formatDate(calendar.start_date)}
+                  </div>
+                  <div>
+                    <strong>Bitiş Tarihi:</strong>{" "}
+                    {formatDate(calendar.end_date)}
+                  </div>
+                </div>
+              )}
+              {activeTab === "agencies" && (
+                <div className="p-2">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="mb-0">Ajanslar</h5>
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={() => setShowAgencyAdd(true)}
+                    >
+                      Yeni
+                    </button>
+                  </div>
+                  {showAgencyAdd && (
+                    <AgencyAdd
+                      token={token}
+                      project_id={project_id}
+                      setAgencies={setAgencies}
+                      onClose={() => setShowAgencyAdd(false)}
+                    />
+                  )}
+                  {showAgencyEdit && (
+                    <AgencyEdit
+                      token={token}
+                      project_id={project_id}
+                      agency={showAgencyEdit}
+                      setAgencies={setAgencies}
+                      onClose={() => setShowAgencyEdit(null)}
+                    />
+                  )}
+                  <div>
+                    {agencies.length > 0 ? (
+                      agencies.map((agency) => (
+                        <div key={agency.agency_id} className="card mb-2">
+                          <div className="card-body d-flex justify-content-between align-items-center p-2">
+                            <span
+                              className="text-truncate"
+                              style={{ maxWidth: "60%" }}
+                              title={agency.agency_name}
+                            >
+                              {agency.agency_name}
+                            </span>
+                            <div>
+                              <button
+                                className="btn btn-outline-primary btn-sm me-1"
+                                onClick={() => setShowAgencyEdit(agency)}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() =>
+                                  handleDeleteAgency(agency.agency_id)
+                                }
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p>Henüz ajans bulunmamaktadır.</p>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -410,8 +708,6 @@ Sidebar.propTypes = {
   project_id: PropTypes.string.isRequired,
   routes: PropTypes.array.isRequired,
   setRoutes: PropTypes.func.isRequired,
-  filteredRoutes: PropTypes.array.isRequired,
-  setFilteredRoutes: PropTypes.func.isRequired,
   selectedRoute: PropTypes.string,
   setSelectedRoute: PropTypes.func.isRequired,
   trips: PropTypes.array.isRequired,

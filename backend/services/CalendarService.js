@@ -152,11 +152,33 @@ const calendarService = {
       const [result] = await pool.execute(query, saveValues);
       res.status(201).json({
         message: "Calendar saved successfully",
-        calendar_id: result.insertId,
+        calendar_id: result.insertId, // Otomatik artan ID (eğer varsa)
+        service_id: newServiceId, // Oluşturulan service_id
       });
     } catch (error) {
       console.error(`Error in saveCalendar:`, error);
       res.status(500).json({ error: "Server Error" });
+    }
+  },
+
+  getCalendarsByProjectId: async (req, res) => {
+    try {
+      const user_id = req.user.id;
+      const { project_id } = req.params;
+      const [rows] = await pool.execute(
+        `
+        SELECT * FROM calendar  
+        WHERE user_id = ? AND project_id = ?
+        `,
+        [user_id, project_id]
+      );
+      res.json(rows);
+    } catch (error) {
+      console.error(
+        `Error in getCalendarsByProjectId for project_id: ${req.params.project_id}:`,
+        error
+      );
+      res.status(500).json({ error: "Server error" });
     }
   },
 };
