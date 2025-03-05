@@ -38,7 +38,6 @@ const Sidebar = ({
   location,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [exportLoading, setExportLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("routes");
   const [agencies, setAgencies] = useState([]);
   const [showAgencyAdd, setShowAgencyAdd] = useState(false);
@@ -192,39 +191,7 @@ const Sidebar = ({
     [token, setSelectedRoute, setSelectedTrip, setTrips, setActiveTab]
   );
 
-  // Export işlemi
-  const handleExport = async () => {
-    setExportLoading(true);
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/export/${project_id}`,
-        {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = response.headers
-          .get("content-disposition")
-          .split("filename=")[1]
-          .replaceAll('"', "");
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      } else {
-        console.error("Export failed:", await response.json().message);
-      }
-    } catch (error) {
-      console.error("Export error:", error);
-    } finally {
-      setExportLoading(false);
-    }
-  };
+  
 
   // Tarih formatını düzenleme fonksiyonu (ISO 8601 desteği)
   const formatDate = (dateString) => {
@@ -403,21 +370,6 @@ const Sidebar = ({
 
         {isSidebarOpen && (
           <div className="d-flex flex-column h-100">
-            <button
-              className="btn btn-primary mb-3 w-100"
-              onClick={handleExport}
-              disabled={exportLoading}
-            >
-              {exportLoading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-1" />
-                  Exporting...
-                </>
-              ) : (
-                "Projeyi Dışa Aktar"
-              )}
-            </button>
-
             <ul className="nav nav-tabs mb-3">
               <li className="nav-item">
                 <button

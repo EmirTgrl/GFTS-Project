@@ -67,45 +67,40 @@ const calendarService = {
   updateCalendar: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        service_id,
-        monday,
-        tuesday,
-        wednesday,
-        thursday,
-        friday,
-        saturday,
-        sunday,
-        start_date,
-        end_date,
-      } = req.body;
+      const { service_id, ...params } = req.body;
+      const validFields = [
+        "service_id",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+        "start_date",
+        "end_date",
+        "project_id"
+      ];
+      const fields = [];
+      const values = [];
+
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(`${param} = ?`);
+          values.push(params[param]);
+        } else {
+          console.warn(`unexpected field in ${param}`);
+        }
+      }
+
       const query = `
         UPDATE calendar
-        SET
-          monday = ?,
-          tuesday = ?,
-          wednesday = ?,
-          thursday = ?,
-          friday = ?,
-          saturday = ?,
-          sunday = ?,
-          start_date = ?,
-          end_date = ?
+        SET ${fields.join(", ")}
         WHERE service_id = ? AND user_id = ?
       `;
-      const [result] = await pool.execute(query, [
-        monday,
-        tuesday,
-        wednesday,
-        thursday,
-        friday,
-        saturday,
-        sunday,
-        start_date,
-        end_date,
-        service_id,
-        user_id,
-      ]);
+
+      const [result] = await pool.execute(query, [...values, service_id, user_id]);
+
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Calendar not found" });
       }
@@ -120,56 +115,47 @@ const calendarService = {
   saveCalendar: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { project_id } = req.body; // project_id'yi body'den alıyoruz
-      const {
-        monday,
-        tuesday,
-        wednesday,
-        thursday,
-        friday,
-        saturday,
-        sunday,
-        start_date,
-        end_date,
-      } = req.body;
+      const validFields = [
+        "service_id",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+        "start_date",
+        "end_date",
+        "project_id"];
+      const { ...params } = req.body;
 
-      if (!project_id) {
-        return res.status(400).json({ error: "project_id is required" });
+      const values = [];
+      const fields = [];
+      const placeholders = [];
+
+      for(const param in params){
+        if(validFields.includes(param)){
+          fields.push(param);
+          values.push(params[param]);
+          placeholders.push("?");
+        }else{
+          console.warn(`unexpected field ${param}`);
+        }
       }
 
-      // O projeye ait en yüksek sayısal service_id değerini bul
-      const [rows] = await pool.execute(
-        `SELECT MAX(CAST(service_id AS UNSIGNED)) as max_id 
-         FROM calendar 
-         WHERE project_id = ? AND service_id REGEXP '^[0-9]+$'`,
-        [project_id]
-      );
-      const maxId = rows[0].max_id || 0; // Eğer projede kayıt yoksa 0'dan başla
-      const newServiceId = (maxId + 1).toString(); // Bir sonraki değeri string'e çevir
+      fields.push("user_id");
+      placeholders.push("?");
+      values.push(user_id);
 
       const query = `
-        INSERT INTO calendar(service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date, user_id, project_id)
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO calendar(${fields.join(", ")})
+        VALUES(${placeholders.join(", ")})
       `;
-      const [result] = await pool.execute(query, [
-        newServiceId,
-        monday,
-        tuesday,
-        wednesday,
-        thursday,
-        friday,
-        saturday,
-        sunday,
-        start_date,
-        end_date,
-        user_id,
-        project_id,
-      ]);
-
+      const [result] = await pool.execute(query, values);
       res.status(201).json({
         message: "Calendar saved successfully",
-        calendar_id: result.insertId, // Otomatik artan ID (eğer varsa)
-        service_id: newServiceId, // Oluşturulan service_id
+        service_id: result.insertId, // Otomatik artan ID (eğer varsa)
+       
       });
     } catch (error) {
       console.error(`Error in saveCalendar:`, error);

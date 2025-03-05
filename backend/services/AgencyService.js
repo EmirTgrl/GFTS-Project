@@ -21,28 +21,45 @@ const agencyService = {
   saveAgency: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { project_id, agency_name } = req.body;
 
-      const [rows] = await pool.execute(
-        "SELECT MAX(CAST(agency_id AS UNSIGNED)) as max_id FROM agency WHERE project_id = ? AND user_id = ?",
-        [project_id, user_id]
-      );
-      const lastId = rows[0].max_id || 0;
-      const agency_id = String(parseInt(lastId, 10) + 1).padStart(2, "0");
+      const validFields = [
+        "agency_name", 
+        "agency_url", 
+        "agency_timezone", 
+        "agency_lang", 
+        "agency_phone", 
+        "project_id"
+      ];
+      const { ...params} = req.body;
 
+      const fields = [];
+      const values = [];
+      const placeholders = [];
+
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(param);
+          values.push(params[param]);
+          placeholders.push("?")
+        } else {
+          console.warn(`unexpected field in ${param}`);
+        }
+      }
+
+      fields.push("user_id");
+      placeholders.push("?");
+      values.push(user_id);
+      
       const query = `
-        INSERT INTO agency (agency_id, agency_name, agency_url, agency_timezone, agency_lang, agency_phone, project_id, user_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO agency (${fields.join(", ")})
+        VALUES (${placeholders.join(", ")})
       `;
-      const [result] = await pool.execute(query, [
-        agency_id,
-        agency_name,
-        project_id,
-        user_id,
-      ]);
+
+      const [result] = await pool.execute(query, values);
+
       res.status(201).json({
         message: "Agency saved successfully",
-        agency_id: agency_id,
+        agency_id: result.insertId,
       });
     } catch (error) {
       console.error("Error in saveAgency:", error);
@@ -53,43 +70,37 @@ const agencyService = {
   updateAgency: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        agency_id,
-        agency_name,
-        agency_url,
-        agency_timezone,
-        agency_lang, 
-        agency_phone, 
-        project_id,
-      } = req.body;
+      const validFields = [
+        "agency_id",
+        "agency_name", 
+        "agency_url", 
+        "agency_timezone", 
+        "agency_lang", 
+        "agency_phone", 
+        "project_id"
+      ];
+      const { agency_id, ...params} = req.body;
 
-      if (!agency_name || !agency_url || !agency_timezone || !project_id) {
-        return res.status(400).json({
-          error:
-            "Missing required fields: agency_name, agency_url, agency_timezone are mandatory",
-        });
+      const fields = [];
+      const values = [];
+
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(`${param} = ?`);
+          values.push(params[param]);
+        } else {
+          console.warn(`unexpected field ${param}`);
+        }
       }
 
       const query = `
         UPDATE agency
         SET 
-          agency_name = ?,
-          agency_url = ?,
-          agency_timezone = ?,
-          agency_lang = ?,
-          agency_phone = ?
-        WHERE agency_id = ? AND project_id = ? AND user_id = ?
+          ${fields.join(", ")}
+        WHERE agency_id = ?  AND user_id = ?
       `;
-      const [result] = await pool.execute(query, [
-        agency_name,
-        agency_url,
-        agency_timezone,
-        agency_lang || null,
-        agency_phone || null, 
-        agency_id,
-        project_id,
-        user_id,
-      ]);
+
+      const [result] = await pool.execute(query, [...values, agency_id, user_id]);
 
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Agency not found" });
