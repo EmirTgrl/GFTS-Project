@@ -24,6 +24,41 @@ const HomePage = () => {
   const { isAuthenticated, token } = useContext(AuthContext);
   const [showDeleteModal, setDeleteModal] = useState(false);
   const [deletedProjectId, setDeletedProjectID] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
+
+  // Export işlemi
+  const handleExport = async (project_id) => {
+    setExportLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/io/export/${project_id}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = response.headers
+          .get("content-disposition")
+          .split("filename=")[1]
+          .replaceAll('"', "");
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        console.error("Export failed:", await response.json().message);
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const loadProjects = useCallback(async () => {
     try {
@@ -93,68 +128,68 @@ const HomePage = () => {
 
   const handleCreateProject = async () => {
     try {
-        const response = await fetch('http://localhost:5000/api/projects/', {
-            method: 'POST',
-            headers: {
-              'Content-Type':'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ file_name: projectName })
-        });
+      const response = await fetch('http://localhost:5000/api/projects/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ file_name: projectName })
+      });
 
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Project created successfully', data);
-            const projectId = data.project_id;
-            navigate(`/map/${projectId}`);
-            setShowModal(false); 
-
-        } else {
-            console.error('Failed to create project:', response.status);
-            setShowModal(false);
-        }
-    } catch (error) {
-        console.error('Error creating project:', error);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Project created successfully', data);
+        const projectId = data.project_id;
+        navigate(`/map/${projectId}`);
         setShowModal(false);
-    }
-};
 
-const handleOpenModal = () => {
-    setShowModal(true);
-};
-
-const handleCloseModal = () => {
-    setShowModal(false);
-};
-
-const handleInputChange = (e) => {
-    setProjectName(e.target.value);
-};
-
-const handleDeleteProject = async () => {
-  try {
-    const response = await fetch(`http://localhost:5000/api/projects/${deletedProjectId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type':'application/json',
-        Authorization: `Bearer ${token}`,
+      } else {
+        console.error('Failed to create project:', response.status);
+        setShowModal(false);
       }
-    });
-
-    if (response.ok) {
-      setProjects(projects.filter(project => project.project_id !== deletedProjectId));
-      console.log("Project deleted successfully"); // Optional: Log a success message
-    } else {
-      console.error("Error deleting project:", response.status);
-      // Handle the error (e.g., display an error message to the user)
+    } catch (error) {
+      console.error('Error creating project:', error);
+      setShowModal(false);
     }
-  } catch (error) {
-    console.error("Error deleting project:", error);
-    // Handle the error (e.g., display an error message to the user)
-  }finally{
-    setDeleteModal(false);
+  };
+
+  const handleOpenModal = () => {
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
+  const handleInputChange = (e) => {
+    setProjectName(e.target.value);
+  };
+
+  const handleDeleteProject = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/projects/${deletedProjectId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        }
+      });
+
+      if (response.ok) {
+        setProjects(projects.filter(project => project.project_id !== deletedProjectId));
+        console.log("Project deleted successfully"); // Optional: Log a success message
+      } else {
+        console.error("Error deleting project:", response.status);
+        // Handle the error (e.g., display an error message to the user)
+      }
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      // Handle the error (e.g., display an error message to the user)
+    } finally {
+      setDeleteModal(false);
+    }
   }
-}
 
   return (
     <Container fluid className="py-3">
@@ -215,7 +250,7 @@ const handleDeleteProject = async () => {
               <div className="d-flex justify-content-between">
                 <h2 className="card-title h5 mb-2">Projects</h2>
                 <button className="btn btn-primary" onClick={handleOpenModal}>Create Blank Project</button>
-                
+
               </div>
               <hr />
               <div className="imports-list">
@@ -234,16 +269,31 @@ const handleDeleteProject = async () => {
                         </div>
                         <Button
                           variant="outline-primary"
-                          className="ms-auto"
+                          className="ms-auto mx-2"
                           size="sm"
                           onClick={() => navigate(`/map/${project.project_id}`)}
                         >
                           View
                         </Button>
                         <Button
+                          variant="outline-primary"
+                          className="ms-2"
+                          onClick={()=>handleExport(project.project_id)}
+                          disabled={exportLoading}
+                        >
+                          {exportLoading ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-1" />
+                              Exporting...
+                            </>
+                          ) : (
+                            "Projeyi Dışa Aktar"
+                          )}
+                        </Button>
+                        <Button
                           variant="btn btn-close"
                           className="text-danger"
-                          onClick={()=>{setDeleteModal(true);setDeletedProjectID(project.project_id)}}>
+                          onClick={() => { setDeleteModal(true); setDeletedProjectID(project.project_id) }}>
                         </Button>
                       </Card.Body>
                     </Card>
@@ -258,19 +308,19 @@ const handleDeleteProject = async () => {
           </Card>
         </Col>
       </Row>
-      {showDeleteModal && ( 
+      {showDeleteModal && (
         <div className={`popup  ${showDeleteModal ? 'show' : ''}`}>
           <div className="popup-content">
-            <span className="close" onClick={()=> setDeleteModal(false)}>&times;</span>
+            <span className="close" onClick={() => setDeleteModal(false)}>&times;</span>
             <h2>Are you sure</h2>
             <div className="d-flex justify-content-between">
-            <Button variant="danger" onClick={handleDeleteProject}>Delete</Button>
-            <Button variant="secondary" onClick={()=> setDeleteModal(false)}>Cancel</Button>
+              <Button variant="danger" onClick={handleDeleteProject}>Delete</Button>
+              <Button variant="secondary" onClick={() => setDeleteModal(false)}>Cancel</Button>
             </div>
           </div>
         </div>
       )}
-      {showModal && ( 
+      {showModal && (
         <div className={`popup  ${showModal ? 'show' : ''}`}>
           <div className="popup-content">
             <span className="close" onClick={handleCloseModal}>&times;</span>
