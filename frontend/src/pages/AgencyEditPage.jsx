@@ -25,7 +25,7 @@ const AgencyEditPage = ({
       !formData.agency_url ||
       !formData.agency_timezone
     ) {
-      setError("Ajans adı, URL ve zaman dilimi zorunludur!");
+      setError("Agency adı, URL ve zaman dilimi zorunludur!");
       return;
     }
 
@@ -43,9 +43,9 @@ const AgencyEditPage = ({
           a.agency_id === agency.agency_id ? { ...a, ...agencyData } : a
         )
       );
-      onClose(); // Formu kapat
+      onClose(); 
     } catch (err) {
-      setError("Ajans güncellenirken bir hata oluştu.");
+      setError("Agency güncellenirken bir hata oluştu.");
       console.error("Error updating agency:", err);
     } finally {
       setLoading(false);
@@ -59,7 +59,7 @@ const AgencyEditPage = ({
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label htmlFor="agency_name" className="form-label">
-              Ajans Adı
+            Agency Adı
             </label>
             <input
               type="text"
@@ -73,7 +73,7 @@ const AgencyEditPage = ({
           </div>
           <div className="mb-3">
             <label htmlFor="agency_url" className="form-label">
-              Ajans URL
+            Agency URL
             </label>
             <input
               type="url"

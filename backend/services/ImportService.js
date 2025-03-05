@@ -23,11 +23,9 @@ class ImportService {
       "calendar",
       "stops",
       "routes",
+      "shapes",
       "trips",
       "stop_times",
-      "calendar_dates",
-      "shapes",
-      "translations",
     ];
   }
 

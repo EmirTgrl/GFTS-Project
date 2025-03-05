@@ -35,7 +35,6 @@ const Sidebar = ({
   setCalendar,
   setMapCenter,
   setZoom,
-  navigate: propNavigate,
   location,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -804,7 +803,6 @@ Sidebar.propTypes = {
   setMapCenter: PropTypes.func.isRequired,
   zoom: PropTypes.number.isRequired,
   setZoom: PropTypes.func.isRequired,
-  navigate: PropTypes.func.isRequired,
   location: PropTypes.object.isRequired,
 };
 

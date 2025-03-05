@@ -25,7 +25,7 @@ const AgencyAddPage = ({ token, project_id, setAgencies, onClose }) => {
       !formData.agency_url ||
       !formData.agency_timezone
     ) {
-      setError("Ajans adı, URL ve zaman dilimi zorunludur!");
+      setError("Agency adı, URL ve zaman dilimi zorunludur!");
       return;
     }
 
@@ -38,9 +38,9 @@ const AgencyAddPage = ({ token, project_id, setAgencies, onClose }) => {
         ...prev,
         { agency_id: result.agency_id, agency_name: formData.agency_name },
       ]);
-      onClose(); // Formu kapat
+      onClose();
     } catch (err) {
-      setError("Ajans eklenirken bir hata oluştu.");
+      setError("Agency eklenirken bir hata oluştu.");
       console.error("Error adding agency:", err);
     } finally {
       setLoading(false);
@@ -49,12 +49,12 @@ const AgencyAddPage = ({ token, project_id, setAgencies, onClose }) => {
 
   return (
     <div className="card mb-3">
-      <div className="card-header">Yeni Ajans Ekle</div>
+      <div className="card-header">Yeni Agency Ekle</div>
       <div className="card-body">
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label htmlFor="agency_name" className="form-label">
-              Ajans Adı
+              Agency Adı
             </label>
             <input
               type="text"
@@ -68,7 +68,7 @@ const AgencyAddPage = ({ token, project_id, setAgencies, onClose }) => {
           </div>
           <div className="mb-3">
             <label htmlFor="agency_url" className="form-label">
-              Ajans URL
+            Agency URL
             </label>
             <input
               type="url"
