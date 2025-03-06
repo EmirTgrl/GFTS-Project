@@ -62,57 +62,47 @@ const stopService = {
   updateStop: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        stop_id,
-        stop_code,
-        stop_name,
-        stop_desc,
-        stop_lat,
-        stop_lon,
-        zone_id,
-        stop_url,
-        location_type,
-        parent_station,
-        stop_timezone,
-        wheelchair_boarding,
-        platform_code,
-        project_id,
-      } = req.body;
+      const validFields = [
+        "stop_id",
+        "stop_code",
+        "stop_name",
+        "stop_desc",
+        "stop_lat",
+        "stop_lon",
+        "zone_id",
+        "stop_url",
+        "location_type",
+        "parent_station",
+        "stop_timezone",
+        "wheelchair_boarding",
+        "project_id"        
+      ]
+      
+      const {stop_id, ...params} = req.body;
+
+      const fields = [];
+      const values = [];
+
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(`${param} = ?`);
+          values.push(params[param]);
+        } else {
+          console.warn(`unexpected field ${param}`);
+        }
+      }
+      
       const query = `
         UPDATE stops 
         SET
-          stop_code = ?,
-          stop_name = ?,
-          stop_desc = ?,
-          stop_lat = ?,
-          stop_lon = ?,
-          zone_id = ?,
-          stop_url = ?,
-          location_type = ?,
-          parent_station = ?,
-          stop_timezone = ?,
-          wheelchair_boarding = ?,
-          platform_code = ?,
-          project_id = ?
+         ${fields.join(", ")}
         WHERE stop_id = ? AND user_id = ?`;
 
-      await pool.execute(query, [
-        stop_code,
-        stop_name,
-        stop_desc,
-        stop_lat,
-        stop_lon,
-        zone_id,
-        stop_url,
-        location_type,
-        parent_station,
-        stop_timezone,
-        wheelchair_boarding,
-        platform_code,
-        project_id,
-        stop_id,
-        user_id,
-      ]);
+      const [result] = await pool.execute(query, [...values, stop_id, user_id]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Stop not found" });
+      }
 
       res.status(200).json({ message: "Stop updated successfully" });
     } catch (error) {
@@ -124,33 +114,51 @@ const stopService = {
   saveStop: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { stop_name, stop_desc, stop_lat, stop_lon, project_id } = req.body;
+      const validFields = [
+        "stop_id",
+        "stop_code",
+        "stop_name",
+        "stop_desc",
+        "stop_lat",
+        "stop_lon",
+        "zone_id",
+        "stop_url",
+        "location_type",
+        "parent_station",
+        "stop_timezone",
+        "wheelchair_boarding",
+        "project_id"        
+      ]
 
-      const [rows] = await pool.execute(
-        "SELECT MAX(CAST(stop_id AS UNSIGNED)) as max_id FROM stops WHERE project_id = ? AND user_id = ?",
-        [project_id, user_id]
-      );
-      const lastId = rows[0].max_id || 0;
-      const newId = parseInt(lastId, 10) + 1;
-      const stop_id = String(newId).padStart(5, "0");
+      const {...params} = req.body;
 
+      const fields = [];
+      const values = [];
+      const placeholders = [];
+
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(param);
+          values.push(params[param]);
+          placeholders.push("?")
+        } else {
+          console.warn(`unexpected field in ${param}`);
+        }
+      }
+
+      fields.push("user_id");
+      placeholders.push("?");
+      values.push(user_id);
+      
       const query = `
-        INSERT INTO stops (stop_id, stop_name, stop_desc, stop_lat, stop_lon, user_id, project_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO stops (${fields.join(", ")})
+        VALUES (${placeholders.join(", ")})
       `;
-      const [result] = await pool.execute(query, [
-        stop_id,
-        stop_name || "Yeni Durak",
-        stop_desc || null,
-        stop_lat || null,
-        stop_lon || null,
-        user_id,
-        project_id,
-      ]);
+      const [result] = await pool.execute(query, values);
 
       res.status(201).json({
         message: "Stop saved successfully",
-        stop_id: stop_id,
+        stop_id: result.insertId
       });
     } catch (error) {
       console.error(`Error in saveStop:`, error);

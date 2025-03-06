@@ -7,7 +7,7 @@ const stopTimeService = {
       const { trip_id, project_id } = req.params;
       const [rows] = await pool.execute(
         `SELECT * FROM stop_times st
-         LEFT OUTER JOIN stops s
+         JOIN stops s
          ON st.stop_id = s.stop_id
          WHERE st.user_id = ? AND st.trip_id = ? AND st.project_id = ?`,
         [user_id, trip_id, project_id]
@@ -88,79 +88,42 @@ const stopTimeService = {
   updateStopTime: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        trip_id,
-        stop_id,
-        project_id,
-        arrival_time,
-        departure_time,
-        stop_sequence,
-        stop_headsign,
-        pickup_type,
-        drop_off_type,
-        shape_dist_traveled,
-        timepoint,
-      } = req.body;
+      const validFields = [
+        "trip_id",
+        "stop_id",
+        "project_id",
+        "arrival_time",
+        "departure_time",
+        "stop_sequence",
+        "stop_headsign",
+        "pickup_type",
+        "drop_off_type",
+        "shape_dist_traveled",
+        "timepoint"
+      ];
 
-      const [existingRows] = await pool.execute(
-        `
-        SELECT * FROM stop_times
-        WHERE user_id = ? AND trip_id = ? AND stop_id = ? AND project_id = ?
-        `,
-        [user_id, trip_id, stop_id, project_id]
-      );
-      if (existingRows.length === 0) {
-        return res.status(404).json({ error: "Stop time not found" });
+      const {trip_id , stop_id, ...params} = req.body;
+
+      const fields = [];
+      const values = [];
+
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(`${param} = ?`);
+          values.push(params[param]);
+        } else {
+          console.warn(`unexpected field ${param}`);
+        }
       }
-      const existing = existingRows[0];
-
-      const updatedData = {
-        arrival_time:
-          arrival_time !== undefined ? arrival_time : existing.arrival_time,
-        departure_time:
-          departure_time !== undefined
-            ? departure_time
-            : existing.departure_time,
-        stop_sequence:
-          stop_sequence !== undefined ? stop_sequence : existing.stop_sequence,
-        stop_headsign:
-          stop_headsign !== undefined ? stop_headsign : existing.stop_headsign,
-        pickup_type:
-          pickup_type !== undefined ? pickup_type : existing.pickup_type,
-        drop_off_type:
-          drop_off_type !== undefined ? drop_off_type : existing.drop_off_type,
-        shape_dist_traveled:
-          shape_dist_traveled !== undefined && shape_dist_traveled !== ""
-            ? shape_dist_traveled
-            : null,
-        timepoint: timepoint !== undefined ? timepoint : existing.timepoint,
-      };
 
       const query = `
         UPDATE stop_times
-        SET arrival_time = ?,
-            departure_time = ?,
-            stop_sequence = ?,
-            stop_headsign = ?,
-            pickup_type = ?,
-            drop_off_type = ?,
-            shape_dist_traveled = ?,
-            timepoint = ?
-        WHERE trip_id = ? AND stop_id = ? AND user_id = ? AND project_id = ?`;
+        SET 
+          ${fields.join(", ")}
+        WHERE trip_id = ? AND stop_id = ? AND user_id = ?`;
 
       const [result] = await pool.execute(query, [
-        updatedData.arrival_time,
-        updatedData.departure_time,
-        updatedData.stop_sequence,
-        updatedData.stop_headsign,
-        updatedData.pickup_type,
-        updatedData.drop_off_type,
-        updatedData.shape_dist_traveled,
-        updatedData.timepoint,
-        trip_id,
-        stop_id,
-        user_id,
-        project_id,
+        ...values, trip_id, stop_id, user_id
       ]);
 
       if (result.affectedRows === 0) {
@@ -177,82 +140,46 @@ const stopTimeService = {
   saveStopTime: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        trip_id,
-        stop_id,
-        project_id,
-        arrival_time,
-        departure_time,
-        stop_sequence,
-        stop_headsign,
-        pickup_type,
-        drop_off_type,
-        shape_dist_traveled,
-        timepoint,
-      } = req.body;
+      const validFields = [
+        "trip_id",
+        "stop_id",
+        "project_id",
+        "arrival_time",
+        "departure_time",
+        "stop_sequence",
+        "stop_headsign",
+        "pickup_type",
+        "drop_off_type",
+        "shape_dist_traveled",
+        "timepoint",
+       ];
 
-      // Zorunlu alanları kontrol et
-      if (!trip_id || !stop_id || !project_id) {
-        return res
-          .status(400)
-          .json({ error: "trip_id, stop_id, and project_id are required" });
+      const params = req.body;
+
+      const fields = [];
+      const values = [];
+      const placeholders = [];
+
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(param);
+          values.push(params[param]);
+          placeholders.push("?")
+        } else {
+          console.warn(`unexpected field in ${param}`);
+        }
       }
 
-      // stop_id'nin stops tablosunda mevcut olup olmadığını kontrol et
-      const [stopRows] = await pool.execute(
-        `SELECT stop_id FROM stops WHERE stop_id = ? AND user_id = ? AND project_id = ?`,
-        [stop_id, user_id, project_id]
-      );
-      if (stopRows.length === 0) {
-        return res.status(400).json({
-          error:
-            "Invalid stop_id: Stop does not exist for this user and project",
-        });
-      }
-
-      // stop_sequence varsa, mevcut kayıtları güncelle
-      if (stop_sequence !== undefined && stop_sequence !== null) {
-        await pool.execute(
-          `
-          UPDATE stop_times
-          SET stop_sequence = stop_sequence + 1
-          WHERE trip_id = ? AND user_id = ? AND project_id = ? AND stop_sequence >= ?
-          `,
-          [trip_id, user_id, project_id, stop_sequence]
-        );
-      }
-
+      fields.push("user_id");
+      placeholders.push("?");
+      values.push(user_id);
+      
       const query = `
-        INSERT INTO stop_times (
-          trip_id,
-          stop_id,
-          user_id,
-          project_id,
-          arrival_time,
-          departure_time,
-          stop_sequence,
-          stop_headsign,
-          pickup_type,
-          drop_off_type,
-          shape_dist_traveled,
-          timepoint
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO stop_times (${fields.join(", ")}) 
+        VALUES (${placeholders.join(", ")})
       `;
 
-      const [result] = await pool.execute(query, [
-        trip_id,
-        stop_id,
-        user_id,
-        project_id,
-        arrival_time || null,
-        departure_time || null,
-        stop_sequence || null,
-        stop_headsign || null,
-        pickup_type || null,
-        drop_off_type || null,
-        shape_dist_traveled || null,
-        timepoint || null,
-      ]);
+      const [result] = await pool.execute(query, values);
 
       res
         .status(201)
