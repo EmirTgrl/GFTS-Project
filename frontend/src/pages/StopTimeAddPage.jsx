@@ -110,12 +110,13 @@ const StopTimeAddPage = () => {
           throw new Error("Mevcut durak seçimi için stop_id gerekli!");
         }
 
+        console.log("DEV LOGS: ",finalStopId)
         await saveStopTime(
           {
             trip_id,
-            stop_id: finalStopId,
             project_id,
             ...stopTime,
+            stop_id: finalStopId,
           },
           token
         );
