@@ -158,7 +158,7 @@ const stopService = {
 
       res.status(201).json({
         message: "Stop saved successfully",
-        stop_id: stop_id,
+        stop_id: result.insertId
       });
     } catch (error) {
       console.error(`Error in saveStop:`, error);
