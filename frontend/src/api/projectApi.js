@@ -15,3 +15,37 @@ export const fetchProjects = async (token) => {
   }
   return response.json();
 };
+
+export const deleteProject = async (projectId, token) => {
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("HTTP error in deleteProject!", response.status, errorText);
+    throw new Error(
+      `HTTP error! Status: ${response.status}, Message: ${errorText}`
+    );
+  }
+  return response.json();
+};
+
+export const exportProject = async (projectId, token) => {
+  const response = await fetch(`${API_BASE_URL}/export/${projectId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("HTTP error in exportProject!", response.status, errorText);
+    throw new Error(
+      `HTTP error! Status: ${response.status}, Message: ${errorText}`
+    );
+  }
+  return response.blob(); 
+};

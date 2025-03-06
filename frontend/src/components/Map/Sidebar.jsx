@@ -46,7 +46,6 @@ const Sidebar = ({
   const [showCalendarEdit, setShowCalendarEdit] = useState(false);
   const navigate = useNavigate();
 
-  // Ajansları yükle
   useEffect(() => {
     const loadAgencies = async () => {
       try {
@@ -60,7 +59,6 @@ const Sidebar = ({
     if (token && project_id) loadAgencies();
   }, [token, project_id]);
 
-  // Rotaları yükle
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -74,7 +72,6 @@ const Sidebar = ({
     if (token && project_id) loadInitialData();
   }, [token, project_id, setRoutes]);
 
-  // Refresh kontrolü
   useEffect(() => {
     const { refresh } = location.state || {};
     if (refresh) {
@@ -109,7 +106,6 @@ const Sidebar = ({
     setStopsAndTimes,
   ]);
 
-  // Trip seçimi
   const handleTripSelect = useCallback(
     async (tripId) => {
       setSelectedTrip(tripId);
@@ -174,7 +170,6 @@ const Sidebar = ({
     ]
   );
 
-  // Rota seçimi
   const handleRouteSelect = useCallback(
     async (routeId) => {
       setSelectedRoute(routeId);
@@ -191,9 +186,6 @@ const Sidebar = ({
     [token, setSelectedRoute, setSelectedTrip, setTrips, setActiveTab]
   );
 
-  
-
-  // Tarih formatını düzenleme fonksiyonu (ISO 8601 desteği)
   const formatDate = (dateString) => {
     if (!dateString) return "Belirtilmemiş";
     try {
@@ -209,7 +201,6 @@ const Sidebar = ({
     }
   };
 
-  // Gün isimlerini Türkçe yapma ve esnek format desteği
   const formatDays = (calendar) => {
     if (!calendar) return "Yok";
     const dayMap = {
@@ -241,7 +232,6 @@ const Sidebar = ({
     return activeDays.length > 0 ? activeDays.join(", ") : "Yok";
   };
 
-  // CRUD İşlemleri (Swal ile)
   const handleDeleteRoute = async (routeId) => {
     const result = await Swal.fire({
       title: "Emin misiniz?",

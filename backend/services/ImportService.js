@@ -17,7 +17,7 @@ class ImportService {
         cb(null, true);
       },
     });
-    this.batchSize = 1000;
+    this.batchSize = 2000;
     this.tableOrder = [
       "agency",
       "calendar",
@@ -27,6 +27,14 @@ class ImportService {
       "trips",
       "stop_times",
     ];
+    this.independentTables = [
+      "agency",
+      "calendar",
+      "stops",
+      "routes",
+      "shapes",
+    ];
+    this.dependentTables = ["trips", "stop_times"];
   }
 
   async insertImportedData(userId, fileName) {
@@ -59,11 +67,6 @@ class ImportService {
 
   async processBatch(tableName, batch) {
     if (batch.length === 0) return;
-
-    // if (!(await tableExists(tableName))) {
-    //   console.error(`❌ Table ${tableName} does not exist and is not expected`);
-    //   return;
-    // }
 
     const validColumns = await this.getTableColumns(tableName);
     const columns = Object.keys(batch[0]).filter((col) =>
@@ -145,6 +148,48 @@ class ImportService {
     }
   }
 
+  async processTable(tableName, buffer, userId, projectId) {
+    console.log(`📥 Importing ${tableName}.txt (${tableName})...`);
+    let batch = [];
+
+    await new Promise((resolve, reject) => {
+      const stream = Readable.from(buffer).pipe(csv());
+      stream
+        .on("data", async (row) => {
+          Object.keys(row).forEach((key) => {
+            if (row[key] === "" || row[key] === undefined) {
+              row[key] = null;
+            }
+          });
+          row.user_id = userId;
+          row.project_id = projectId;
+
+          batch.push(row);
+
+          if (batch.length >= this.batchSize) {
+            stream.pause();
+            await this.processBatch(tableName, batch);
+            batch = [];
+            stream.resume();
+          }
+        })
+        .on("end", async () => {
+          if (batch.length > 0) {
+            await this.processBatch(tableName, batch);
+          }
+          console.log(`✅ Import completed for ${tableName}`);
+          resolve();
+        })
+        .on("error", (error) => {
+          console.error(
+            `❌ CSV parsing error for ${tableName}:`,
+            error.message
+          );
+          reject(error);
+        });
+    });
+  }
+
   async importGTFSData(req, res) {
     try {
       const userId = req.user.id;
@@ -211,58 +256,36 @@ class ImportService {
         userId,
         req.file.originalname
       );
-      console.log("🚀 Starting file imports with projectId:", projectId);
+      console.log(
+        "🚀 Starting parallel file imports with projectId:",
+        projectId
+      );
 
-      //await initializeTables();
-
-      for (const tableName of this.tableOrder) {
+      const independentPromises = this.independentTables.map((tableName) => {
         const filename = `${tableName}.txt`;
         const buffer = files[filename];
         if (!buffer) {
           console.log(`⚠️ ${filename} not found in ZIP, skipping`);
-          continue;
+          return Promise.resolve();
         }
+        return this.processTable(tableName, buffer, userId, projectId);
+      });
 
-        console.log(`📥 Importing ${filename} (${tableName})...`);
+      await Promise.all(independentPromises);
+      console.log("✅ All independent tables imported");
 
-        let batch = [];
-        await new Promise((resolve, reject) => {
-          const stream = Readable.from(buffer).pipe(csv());
-          stream
-            .on("data", async (row) => {
-              Object.keys(row).forEach((key) => {
-                if (row[key] === "" || row[key] === undefined) {
-                  row[key] = null;
-                }
-              });
-              row.user_id = userId;
-              row.project_id = projectId;
+      const dependentPromises = this.dependentTables.map((tableName) => {
+        const filename = `${tableName}.txt`;
+        const buffer = files[filename];
+        if (!buffer) {
+          console.log(`⚠️ ${filename} not found in ZIP, skipping`);
+          return Promise.resolve();
+        }
+        return this.processTable(tableName, buffer, userId, projectId);
+      });
 
-              batch.push(row);
-
-              if (batch.length >= this.batchSize) {
-                stream.pause();
-                await this.processBatch(tableName, batch);
-                batch = [];
-                stream.resume();
-              }
-            })
-            .on("end", async () => {
-              if (batch.length > 0) {
-                await this.processBatch(tableName, batch);
-              }
-              console.log(`✅ Import completed for ${tableName}`);
-              resolve();
-            })
-            .on("error", (error) => {
-              console.error(
-                `❌ CSV parsing error for ${tableName}:`,
-                error.message
-              );
-              reject(error);
-            });
-        });
-      }
+      await Promise.all(dependentPromises);
+      console.log("✅ All dependent tables imported");
 
       for (const [filename] of Object.entries(files)) {
         const tableName = filename.replace(".txt", "").toLowerCase();
@@ -273,7 +296,7 @@ class ImportService {
         }
       }
 
-      console.log("🎉 Import process completed");
+      console.log("🎉 Parallel import process completed");
       return res.status(200).json({
         message: "GTFS data import completed",
         success: true,

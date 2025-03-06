@@ -15,7 +15,7 @@ const ImportPage = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [uploadProgress, setUploadProgress] = useState(0); // Progress bar için
+  const [uploadProgress, setUploadProgress] = useState(0);
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
 
@@ -28,7 +28,7 @@ const ImportPage = () => {
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
     setError("");
-    setUploadProgress(0); // Yeni dosya seçildiğinde progress sıfırlanır
+    setUploadProgress(0);
   };
 
   const handleUpload = async (e) => {
@@ -46,7 +46,6 @@ const ImportPage = () => {
     try {
       const xhr = new XMLHttpRequest();
 
-      // Progress takibi
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           const percentComplete = Math.round(
@@ -56,7 +55,6 @@ const ImportPage = () => {
         }
       };
 
-      // Yükleme tamamlandığında
       const promise = new Promise((resolve, reject) => {
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
@@ -77,7 +75,7 @@ const ImportPage = () => {
       if (data.success) {
         setFile(null);
         setUploadProgress(0);
-        navigate("/projects"); // Başarılı upload sonrası Projects sayfasına yönlendir
+        navigate("/projects"); 
       } else {
         setError(data.message || "An error occurred during import!");
       }

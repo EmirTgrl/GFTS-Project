@@ -1,9 +1,14 @@
 import { useState, useContext, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../components/Auth/AuthContext";
-import { fetchProjects } from "../api/projectApi.js";
+import {
+  fetchProjects,
+  deleteProject,
+  exportProject,
+} from "../api/projectApi.js";
 import { Container, Card, Button, Pagination, Row, Col } from "react-bootstrap";
-import { XCircle } from "react-bootstrap-icons"; // Kapatma ikonu için
+import { XCircle, Trash, Download, Eye } from "react-bootstrap-icons"; 
+import Swal from "sweetalert2";
 import "../styles/ProjectsPage.css";
 
 const ProjectsPage = () => {
@@ -60,6 +65,48 @@ const ProjectsPage = () => {
     }
   };
 
+  const handleDeleteProject = async (projectId, projectName) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `You are about to delete "${projectName}". This action cannot be undone!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteProject(projectId, token);
+        setProjects((prev) => prev.filter((p) => p.project_id !== projectId));
+        Swal.fire("Deleted!", "Your project has been deleted.", "success");
+      } catch (error) {
+        console.error("Error deleting project:", error);
+        Swal.fire("Error!", "Failed to delete the project.", "error");
+      }
+    }
+  };
+
+  const handleExportProject = async (projectId, projectName) => {
+    try {
+      const blob = await exportProject(projectId, token);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${projectName}_export.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      Swal.fire("Success!", "Your project has been exported.", "success");
+    } catch (error) {
+      console.error("Error exporting project:", error);
+      Swal.fire("Error!", "Failed to export the project.", "error");
+    }
+  };
+
   const handleOpenModal = () => {
     setShowModal(true);
   };
@@ -102,10 +149,7 @@ const ProjectsPage = () => {
                 {currentProjects.length > 0 ? (
                   currentProjects.map((project) => (
                     <Col key={project.project_id} md={6} className="mb-3">
-                      <Card
-                        className="project-card shadow-sm h-100"
-                        onClick={() => navigate(`/map/${project.project_id}`)}
-                      >
+                      <Card className="project-card shadow-sm h-100">
                         <Card.Body className="d-flex flex-column justify-content-between">
                           <div>
                             <Card.Title className="h6 fw-semibold mb-2">
@@ -117,6 +161,41 @@ const ProjectsPage = () => {
                                 project.import_date
                               ).toLocaleDateString()}
                             </Card.Text>
+                          </div>
+                          <div className="d-flex justify-content-end gap-2 mt-2">
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() =>
+                                navigate(`/map/${project.project_id}`)
+                              }
+                            >
+                              <Eye size={16} /> {/* View ikonu */}
+                            </Button>
+                            <Button
+                              variant="outline-success"
+                              size="sm"
+                              onClick={() =>
+                                handleExportProject(
+                                  project.project_id,
+                                  project.file_name
+                                )
+                              }
+                            >
+                              <Download size={16} />
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() =>
+                                handleDeleteProject(
+                                  project.project_id,
+                                  project.file_name
+                                )
+                              }
+                            >
+                              <Trash size={16} />
+                            </Button>
                           </div>
                         </Card.Body>
                       </Card>

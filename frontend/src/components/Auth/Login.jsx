@@ -16,7 +16,7 @@ const Login = ({ switchToRegister }) => {
 
   useEffect(() => {
     if (isAuthenticated && !isLoggingIn) {
-      navigate("/home", { replace: true });
+      navigate("/projects", { replace: true });
     }
   }, [isAuthenticated, isLoggingIn, navigate]);
 
