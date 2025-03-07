@@ -3,9 +3,9 @@ const { pool } = require("../db.js");
 const stopTimeService = {
   getStopsAndStopTimesByQuery: async (req, res) => {
     const user_id = req.user.id;
-    const validFields = [
+    const validFieldsStopTime = [
       "trip_id",
-      "stop_id",
+      "stop_id", // Explicitly handle the ambiguous stop_id
       "project_id",
       "arrival_time",
       "departure_time",
@@ -15,6 +15,9 @@ const stopTimeService = {
       "drop_off_type",
       "shape_dist_traveled",
       "timepoint",
+    ];
+  
+    const validFieldsStop = [
       "stop_code",
       "stop_name",
       "stop_desc",
@@ -30,20 +33,27 @@ const stopTimeService = {
   
     const fields = [];
     const values = [];
-    fields.push("user_id = ?")
+    fields.push("stop_times.user_id = ?");
     values.push(user_id);
   
     for (const param in req.query) {
-      if (validFields.includes(param)) {
-        fields.push(`${param} = ?`); 
-        values.push(req.query[param]); 
+      if (validFieldsStopTime.includes(param)) {
+        fields.push(`stop_times.${param} = ?`);
+        values.push(req.query[param]);
+      } else if (validFieldsStop.includes(param)) {
+        fields.push(`stops.${param} = ?`);
+        values.push(req.query[param]);
       } else {
-        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+        console.warn(`Unexpected query parameter: ${param}`);
       }
     }
   
-    let query = `SELECT * FROM stop_times 
-    WHERE ${fields.join(" AND ")}`;
+    let query = `
+      SELECT *
+      FROM stop_times
+      JOIN stops ON stop_times.stop_id = stops.stop_id
+      WHERE ${fields.join(" AND ")}
+    `;
   
     try {
       const [rows] = await pool.execute(query, values);
