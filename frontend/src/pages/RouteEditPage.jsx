@@ -12,13 +12,17 @@ const RouteEditPage = ({ project_id, route_id, onClose, setRoutes }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState(null);
   const [agencies, setAgencies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const route = await fetchRouteById(route_id, project_id, token);
+        console.log("Fetched route:", route); // Debugging
+        if (!route) {
+          throw new Error("Route data not found");
+        }
         setRouteData({
-          route_id: route.route_id,
           agency_id: route.agency_id || "",
           project_id: route.project_id || project_id,
           route_short_name: route.route_short_name || "",
@@ -43,13 +47,21 @@ const RouteEditPage = ({ project_id, route_id, onClose, setRoutes }) => {
         });
 
         const agencyData = await fetchAgenciesByProjectId(project_id, token);
+        console.log("Fetched agencies:", agencyData); // Debugging
         setAgencies(agencyData);
       } catch (error) {
-        console.error("Error fetching route or agencies:", error);
+        Swal.fire(
+          "Hata!",
+          `Rota yüklenirken hata oluştu: ${error.message}`,
+          "error"
+        );
+        onClose();
+      } finally {
+        setLoading(false);
       }
     };
     loadData();
-  }, [route_id, project_id, token]);
+  }, [route_id, project_id, token, onClose]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -81,10 +93,14 @@ const RouteEditPage = ({ project_id, route_id, onClose, setRoutes }) => {
 
     if (result.isConfirmed) {
       try {
-        const updatedRoute = await updateRoute(routeData, token);
+        // route_id’yi routeData’ya ekleyerek gönderiyoruz
+        const updatedRouteData = { route_id, ...routeData };
+        const updatedRoute = await updateRoute(updatedRouteData, token);
         setRoutes((prev) =>
-          prev.map((r) => (r.route_id === route_id ? updatedRoute : r))
-        ); // Liste güncelle
+          prev.map((r) =>
+            r.route_id === parseInt(route_id) ? updatedRoute : r
+          )
+        );
         Swal.fire("Güncellendi!", "Rota başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {
@@ -97,25 +113,12 @@ const RouteEditPage = ({ project_id, route_id, onClose, setRoutes }) => {
     }
   };
 
-  if (!routeData) return <p>Yükleniyor...</p>;
+  if (loading || !routeData) return <p>Yükleniyor...</p>;
 
   return (
     <div className="form-container">
       <h5>Rota Düzenle</h5>
       <form onSubmit={handleSubmit}>
-        <div className="mb-2">
-          <label htmlFor="route_id" className="form-label">
-            Rota ID
-          </label>
-          <input
-            type="text"
-            id="route_id"
-            name="route_id"
-            className="form-control"
-            value={routeData.route_id}
-            readOnly
-          />
-        </div>
         <div className="mb-2">
           <label htmlFor="agency_id" className="form-label">
             Ajans

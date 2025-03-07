@@ -39,13 +39,18 @@ export const fetchRoutesByAgencyId = async (agencyId, projectId, token) => {
 
 export const fetchRouteById = async (routeId, projectId, token) => {
   const response = await fetch(
-    `${API_BASE_URL}?project_id=${projectId},route_id=${routeId}`,
+    `${API_BASE_URL}?project_id=${projectId}&route_id=${routeId}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
   );
-  if (!response.ok) throw new Error("Failed to fetch route");
-  return response.json();
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Failed to fetch route:", response.status, errorText);
+    throw new Error(`Failed to fetch route: ${errorText}`);
+  }
+  const data = await response.json();
+  return Array.isArray(data) && data.length > 0 ? data[0] : data;
 };
 
 export const deleteRouteById = async (routeId, token) => {
@@ -57,8 +62,8 @@ export const deleteRouteById = async (routeId, token) => {
   return response.json();
 };
 
-export const updateRoute = async (routeData, routeId, token) => {
-  const response = await fetch(`${API_BASE_URL}/update/${routeId}`, {
+export const updateRoute = async (routeData, token) => {
+  const response = await fetch(`${API_BASE_URL}/update/${routeData.route_id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -66,7 +71,10 @@ export const updateRoute = async (routeData, routeId, token) => {
     },
     body: JSON.stringify(routeData),
   });
-  if (!response.ok) throw new Error("Failed to update route");
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to update route: ${errorText}`);
+  }
   return response.json();
 };
 

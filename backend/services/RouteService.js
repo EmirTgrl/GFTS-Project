@@ -14,26 +14,26 @@ const routeService = {
       "route_url",
       "route_color",
       "route_text_color",
-      "route_sort_order"
+      "route_sort_order",
     ];
-  
+
     const fields = [];
     const values = [];
-    fields.push("user_id = ?")
+    fields.push("user_id = ?");
     values.push(user_id);
-  
+
     for (const param in req.query) {
       if (validFields.includes(param)) {
-        fields.push(`${param} = ?`); 
-        values.push(req.query[param]); 
+        fields.push(`${param} = ?`);
+        values.push(req.query[param]);
       } else {
         console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
       }
     }
-  
+
     let query = `SELECT * FROM routes 
     WHERE ${fields.join(" AND ")}`;
-  
+
     try {
       const [rows] = await pool.execute(query, values);
       res.json(rows.length > 0 ? rows : []);
@@ -42,11 +42,11 @@ const routeService = {
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
-  
+
   deleteRouteById: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { route_id} = req.params;
+      const { route_id } = req.params;
       const [results] = await pool.execute(
         `
         DELETE FROM routes 
@@ -65,7 +65,7 @@ const routeService = {
   updateRoute: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {route_id} = req.params;
+      const { route_id } = req.params;
       const validFields = [
         "route_id",
         "project_id",
@@ -77,10 +77,10 @@ const routeService = {
         "route_url",
         "route_color",
         "route_text_color",
-        "route_sort_order"
+        "route_sort_order",
       ];
       const { ...params } = req.body;
-      
+
       const fields = [];
       const values = [];
 
@@ -92,19 +92,28 @@ const routeService = {
           console.warn(`unexpected field ${param}`);
         }
       }
-      
+
       const query = `
         UPDATE routes
-        SET
-          ${fields.join(", ")}
+        SET ${fields.join(", ")}
         WHERE route_id = ? AND user_id = ?
       `;
-      const [result] = await pool.execute(query, [...values, route_id, user_id]);
-      
+      const [result] = await pool.execute(query, [
+        ...values,
+        route_id,
+        user_id,
+      ]);
+
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Route not found" });
       }
-      return res.status(200).json({ message: "Route successfully updated" });
+
+      // Güncellenmiş rotayı döndür
+      const [updatedRows] = await pool.execute(
+        `SELECT * FROM routes WHERE route_id = ? AND user_id = ?`,
+        [route_id, user_id]
+      );
+      res.status(200).json(updatedRows[0]);
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: "Server Error", details: e.message });
@@ -123,9 +132,9 @@ const routeService = {
         "route_url",
         "route_color",
         "route_text_color",
-        "route_sort_order"
+        "route_sort_order",
       ];
-      const { ...params} = req.body;
+      const { ...params } = req.body;
 
       const fields = [];
       const values = [];
@@ -135,7 +144,7 @@ const routeService = {
         if (validFields.includes(param)) {
           fields.push(param);
           values.push(params[param]);
-          placeholders.push("?")
+          placeholders.push("?");
         } else {
           console.warn(`unexpected field in ${param}`);
         }
