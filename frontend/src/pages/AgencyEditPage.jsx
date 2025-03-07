@@ -18,7 +18,7 @@ const AgencyEditPage = ({ project_id, agency_id, onClose, setAgencies }) => {
 
         const agency = agencies.find(
           (ag) => ag.agency_id === parseInt(agency_id)
-        ); // int türünde karşılaştırma
+        ); 
         if (agency) {
           setFormData({
             agency_id: agency.agency_id,

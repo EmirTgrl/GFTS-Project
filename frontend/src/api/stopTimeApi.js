@@ -25,7 +25,7 @@ export const fetchStopTimesByProjectId = async (projectId, token) => {
 
 export const fetchStopTimeById = async (tripId, stopId, token) => {
   const response = await fetch(
-    `${API_BASE_URL}?trip_id=${tripId},trip_id=${stopId}`,
+    `${API_BASE_URL}?trip_id=${tripId}&stop_id=${stopId}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -39,7 +39,9 @@ export const fetchStopTimeById = async (tripId, stopId, token) => {
     );
     throw new Error(`Failed to fetch stop time: ${errorText}`);
   }
-  return response.json();
+  const data = await response.json();
+  // stop_times tablosundan gelen veriyi bir dizi olabilir, ilk elemanı alıyoruz
+  return Array.isArray(data) && data.length > 0 ? data[0] : data;
 };
 
 export const deleteStopTimeById = async (tripId, stopId, token) => {

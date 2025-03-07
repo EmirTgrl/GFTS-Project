@@ -11,13 +11,28 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
   const [tripData, setTripData] = useState(null);
   const [routes, setRoutes] = useState([]);
   const [calendars, setCalendars] = useState([]);
+  const [loading, setLoading] = useState(true); // Yükleme durumu
+  const [error, setError] = useState(null); // Hata durumu
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const trip = await fetchTripById(trip_id, token);
+        console.log("Fetching trip with ID:", trip_id); // trip_id kontrolü
+        const tripResponse = await fetchTripById(trip_id, token);
+        console.log("Raw trip response:", tripResponse); // Ham yanıt
+
+        // API bir dizi dönerse ilk elemanı al, değilse direk kullan
+        const trip =
+          Array.isArray(tripResponse) && tripResponse.length > 0
+            ? tripResponse[0]
+            : tripResponse;
+
+        if (!trip || !trip.trip_id) {
+          throw new Error("Trip data is empty or invalid");
+        }
+
         setTripData({
-          trip_id: trip.trip_id,
+          trip_id: trip.trip_id || trip_id, // trip_id prop’tan geliyor
           service_id: trip.service_id || "",
           route_id: trip.route_id || "",
           project_id: trip.project_id || project_id,
@@ -35,11 +50,17 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
         });
 
         const routeData = await fetchRoutesByProjectId(project_id, token);
-        setRoutes(routeData);
+        console.log("Fetched routes:", routeData);
+        setRoutes(Array.isArray(routeData) ? routeData : []);
+
         const calendarData = await fetchCalendarsByProjectId(project_id, token);
-        setCalendars(calendarData);
+        console.log("Fetched calendars:", calendarData);
+        setCalendars(Array.isArray(calendarData) ? calendarData : []);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
     };
     loadData();
@@ -94,7 +115,7 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
 
     if (result.isConfirmed) {
       try {
-        const updatedTrip = await updateTrip(tripData, token); 
+        const updatedTrip = await updateTrip(tripData, token);
         setTrips((prev) =>
           prev.map((t) => (t.trip_id === trip_id ? updatedTrip : t))
         );
@@ -110,25 +131,14 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
     }
   };
 
-  if (!tripData) return <p>Yükleniyor...</p>;
+  if (loading) return <p>Yükleniyor...</p>;
+  if (error) return <p>Hata: {error}</p>;
+  if (!tripData) return <p>Veri bulunamadı.</p>;
 
   return (
     <div className="form-container">
       <h5>Trip Düzenle</h5>
       <form onSubmit={handleSubmit}>
-        <div className="mb-2">
-          <label htmlFor="trip_id" className="form-label">
-            Trip ID
-          </label>
-          <input
-            type="text"
-            id="trip_id"
-            name="trip_id"
-            className="form-control"
-            value={tripData.trip_id}
-            readOnly
-          />
-        </div>
         <div className="mb-2">
           <label htmlFor="route_id" className="form-label">
             Rota

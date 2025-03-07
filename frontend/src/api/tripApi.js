@@ -30,8 +30,14 @@ export const fetchTripById = async (tripId, token) => {
   const response = await fetch(`${API_BASE_URL}?trip_id=${tripId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new Error("Failed to fetch trip");
-  return response.json();
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Failed to fetch trip:", response.status, errorText);
+    throw new Error(`Failed to fetch trip: ${errorText}`);
+  }
+  const data = await response.json();
+  // Dönen veri bir dizi ise ilk elemanı al, değilse direk veriyi döndür
+  return Array.isArray(data) && data.length > 0 ? data[0] : data;
 };
 
 export const deleteTripById = async (tripId, token) => {

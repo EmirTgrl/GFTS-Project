@@ -5,11 +5,9 @@ import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 const StopList = ({
   token,
-  project_id,
   stopsAndTimes,
   setStopsAndTimes,
-  selectedTrip,
-  navigate,
+  openForm, 
 }) => {
   const handleDeleteStopTime = async (tripId, stopId) => {
     const result = await Swal.fire({
@@ -25,7 +23,7 @@ const StopList = ({
 
     if (result.isConfirmed) {
       try {
-        await deleteStopTimeById(tripId, stopId, project_id, token);
+        await deleteStopTimeById(tripId, stopId, token); // project_id burada gerekli değil
         setStopsAndTimes((prevStopsAndTimes) =>
           prevStopsAndTimes.filter(
             (stopTime) =>
@@ -41,9 +39,8 @@ const StopList = ({
   };
 
   const handleEditStopTime = (tripId, stopId) => {
-    navigate(`/edit-stop-time/${project_id}/${tripId}/${stopId}`, {
-      state: { selectedRoute: null, selectedTrip },
-    });
+    console.log("Editing stop time with trip_id:", tripId, "stop_id:", stopId);
+    openForm("edit", stopId); // Sidebar’daki openStopTimeForm’u tetikliyoruz
   };
 
   const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
@@ -54,58 +51,62 @@ const StopList = ({
         <h5 className="mb-0">Duraklar</h5>
       </div>
       <div>
-        {stopsAndTimes.map((stopAndTime) => (
-          <div
-            key={stopAndTime.stop_id + stopAndTime.stop_sequence}
-            className="card mb-2"
-          >
-            <div className="card-body p-2">
-              <div className="d-flex justify-content-between align-items-center">
-                <OverlayTrigger
-                  placement="top"
-                  overlay={renderTooltip(
-                    stopAndTime ? stopAndTime.stop_name : "Bilinmeyen Durak"
-                  )}
-                >
-                  <h6
-                    className="card-title mb-0 text-truncate"
-                    style={{ maxWidth: "60%" }}
+        {stopsAndTimes.length > 0 ? (
+          stopsAndTimes.map((stopAndTime) => (
+            <div
+              key={stopAndTime.stop_id + stopAndTime.stop_sequence}
+              className="card mb-2"
+            >
+              <div className="card-body p-2">
+                <div className="d-flex justify-content-between align-items-center">
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={renderTooltip(
+                      stopAndTime ? stopAndTime.stop_name : "Bilinmeyen Durak"
+                    )}
                   >
-                    {stopAndTime ? stopAndTime.stop_name : "Bilinmeyen Durak"}
-                  </h6>
-                </OverlayTrigger>
-                <div>
-                  <button
-                    className="btn btn-outline-primary btn-sm me-1"
-                    onClick={() =>
-                      handleEditStopTime(
-                        stopAndTime.trip_id,
-                        stopAndTime.stop_id
-                      )
-                    }
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    className="btn btn-outline-danger btn-sm"
-                    onClick={() =>
-                      handleDeleteStopTime(
-                        stopAndTime.trip_id,
-                        stopAndTime.stop_id
-                      )
-                    }
-                  >
-                    🗑️
-                  </button>
+                    <h6
+                      className="card-title mb-0 text-truncate"
+                      style={{ maxWidth: "60%" }}
+                    >
+                      {stopAndTime ? stopAndTime.stop_name : "Bilinmeyen Durak"}
+                    </h6>
+                  </OverlayTrigger>
+                  <div>
+                    <button
+                      className="btn btn-outline-primary btn-sm me-1"
+                      onClick={() =>
+                        handleEditStopTime(
+                          stopAndTime.trip_id,
+                          stopAndTime.stop_id
+                        )
+                      }
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() =>
+                        handleDeleteStopTime(
+                          stopAndTime.trip_id,
+                          stopAndTime.stop_id
+                        )
+                      }
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
+                <p className="card-text small mt-1">
+                  Varış: {stopAndTime.arrival_time || "Bilinmiyor"} <br />
+                  Kalkış: {stopAndTime.departure_time || "Bilinmiyor"}
+                </p>
               </div>
-              <p className="card-text small mt-1">
-                Varış: {stopAndTime.arrival_time || "Bilinmiyor"} <br />
-                Kalkış: {stopAndTime.departure_time || "Bilinmiyor"}
-              </p>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-muted text-center">Durak bulunamadı.</p>
+        )}
       </div>
     </div>
   );
@@ -117,7 +118,7 @@ StopList.propTypes = {
   stopsAndTimes: PropTypes.array.isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
   selectedTrip: PropTypes.string,
-  navigate: PropTypes.func.isRequired,
+  openForm: PropTypes.func.isRequired, // openForm prop’u eklendi
 };
 
 export default StopList;
