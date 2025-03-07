@@ -1,16 +1,37 @@
 const { pool } = require("../db.js");
 
 const agencyService = {
-  getAgenciesByProjectId: async (req, res) => {
+  getAgencyByQuery: async (req, res) => {
+    const user_id = req.user.id;
+    const validFields = [
+      "agency_id",
+      "agency_name", 
+      "agency_url", 
+      "agency_timezone", 
+      "agency_lang", 
+      "agency_phone", 
+      "project_id"
+    ];
+  
+    const fields = [];
+    const values = [];
+    fields.push("user_id = ?")
+    values.push(user_id);
+  
+    for (const param in req.query) {
+      if (validFields.includes(param)) {
+        fields.push(`${param} = ?`); 
+        values.push(req.query[param]); 
+      } else {
+        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+      }
+    }
+  
+    let query = `SELECT * FROM agency 
+    WHERE ${fields.join(" AND ")}`;
+  
     try {
-      const user_id = req.user.id;
-      const { project_id } = req.params;
-      const [rows] = await pool.execute(
-        `SELECT agency_id, agency_name 
-         FROM agency 
-         WHERE user_id = ? AND project_id = ?`,
-        [user_id, project_id]
-      );
+      const [rows] = await pool.execute(query, values);
       res.json(rows.length > 0 ? rows : []);
     } catch (error) {
       console.error(error);
@@ -56,7 +77,13 @@ const agencyService = {
       `;
 
       const [result] = await pool.execute(query, values);
-
+"agency_id",
+        "agency_name", 
+        "agency_url", 
+        "agency_timezone", 
+        "agency_lang", 
+        "agency_phone", 
+        "project_id"
       res.status(201).json({
         message: "Agency saved successfully",
         agency_id: result.insertId,

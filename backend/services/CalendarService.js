@@ -1,45 +1,45 @@
 const { pool } = require("../db.js");
 
 const calendarService = {
-  getCalendarsByProjectId: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { project_id } = req.params;
-      const [rows] = await pool.execute(
-        `
-        SELECT * FROM calendar  
-        WHERE user_id = ? AND project_id = ?
-        `,
-        [user_id, project_id]
-      );
-      res.json(rows);
-    } catch (error) {
-      console.error(
-        `Error in getCalendarsByProjectId for project_id: ${req.params.project_id}:`,
-        error
-      );
-      res.status(500).json({ error: "Server error" });
+  getCalendarByQuery: async (req, res) => {
+    const user_id = req.user.id;
+    const validFields = [
+      "service_id",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+      "start_date",
+      "end_date",
+      "project_id"
+    ];
+  
+    const fields = [];
+    const values = [];
+    fields.push("user_id = ?")
+    values.push(user_id);
+  
+    for (const param in req.query) {
+      if (validFields.includes(param)) {
+        fields.push(`${param} = ?`); 
+        values.push(req.query[param]); 
+      } else {
+        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+      }
     }
-  },
-
-  getCalendarById: async (req, res) => {
+  
+    let query = `SELECT * FROM calendar 
+    WHERE ${fields.join(" AND ")}`;
+  
     try {
-      const user_id = req.user.id;
-      const { service_id } = req.params;
-      const [rows] = await pool.execute(
-        `
-        SELECT * FROM calendar
-        WHERE service_id = ? AND user_id = ?
-        `,
-        [service_id, user_id]
-      );
-      res.json(rows.length > 0 ? rows[0] : null);
+      const [rows] = await pool.execute(query, values);
+      res.json(rows.length > 0 ? rows : []);
     } catch (error) {
-      console.error(
-        `Error in getCalendarById for service_id: ${req.params.service_id}:`,
-        error
-      );
-      res.status(500).json({ error: "Server Error" });
+      console.error(error);
+      res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
 
@@ -162,27 +162,5 @@ const calendarService = {
       res.status(500).json({ error: "Server Error" });
     }
   },
-
-  getCalendarsByProjectId: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { project_id } = req.params;
-      const [rows] = await pool.execute(
-        `
-        SELECT * FROM calendar  
-        WHERE user_id = ? AND project_id = ?
-        `,
-        [user_id, project_id]
-      );
-      res.json(rows);
-    } catch (error) {
-      console.error(
-        `Error in getCalendarsByProjectId for project_id: ${req.params.project_id}:`,
-        error
-      );
-      res.status(500).json({ error: "Server error" });
-    }
-  },
-};
-
+}
 module.exports = calendarService;

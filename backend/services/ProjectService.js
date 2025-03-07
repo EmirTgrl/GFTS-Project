@@ -1,35 +1,39 @@
 const {pool} = require("../db.js");
 
 const projectService = {
-    getAllProjects: async (req, res) => {
-        try {
-            const user_id = req.user.id;
-            const query = "SELECT * FROM projects WHERE user_id = ?";
-            const [rows] = await pool.query(query, [user_id]);
-            res.json(rows);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "server error" });
+    getProjectsByQuery: async (req, res) => {
+        const user_id = req.user.id;
+        const validFields = [
+          "project_id",
+          "file_name",
+          "import_date"
+        ];
+      
+        const fields = [];
+        const values = [];
+        fields.push("user_id = ?")
+        values.push(user_id);
+      
+        for (const param in req.query) {
+          if (validFields.includes(param)) {
+            fields.push(`${param} = ?`); 
+            values.push(req.query[param]); 
+          } else {
+            console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+          }
         }
-    },
-
-    getProjectById: async (req, res) => {
+      
+        let query = `SELECT * FROM projects 
+        WHERE ${fields.join(" AND ")}`;
+      
         try {
-            const { project_id } = req.params;
-            const user_id = req.user.id;
-            const query = "SELECT * FROM projects WHERE project_id = ? AND user_id = ?";
-            const [rows] = await pool.query(query, [project_id, user_id]);
-
-            if (rows.length === 0) {
-                return res.status(404).json({ message: "Project not found" });
-            }
-
-            res.json(rows[0]);
+          const [rows] = await pool.execute(query, values);
+          res.json(rows.length > 0 ? rows : []);
         } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "Server error" });
+          console.error(error);
+          res.status(500).json({ error: "Server Error", details: error.message });
         }
-    },
+      },
 
     updateProject: async (req, res) => {
         try {

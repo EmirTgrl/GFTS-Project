@@ -2,11 +2,32 @@ const { pool } = require("../db.js");
 
 const userService = {
     getAllUsers: async (req, res) => {
+        const user_id = req.user.id;
+        const validFields = [
+            "id",
+            "email",
+            "created_at",
+            "is_active",
+        ];
+
+        const fields = [];
+        const values = [];
+
+        for (const param in req.query) {
+            if (validFields.includes(param)) {
+                fields.push(`${param} = ?`);
+                values.push(req.query[param]);
+            } else {
+                console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+            }
+        }
+
+        let query = `SELECT * FROM routes 
+                    ${fields.length>0?" WHERE ":""} ${fields.join(" AND ")}`;
+
         try {
-            const [rows] = await pool.execute(
-                `SELECT * FROM users`
-            );
-            res.json(rows);
+            const [rows] = await pool.execute(query, values);
+            res.json(rows.length > 0 ? rows : []);
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: "Server Error", details: error.message });
@@ -99,7 +120,7 @@ const userService = {
                 WHERE id = ?
             `;
 
-            await pool.execute(query, [...values , id]);
+            await pool.execute(query, [...values, id]);
 
             res.status(201).json({
                 message: "user updated successfully",

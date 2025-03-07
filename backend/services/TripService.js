@@ -1,60 +1,45 @@
 const { pool } = require("../db.js");
 
 const tripService = {
-  getTripsByRouteId: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { route_id } = req.params;
-      const [rows] = await pool.execute(
-        `
-        SELECT * FROM trips
-        WHERE user_id = ? AND route_id = ?
-        `,
-        [user_id, route_id]
-      );
-      res.json(rows);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server error" });
-    }
-  },
-
-  getTripsByProjectId: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { project_id } = req.params;
-      const [rows] = await pool.execute(
-        `
-        SELECT * FROM trips
-        WHERE user_id = ? AND project_id = ?
-        `,
-        [user_id, project_id]
-      );
-      res.json(rows);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server error" });
-    }
-  },
-
-  getTripById: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { trip_id } = req.params;
-      const [rows] = await pool.execute(
-        `
-        SELECT * FROM trips
-        WHERE trip_id = ? AND user_id = ?
-        `,
-        [trip_id, user_id]
-      );
-      if (rows.length === 0) {
-        return res.status(404).json({ error: "Trip not found" });
+  getTripsByQuery: async (req, res) => {
+    const user_id = req.user.id;
+    const validFields = [
+      "route_id",
+      "service_id",
+      "trip_id",
+      "trip_headsign",
+      "trip_short_name",
+      "direction_id",
+      "block_id",
+      "shape_id",
+      "wheelchair_accessible",
+      "bikes_allowed",
+      "project_id",
+    ];
+  
+    const fields = [];
+    const values = [];
+    fields.push("user_id = ?")
+    values.push(user_id);
+  
+    for (const param in req.query) {
+      if (validFields.includes(param)) {
+        fields.push(`${param} = ?`); 
+        values.push(req.query[param]); 
+      } else {
+        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
       }
-      res.json(rows[0]); 
+    }
+  
+    let query = `SELECT * FROM trips 
+    WHERE ${fields.join(" AND ")}`;
+  
+    try {
+      const [rows] = await pool.execute(query, values);
+      res.json(rows.length > 0 ? rows : []);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: "Server error" });
+      res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
 
@@ -82,118 +67,101 @@ const tripService = {
   updateTrip: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        trip_id,
-        service_id,
-        shape_id,
-        route_id,
-        project_id,
-        trip_headsign,
-        trip_short_name,
-        direction_id,
-        block_id,
-        wheelchair_accessible,
-        bikes_allowed,
-      } = req.body;
+      const validFields = [
+        "route_id",
+        "service_id",
+        "trip_id",
+        "trip_headsign",
+        "trip_short_name",
+        "direction_id",
+        "block_id",
+        "shape_id",
+        "wheelchair_accessible",
+        "bikes_allowed",
+        "project_id",
+      ];
+      const { trip_id, ...params } = req.body;
+      
+      const fields = [];
+      const values = [];
 
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(`${param} = ?`);
+          values.push(params[param]);
+        } else {
+          console.warn(`unexpected field ${param}`);
+        }
+      }
+      
       const query = `
         UPDATE trips
         SET
-          service_id = ?,
-          shape_id = ?,
-          route_id = ?,
-          trip_headsign = ?,
-          trip_short_name = ?,
-          direction_id = ?,
-          block_id = ?,
-          wheelchair_accessible = ?, 
-          bikes_allowed = ?,
-        WHERE trip_id = ? AND user_id = ? AND project_id = ?
+          ${fields.join(", ")}
+        WHERE trip_id = ? AND user_id = ?
       `;
-      const [result] = await pool.execute(query, [
-        service_id,
-        shape_id,
-        route_id,
-        trip_headsign,
-        trip_short_name,
-        direction_id,
-        block_id,
-        wheelchair_accessible,
-        bikes_allowed,
-        agency_email,
-        trip_id,
-        user_id,
-        project_id,
-      ]);
-
+      const [result] = await pool.execute(query, [...values, trip_id, user_id]);
+      
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Trip not found" });
       }
-      res.status(200).json({ message: "Trip successfully updated" });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server error" });
+      return res.status(200).json({ message: "Trip successfully updated" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Server Error", details: e.message });
     }
   },
 
   saveTrip: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {
-        service_id,
-        shape_id,
-        route_id,
-        project_id,
-        trip_headsign,
-        trip_short_name,
-        direction_id,
-        block_id,
-        wheelchair_accessible,
-        bikes_allowed,
-      } = req.body;
+      const validFields = [
+        "route_id",
+        "service_id",
+        "trip_id",
+        "trip_headsign",
+        "trip_short_name",
+        "direction_id",
+        "block_id",
+        "shape_id",
+        "wheelchair_accessible",
+        "bikes_allowed",
+        "project_id",
+      ];
+      const { ...params} = req.body;
 
-      // Zorunlu alanları kontrol et
-      if (!route_id || !service_id || !project_id) {
-        return res.status(400).json({ error: "route_id, service_id, and project_id are required" });
+      const fields = [];
+      const values = [];
+      const placeholders = [];
+
+      for (const param in params) {
+        if (validFields.includes(param)) {
+          fields.push(param);
+          values.push(params[param]);
+          placeholders.push("?")
+        } else {
+          console.warn(`unexpected field in ${param}`);
+        }
       }
 
-      // En yüksek trip_id'yi bul ve yeni bir trip_id oluştur
-      const [rows] = await pool.execute(
-        "SELECT MAX(CAST(trip_id AS UNSIGNED)) as max_id FROM trips WHERE project_id = ? AND user_id = ?",
-        [project_id, user_id]
-      );
-      const lastId = rows[0].max_id || 0;
-      const trip_id = String(parseInt(lastId, 10) + 1).padStart(7, "0");
-
-      // Undefined değerleri null ile değiştir
-      const safeParams = [
-        trip_id,
-        service_id, // Zorunlu, zaten kontrol edildi
-        shape_id ?? null,
-        route_id, // Zorunlu, zaten kontrol edildi
-        user_id,
-        project_id, // Zorunlu, zaten kontrol edildi
-        trip_headsign ?? null,
-        trip_short_name ?? null,
-        direction_id ?? null,
-        block_id ?? null,
-        wheelchair_accessible ?? null,
-        bikes_allowed ?? null,
-      ];
+      fields.push("user_id");
+      placeholders.push("?");
+      values.push(user_id);
 
       const query = `
-        INSERT INTO trips (trip_id, service_id, shape_id, route_id, user_id, project_id, trip_headsign, trip_short_name, direction_id, block_id, wheelchair_accessible, bikes_allowed)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO trips(${fields.join(", ")})
+        VALUES(${placeholders.join(", ")})
       `;
-      const [result] = await pool.execute(query, safeParams);
+
+      const [result] = await pool.execute(query, values);
 
       res.status(201).json({
-        message: "Trip successfully created",
-        trip_id: trip_id,
+        message: "Trip saved successfully",
+        trip_id: result.insertId,
       });
     } catch (error) {
-      console.error("Error in saveTrip:", error);
-      res.status(500).json({ error: "Server error" });
+      console.error(error);
+      res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
 };

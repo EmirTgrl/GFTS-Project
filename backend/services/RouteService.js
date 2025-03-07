@@ -19,20 +19,20 @@ const routeService = {
   
     const fields = [];
     const values = [];
-    let whereClause = `WHERE user_id = ?`; // Base where clause
+    fields.push("user_id = ?")
     values.push(user_id);
   
     for (const param in req.query) {
       if (validFields.includes(param)) {
-        fields.push(param); // Store the field name
-        whereClause += ` AND ${param} = ?`; // Add to the WHERE clause
-        values.push(req.query[param]); // Add the value
+        fields.push(`${param} = ?`); 
+        values.push(req.query[param]); 
       } else {
         console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
       }
     }
   
-    let query = `SELECT * FROM routes ${whereClause}`;
+    let query = `SELECT * FROM routes 
+    WHERE ${fields.join(" AND ")}`;
   
     try {
       const [rows] = await pool.execute(query, values);

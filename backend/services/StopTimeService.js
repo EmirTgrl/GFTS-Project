@@ -1,66 +1,56 @@
 const { pool } = require("../db.js");
 
 const stopTimeService = {
-  getStopsAndStopTimes: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { trip_id, project_id } = req.params;
-      const [rows] = await pool.execute(
-        `SELECT * FROM stop_times st
-         JOIN stops s
-         ON st.stop_id = s.stop_id
-         WHERE st.user_id = ? AND st.trip_id = ? AND st.project_id = ?`,
-        [user_id, trip_id, project_id]
-      );
-      res.json(rows);
-    } catch (error) {
-      console.error(
-        `Error in getStopsAndStopTimes for trip_id: ${req.params.trip_id}, project_id: ${req.params.project_id}:`,
-        error
-      );
-      res.status(500).json({ error: "Server error", details: error.message });
+  getStopsAndStopTimesByQuery: async (req, res) => {
+    const user_id = req.user.id;
+    const validFields = [
+      "trip_id",
+      "stop_id",
+      "project_id",
+      "arrival_time",
+      "departure_time",
+      "stop_sequence",
+      "stop_headsign",
+      "pickup_type",
+      "drop_off_type",
+      "shape_dist_traveled",
+      "timepoint",
+      "stop_code",
+      "stop_name",
+      "stop_desc",
+      "stop_lat",
+      "stop_lon",
+      "zone_id",
+      "stop_url",
+      "location_type",
+      "parent_station",
+      "stop_timezone",
+      "wheelchair_boarding",
+    ];
+  
+    const fields = [];
+    const values = [];
+    fields.push("user_id = ?")
+    values.push(user_id);
+  
+    for (const param in req.query) {
+      if (validFields.includes(param)) {
+        fields.push(`${param} = ?`); 
+        values.push(req.query[param]); 
+      } else {
+        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+      }
     }
-  },
-
-  getStopTimesByProjectId: async (req, res) => {
+  
+    let query = `SELECT * FROM stop_times 
+    WHERE ${fields.join(" AND ")}`;
+  
     try {
-      const user_id = req.user.id;
-      const { project_id } = req.params;
-      const [rows] = await pool.execute(
-        `
-        SELECT * FROM stop_times
-        WHERE project_id = ? AND user_id = ?
-        `,
-        [project_id, user_id]
-      );
-      res.json(rows);
+      const [rows] = await pool.execute(query, values);
+      res.json(rows.length > 0 ? rows : []);
     } catch (error) {
-      console.error(
-        `Error in getStopTimesByProjectId for project_id: ${req.params.project_id}:`,
-        error
-      );
-      res.status(500).json({ error: "Server error" });
-    }
-  },
-
-  getStopTimeById: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { trip_id, stop_id } = req.params;
-      const [rows] = await pool.execute(
-        `
-        SELECT * FROM stop_times
-        WHERE user_id = ? AND trip_id = ? AND stop_id = ?
-        `,
-        [user_id, trip_id, stop_id]
-      );
-      res.json(rows.length > 0 ? rows[0] : null);
-    } catch (error) {
-      console.error(
-        `Error in getStopTimeById for trip_id: ${req.params.trip_id}, stop_id: ${req.params.stop_id}:`,
-        error
-      );
-      res.status(500).json({ error: "Server Error" });
+      console.error(error);
+      res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
 
