@@ -1,7 +1,7 @@
 const API_BASE_URL = "http://localhost:5000/api/stops";
 
 export const fetchStopsByProjectId = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+  const response = await fetch(`${API_BASE_URL}?project_id=${projectId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) throw new Error("Failed to fetch stops by project");
@@ -9,7 +9,7 @@ export const fetchStopsByProjectId = async (projectId, token) => {
 };
 
 export const fetchStopById = async (stopId, token) => {
-  const response = await fetch(`${API_BASE_URL}/${stopId}`, {
+  const response = await fetch(`${API_BASE_URL}?stop_id=${stopId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) throw new Error("Failed to fetch stop");
@@ -17,7 +17,7 @@ export const fetchStopById = async (stopId, token) => {
 };
 
 export const deleteStopById = async (stopId, token) => {
-  const response = await fetch(`${API_BASE_URL}/${stopId}`, {
+  const response = await fetch(`${API_BASE_URL}/delete/${stopId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -25,8 +25,8 @@ export const deleteStopById = async (stopId, token) => {
   return response.json();
 };
 
-export const updateStop = async (stopData, token) => {
-  const response = await fetch(`${API_BASE_URL}`, {
+export const updateStop = async (stopData, stopId, token) => {
+  const response = await fetch(`${API_BASE_URL}/update/${stopId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -39,7 +39,7 @@ export const updateStop = async (stopData, token) => {
 };
 
 export const saveStop = async (stopData, token) => {
-  const response = await fetch(`${API_BASE_URL}`, {
+  const response = await fetch(`${API_BASE_URL}/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

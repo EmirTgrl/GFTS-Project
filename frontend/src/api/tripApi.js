@@ -1,7 +1,7 @@
 const API_BASE_URL = "http://localhost:5000/api/trips";
 
 export const fetchTripsByRouteId = async (routeId, token) => {
-  const response = await fetch(`${API_BASE_URL}/route/${routeId}`, {
+  const response = await fetch(`${API_BASE_URL}?route_id=${routeId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -19,7 +19,7 @@ export const fetchTripsByRouteId = async (routeId, token) => {
 };
 
 export const fetchTripsByProjectId = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+  const response = await fetch(`${API_BASE_URL}?project_id=${projectId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) throw new Error("Failed to fetch trips by project");
@@ -27,7 +27,7 @@ export const fetchTripsByProjectId = async (projectId, token) => {
 };
 
 export const fetchTripById = async (tripId, token) => {
-  const response = await fetch(`${API_BASE_URL}/${tripId}`, {
+  const response = await fetch(`${API_BASE_URL}?trip_id=${tripId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) throw new Error("Failed to fetch trip");
@@ -35,7 +35,7 @@ export const fetchTripById = async (tripId, token) => {
 };
 
 export const deleteTripById = async (tripId, token) => {
-  const response = await fetch(`${API_BASE_URL}/${tripId}`, {
+  const response = await fetch(`${API_BASE_URL}/delete/${tripId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -43,8 +43,8 @@ export const deleteTripById = async (tripId, token) => {
   return response.json();
 };
 
-export const updateTrip = async (tripData, token) => {
-  const response = await fetch(`${API_BASE_URL}`, {
+export const updateTrip = async (tripData, tripId, token) => {
+  const response = await fetch(`${API_BASE_URL}/update/${tripId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -57,7 +57,7 @@ export const updateTrip = async (tripData, token) => {
 };
 
 export const saveTrip = async (tripData, token) => {
-  const response = await fetch(`${API_BASE_URL}`, {
+  const response = await fetch(`${API_BASE_URL}/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

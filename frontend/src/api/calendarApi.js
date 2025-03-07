@@ -1,7 +1,7 @@
 const API_BASE_URL = "http://localhost:5000/api/calendars";
 
 export const fetchCalendarByServiceId = async (serviceId, token) => {
-  const response = await fetch(`${API_BASE_URL}/${serviceId}`, {
+  const response = await fetch(`${API_BASE_URL}?service_id=${serviceId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -13,7 +13,7 @@ export const fetchCalendarByServiceId = async (serviceId, token) => {
 };
 
 export const fetchCalendarsByProjectId = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+  const response = await fetch(`${API_BASE_URL}?project_id=${projectId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -25,7 +25,7 @@ export const fetchCalendarsByProjectId = async (projectId, token) => {
 };
 
 export const deleteCalendarById = async (serviceId, token) => {
-  const response = await fetch(`${API_BASE_URL}/${serviceId}`, {
+  const response = await fetch(`${API_BASE_URL}/delete/${serviceId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -37,7 +37,7 @@ export const deleteCalendarById = async (serviceId, token) => {
 };
 
 export const updateCalendar = async (calendarData, token) => {
-  const response = await fetch(`${API_BASE_URL}/${calendarData.service_id}`, {
+  const response = await fetch(`${API_BASE_URL}/update/${calendarData.service_id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -53,7 +53,7 @@ export const updateCalendar = async (calendarData, token) => {
 };
 
 export const saveCalendar = async (calendarData, token) => {
-  const response = await fetch(`${API_BASE_URL}`, {
+  const response = await fetch(`${API_BASE_URL}/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

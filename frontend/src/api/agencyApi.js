@@ -1,7 +1,7 @@
 const API_BASE_URL = "http://localhost:5000/api/agencies";
 
 export const fetchAgenciesByProjectId = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+  const response = await fetch(`${API_BASE_URL}?project_id=${projectId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -13,7 +13,7 @@ export const fetchAgenciesByProjectId = async (projectId, token) => {
 };
 
 export const saveAgency = async (agencyData, token) => {
-  const response = await fetch(`${API_BASE_URL}`, {
+  const response = await fetch(`${API_BASE_URL}/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -29,7 +29,7 @@ export const saveAgency = async (agencyData, token) => {
 };
 
 export const updateAgency = async (agencyData, token) => {
-  const response = await fetch(`${API_BASE_URL}/${agencyData.agency_id}`, {
+  const response = await fetch(`${API_BASE_URL}/update/${agencyData.agency_id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

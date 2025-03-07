@@ -75,7 +75,7 @@ const RouteList = ({
 
     if (result.isConfirmed) {
       try {
-        await deleteRouteById(routeId, project_id, token);
+        await deleteRouteById(routeId, token);
         setRoutes((prevRoutes) =>
           prevRoutes.filter((route) => route.route_id !== routeId)
         );

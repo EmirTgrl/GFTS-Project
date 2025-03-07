@@ -20,29 +20,36 @@ export const fetchRoutesByProjectId = async (projectId, token) => {
 
 export const fetchRoutesByAgencyId = async (agencyId, projectId, token) => {
   const response = await fetch(
-    `${API_BASE_URL}/agency/${agencyId}?project_id=${projectId}`,
+    `${API_BASE_URL}?project_id=${projectId},agency_id=${agencyId}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
   );
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Failed to fetch routes by agency:", response.status, errorText);
+    console.error(
+      "Failed to fetch routes by agency:",
+      response.status,
+      errorText
+    );
     throw new Error(`Failed to fetch routes by agency: ${errorText}`);
   }
   return response.json();
 };
 
 export const fetchRouteById = async (routeId, projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}?project_id=${projectId},route_id=${routeId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetch(
+    `${API_BASE_URL}?project_id=${projectId},route_id=${routeId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   if (!response.ok) throw new Error("Failed to fetch route");
   return response.json();
 };
 
-export const deleteRouteById = async (routeId, projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}/${projectId}/${routeId}`, {
+export const deleteRouteById = async (routeId, token) => {
+  const response = await fetch(`${API_BASE_URL}/delete/${routeId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -50,8 +57,8 @@ export const deleteRouteById = async (routeId, projectId, token) => {
   return response.json();
 };
 
-export const updateRoute = async (routeData, token) => {
-  const response = await fetch(`${API_BASE_URL}`, {
+export const updateRoute = async (routeData, routeId, token) => {
+  const response = await fetch(`${API_BASE_URL}/update/${routeId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -64,7 +71,7 @@ export const updateRoute = async (routeData, token) => {
 };
 
 export const saveRoute = async (routeData, token) => {
-  const response = await fetch(`${API_BASE_URL}`, {
+  const response = await fetch(`${API_BASE_URL}/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -78,7 +85,7 @@ export const saveRoute = async (routeData, token) => {
 
 export const fetchAgenciesByProjectId = async (projectId, token) => {
   const response = await fetch(
-    `http://localhost:5000/api/agencies/project/${projectId}`,
+    `http://localhost:5000/api/agencies?project_id=${projectId}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
