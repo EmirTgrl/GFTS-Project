@@ -1,42 +1,47 @@
 const { pool } = require("../db.js");
 
 const stopService = {
-  getStopsByProjectId: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { project_id } = req.params;
-      const [rows] = await pool.execute(
-        `SELECT stop_id, stop_name, stop_lat, stop_lon 
-         FROM stops
-         WHERE user_id = ? AND project_id = ?`,
-        [user_id, project_id]
-      );
-      res.json(rows);
-    } catch (error) {
-      console.error(
-        `Error in getStopsByProjectId for project_id: ${req.params.project_id}:`,
-        error
-      );
-      res.status(500).json({ error: "Server Error" });
+  getStopsByQuery: async (req, res) => {
+    const user_id = req.user.id;
+    const validFields = [
+      "stop_id",
+      "stop_code",
+      "stop_name",
+      "stop_desc",
+      "stop_lat",
+      "stop_lon",
+      "zone_id",
+      "stop_url",
+      "location_type",
+      "parent_station",
+      "stop_timezone",
+      "wheelchair_boarding",
+      "project_id"
+    ];
+  
+    const fields = [];
+    const values = [];
+    fields.push("user_id = ?")
+    values.push(user_id);
+  
+    for (const param in req.query) {
+      if (validFields.includes(param)) {
+        fields.push(`${param} = ?`); 
+        values.push(req.query[param]); 
+      } else {
+        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+      }
     }
-  },
-
-  getStopById: async (req, res) => {
+  
+    let query = `SELECT * FROM projects 
+    WHERE ${fields.join(" AND ")}`;
+  
     try {
-      const user_id = req.user.id;
-      const { stop_id } = req.params;
-      const [rows] = await pool.execute(
-        `SELECT * FROM stops
-        WHERE stop_id = ? AND user_id = ?`,
-        [stop_id, user_id]
-      );
-      res.json(rows.length > 0 ? rows[0] : null);
+      const [rows] = await pool.execute(query, values);
+      res.json(rows.length > 0 ? rows : []);
     } catch (error) {
-      console.error(
-        `Error in getStopById for stop_id: ${req.params.stop_id}:`,
-        error
-      );
-      res.status(500).json({ error: "Server Error" });
+      console.error(error);
+      res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
 
@@ -62,6 +67,7 @@ const stopService = {
   updateStop: async (req, res) => {
     try {
       const user_id = req.user.id;
+      const {stop_id} = req.params; 
       const validFields = [
         "stop_id",
         "stop_code",
@@ -78,7 +84,7 @@ const stopService = {
         "project_id"        
       ]
       
-      const {stop_id, ...params} = req.body;
+      const {...params} = req.body;
 
       const fields = [];
       const values = [];

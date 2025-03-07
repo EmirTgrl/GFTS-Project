@@ -6,10 +6,9 @@ const authService = require("../services/AuthService.js");
 
 router.use(authService.auth);
 
-router.get("/:project_id",projectService.getProjectById);
-router.delete("/:project_id", projectService.deleteProjectById);
-router.get("/", projectService.getAllProjects);
-router.post("/", projectService.saveProject)
-router.put("/", projectService.updateProject);
+router.get("",projectService.getProjectsByQuery);
+router.delete("/delete/:project_id", projectService.deleteProjectById);
+router.post("/create", projectService.saveProject)
+router.put("/update/:project_id", projectService.updateProject);
 
 module.exports = router;

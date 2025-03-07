@@ -1,45 +1,57 @@
 const { pool } = require("../db.js");
 
 const routeService = {
-  getRoutesByProjectId: async (req, res) => {
+  getRoutesByQuery: async (req, res) => {
+    const user_id = req.user.id;
+    const validFields = [
+      "route_id",
+      "project_id",
+      "agency_id",
+      "route_short_name",
+      "route_long_name",
+      "route_desc",
+      "route_type",
+      "route_url",
+      "route_color",
+      "route_text_color",
+      "route_sort_order"
+    ];
+  
+    const fields = [];
+    const values = [];
+    fields.push("user_id = ?")
+    values.push(user_id);
+  
+    for (const param in req.query) {
+      if (validFields.includes(param)) {
+        fields.push(`${param} = ?`); 
+        values.push(req.query[param]); 
+      } else {
+        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+      }
+    }
+  
+    let query = `SELECT * FROM routes 
+    WHERE ${fields.join(" AND ")}`;
+  
     try {
-      const user_id = req.user.id;
-      const { project_id } = req.params;
-      const [rows] = await pool.execute(
-        `SELECT * FROM routes 
-         WHERE project_id = ? AND user_id = ?`,
-        [project_id, user_id]
-      );
+      const [rows] = await pool.execute(query, values);
       res.json(rows.length > 0 ? rows : []);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
-  getRouteById: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { route_id, project_id } = req.params;
-      const [rows] = await pool.execute(
-        `SELECT * FROM routes 
-         WHERE user_id = ? AND route_id = ? AND project_id = ?`,
-        [user_id, route_id, project_id] 
-      );
-      res.json(rows.length > 0 ? rows[0] : null);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server Error", details: error.message });
-    }
-  },
+  
   deleteRouteById: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { route_id, project_id } = req.params;
+      const { route_id} = req.params;
       const [results] = await pool.execute(
         `
         DELETE FROM routes 
-        WHERE route_id = ? AND user_id = ? AND project_id = ?`,
-        [route_id, user_id, project_id]
+        WHERE route_id = ? AND user_id = ?`,
+        [route_id, user_id]
       );
       if (results.affectedRows === 0) {
         return res.status(404).json({ error: "Route not found" });
@@ -53,6 +65,7 @@ const routeService = {
   updateRoute: async (req, res) => {
     try {
       const user_id = req.user.id;
+      const {route_id} = req.params;
       const validFields = [
         "route_id",
         "project_id",
@@ -66,7 +79,7 @@ const routeService = {
         "route_text_color",
         "route_sort_order"
       ];
-      const { route_id, ...params } = req.body;
+      const { ...params } = req.body;
       
       const fields = [];
       const values = [];

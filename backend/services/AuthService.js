@@ -26,7 +26,8 @@ const authService = {
     try {
       const { email, password } = req.body;
       const [users] = await pool.execute(
-        "SELECT * FROM users WHERE email = ?",
+        `SELECT * FROM users 
+        WHERE email = ? AND is_active = true`,
         [email]
       );
 

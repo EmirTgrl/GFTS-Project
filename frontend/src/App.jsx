@@ -17,6 +17,9 @@ import Header from "./components/Header";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./styles/Layout.css";
 import { useNavigate } from "react-router-dom";
+import AdminPage from "./pages/admin/Index";
+import AdminUsersPage from "./pages/admin/Users";
+import AdminProjectsPage from "./pages/admin/Projects";
 
 function App() {
   return (
@@ -75,6 +78,11 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>}>
+            <Route index element={<Navigate replace to="users" />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="projects" element={<AdminProjectsPage />} />
+          </Route>
           <Route path="/" element={<Navigate to="/projects" replace />} />
           <Route path="*" element={<div>404 - Sayfa Bulunamadı</div>} />
         </Routes>
