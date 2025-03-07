@@ -3,6 +3,8 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../components/Auth/AuthContext";
 import Sidebar from "../components/Map/Sidebar.jsx";
 import MapView from "../components/Map/MapView";
+import { fetchCalendarsByProjectId } from "../api/calendarApi";
+import { fetchAgenciesByProjectId } from "../api/agencyApi";
 import "../styles/Map.css";
 
 const MapPage = () => {
@@ -14,6 +16,8 @@ const MapPage = () => {
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [stopsAndTimes, setStopsAndTimes] = useState([]);
   const [calendar, setCalendar] = useState(null);
+  const [calendars, setCalendars] = useState([]);
+  const [agencies, setAgencies] = useState([]);
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
   const [zoom, setZoom] = useState(13);
   const { project_id } = useParams();
@@ -26,6 +30,24 @@ const MapPage = () => {
     if (prevRoute) setSelectedRoute(prevRoute);
     if (prevTrip) setSelectedTrip(prevTrip);
   }, [location.state]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const calendarData = await fetchCalendarsByProjectId(project_id, token);
+        setCalendars(Array.isArray(calendarData) ? calendarData : []);
+        const agencyData = await fetchAgenciesByProjectId(project_id, token);
+        setAgencies(Array.isArray(agencyData) ? agencyData : []);
+      } catch (error) {
+        console.error("Error loading data:", error);
+        setCalendars([]);
+        setAgencies([]);
+      }
+    };
+    if (token && project_id) {
+      loadData();
+    }
+  }, [token, project_id]);
 
   return (
     <div className="map-container">
@@ -46,6 +68,10 @@ const MapPage = () => {
         setStopsAndTimes={setStopsAndTimes}
         calendar={calendar}
         setCalendar={setCalendar}
+        calendars={calendars}
+        setCalendars={setCalendars}
+        agencies={agencies}
+        setAgencies={setAgencies}
         mapCenter={mapCenter}
         setMapCenter={setMapCenter}
         zoom={zoom}

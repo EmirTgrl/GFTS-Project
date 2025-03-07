@@ -237,9 +237,23 @@
 
 #map {
   flex: 1;
-  height: 100%;
-  width: 100%;
-  z-index: 500;
+  height: 100vh;
+  width: calc(100vw - 350px);
+  margin-left: 350px;
+  overflow: hidden;
+}
+
+.form-panel {
+  position: fixed;
+  top: 50px;
+  left: 350px;
+  width: 400px;
+  height: calc(100vh - 50px);
+  background-color: #fff;
+  padding: 20px;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  z-index: 1001;
 }
 
 @media (max-width: 768px) {
@@ -275,6 +289,16 @@
   .bus-time {
     font-size: 12px;
   }
+
+  #map {
+    width: calc(100vw - 300px);
+    margin-left: 300px;
+  }
+
+  .form-panel {
+    left: 300px;
+    width: 350px;
+  }
 }
 
 @media (max-width: 576px) {
@@ -303,6 +327,16 @@
 
   #map {
     height: 50vh;
+    width: 100vw;
+    margin-left: 0;
+  }
+
+  .form-panel {
+    left: 0;
+    width: 100%;
+    height: 50vh;
+    top: auto;
+    bottom: 50vh;
   }
 }
 
@@ -342,7 +376,7 @@
 }
 
 .action-btn.add-btn {
-  color: #28a745; /* Yeşil renk örneği */
+  color: #28a745;
 }
 
 .action-btn.add-btn:hover {

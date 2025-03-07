@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { deleteTripById } from "../../api/tripApi";
 import Swal from "sweetalert2";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 const TripList = ({
   token,
@@ -55,6 +56,8 @@ const TripList = ({
     });
   };
 
+  const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
+
   return (
     <div className="tab-pane fade show active h-100">
       <div className="d-flex justify-content-between align-items-center mb-2">
@@ -63,49 +66,52 @@ const TripList = ({
           Yeni Trip
         </button>
       </div>
-      <select
-        className="form-select mb-3"
-        value={selectedTrip || ""}
-        onChange={(e) => handleTripSelect(e.target.value)}
-        disabled={trips.length === 0}
-      >
-        <option value="">Trip Seçin</option>
-        {trips.map((trip) => (
-          <option key={trip.trip_id} value={trip.trip_id}>
-            {trip.trip_headsign
-              ? `${trip.trip_headsign} (${trip.trip_id})`
-              : trip.trip_id}
-          </option>
-        ))}
-      </select>
       <div>
-        {trips.map((trip) => (
-          <div key={trip.trip_id} className="card mb-2">
-            <div className="card-body d-flex justify-content-between align-items-center p-2">
-              <span
-                className="text-truncate"
-                style={{ maxWidth: "60%" }}
-                title={trip.trip_headsign || trip.trip_id}
-              >
-                {trip.trip_headsign || trip.trip_id}
-              </span>
-              <div>
-                <button
-                  className="btn btn-outline-primary btn-sm me-1"
-                  onClick={() => handleEditTrip(trip.trip_id)}
+        {trips.length > 0 ? (
+          trips.map((trip) => (
+            <div
+              key={trip.trip_id}
+              className={`card mb-2 ${
+                selectedTrip === trip.trip_id ? "border-primary" : ""
+              }`}
+              onClick={() => handleTripSelect(trip.trip_id)}
+              style={{ cursor: "pointer" }}
+            >
+              <div className="card-body d-flex justify-content-between align-items-center p-2">
+                <OverlayTrigger
+                  placement="top"
+                  overlay={renderTooltip(trip.trip_headsign || trip.trip_id)}
                 >
-                  ✏️
-                </button>
-                <button
-                  className="btn btn-outline-danger btn-sm"
-                  onClick={() => handleDeleteTrip(trip.trip_id)}
-                >
-                  🗑️
-                </button>
+                  <span className="text-truncate" style={{ maxWidth: "60%" }}>
+                    {trip.trip_headsign || trip.trip_id}
+                  </span>
+                </OverlayTrigger>
+                <div>
+                  <button
+                    className="btn btn-outline-primary btn-sm me-1"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Kartın tıklanmasını engelle
+                      handleEditTrip(trip.trip_id);
+                    }}
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTrip(trip.trip_id);
+                    }}
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-muted text-center">Trip bulunamadı.</p>
+        )}
       </div>
     </div>
   );
@@ -119,9 +125,6 @@ TripList.propTypes = {
   selectedTrip: PropTypes.string,
   setSelectedTrip: PropTypes.func.isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
-  setCalendar: PropTypes.func.isRequired,
-  setMapCenter: PropTypes.func.isRequired,
-  setZoom: PropTypes.func.isRequired,
   navigate: PropTypes.func.isRequired,
   handleTripSelect: PropTypes.func.isRequired,
 };

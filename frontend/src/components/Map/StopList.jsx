@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { deleteStopTimeById } from "../../api/stopTimeApi";
 import Swal from "sweetalert2";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 const StopList = ({
   token,
@@ -51,6 +52,8 @@ const StopList = ({
     });
   };
 
+  const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
+
   return (
     <div className="tab-pane fade show active h-100">
       <div className="d-flex justify-content-between align-items-center mb-2">
@@ -67,15 +70,19 @@ const StopList = ({
           >
             <div className="card-body p-2">
               <div className="d-flex justify-content-between align-items-center">
-                <h6
-                  className="card-title mb-0 text-truncate"
-                  style={{ maxWidth: "60%" }}
-                  title={
+                <OverlayTrigger
+                  placement="top"
+                  overlay={renderTooltip(
                     stopAndTime ? stopAndTime.stop_name : "Bilinmeyen Durak"
-                  }
+                  )}
                 >
-                  {stopAndTime ? stopAndTime.stop_name : "Bilinmeyen Durak"}
-                </h6>
+                  <h6
+                    className="card-title mb-0 text-truncate"
+                    style={{ maxWidth: "60%" }}
+                  >
+                    {stopAndTime ? stopAndTime.stop_name : "Bilinmeyen Durak"}
+                  </h6>
+                </OverlayTrigger>
                 <div>
                   <button
                     className="btn btn-outline-primary btn-sm me-1"

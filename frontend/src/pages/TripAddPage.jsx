@@ -1,30 +1,23 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
 import { saveTrip } from "../api/tripApi";
 import { fetchRoutesByProjectId } from "../api/routeApi";
 import { fetchCalendarsByProjectId } from "../api/calendarApi";
-import { useContext } from "react";
-import { AuthContext } from "../components/Auth/AuthContext";
 import Swal from "sweetalert2";
+import PropTypes from "prop-types";
+import { AuthContext } from "../components/Auth/AuthContext";
 
-const TripAddPage = () => {
+const TripAddPage = ({ project_id, onClose, setTrips }) => {
   const { token } = useContext(AuthContext);
-  const { project_id } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { selectedRoute } = location.state || {};
-
   const [tripData, setTripData] = useState({
     service_id: "",
-    route_id: selectedRoute || "",
-    project_id: project_id,
+    route_id: "",
+    project_id,
     trip_headsign: "",
     trip_short_name: "",
     direction_id: null,
     block_id: "",
     wheelchair_accessible: null,
     bikes_allowed: null,
-    agency_email: "",
   });
   const [routes, setRoutes] = useState([]);
   const [calendars, setCalendars] = useState([]);
@@ -40,9 +33,7 @@ const TripAddPage = () => {
         console.error("Error loading data:", error);
       }
     };
-    if (token && project_id) {
-      loadData();
-    }
+    loadData();
   }, [project_id, token]);
 
   const handleChange = (e) => {
@@ -70,28 +61,6 @@ const TripAddPage = () => {
       { name: "Cmt", value: calendar.saturday },
       { name: "Paz", value: calendar.sunday },
     ];
-
-    const weekDays = days.slice(0, 5); 
-    const saturday = days[5];
-    const sunday = days[6];
-
-    const isWeekdaysOnly =
-      weekDays.every((day) => day.value === 1) &&
-      saturday.value === 0 &&
-      sunday.value === 0;
-    const isSaturdayOnly =
-      weekDays.every((day) => day.value === 0) &&
-      saturday.value === 1 &&
-      sunday.value === 0;
-    const isSundayOnly =
-      weekDays.every((day) => day.value === 0) &&
-      saturday.value === 0 &&
-      sunday.value === 1;
-
-    if (isWeekdaysOnly) return `${calendar.service_id} - Hafta İçi`;
-    if (isSaturdayOnly) return `${calendar.service_id} - Cumartesi`;
-    if (isSundayOnly) return `${calendar.service_id} - Pazar`;
-
     const activeDays = days
       .filter((day) => day.value === 1)
       .map((day) => day.name)
@@ -111,21 +80,19 @@ const TripAddPage = () => {
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
       confirmButtonText: "Evet, ekle!",
-      cancelButtonText: "Hayır, iptal et",
+      cancelButtonText: "Hayır",
     });
 
     if (result.isConfirmed) {
       try {
-        await saveTrip(tripData, token);
+        const newTrip = await saveTrip(tripData, token);
+        setTrips((prev) => [...prev, newTrip]); // Liste güncelle
         Swal.fire("Eklendi!", "Trip başarıyla eklendi.", "success");
-        navigate(`/map/${project_id}`, {
-          state: { selectedRoute: tripData.route_id, refresh: true },
-        });
+        onClose();
       } catch (error) {
-        console.error("Error adding trip:", error);
         Swal.fire(
           "Hata!",
-          "Trip eklenirken bir hata oluştu: " + error.message,
+          `Trip eklenirken hata oluştu: ${error.message}`,
           "error"
         );
       }
@@ -133,116 +100,111 @@ const TripAddPage = () => {
   };
 
   return (
-    <div className="container mt-5">
-      <h2 className="mb-4">Yeni Trip Ekle</h2>
+    <div className="form-container">
+      <h5>Yeni Trip Ekle</h5>
       <form onSubmit={handleSubmit}>
-        <div className="row">
-          <div className="col-md-6 mb-3">
-            <label htmlFor="route_id" className="form-label">
-              Rota:
-            </label>
-            <select
-              id="route_id"
-              name="route_id"
-              className="form-select"
-              value={tripData.route_id}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Bir rota seçin</option>
-              {routes.map((route) => (
-                <option key={route.route_id} value={route.route_id}>
-                  {route.route_long_name ||
-                    route.route_short_name ||
-                    route.route_id}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-md-6 mb-3">
-            <label htmlFor="service_id" className="form-label">
-              Servis:
-            </label>
-            <select
-              id="service_id"
-              name="service_id"
-              className="form-select"
-              value={tripData.service_id}
-              onChange={handleChange}
-            >
-              <option value="">Bir servis seçin</option>
-              {calendars.map((calendar) => (
-                <option key={calendar.service_id} value={calendar.service_id}>
-                  {getServiceName(calendar)}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="mb-2">
+          <label htmlFor="route_id" className="form-label">
+            Rota
+          </label>
+          <select
+            id="route_id"
+            name="route_id"
+            className="form-control"
+            value={tripData.route_id}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Bir rota seçin</option>
+            {routes.map((route) => (
+              <option key={route.route_id} value={route.route_id}>
+                {route.route_long_name ||
+                  route.route_short_name ||
+                  route.route_id}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="row">
-          <div className="col-md-6 mb-3">
-            <label htmlFor="trip_headsign" className="form-label">
-              Trip Başlığı:
-            </label>
-            <input
-              type="text"
-              id="trip_headsign"
-              name="trip_headsign"
-              className="form-control"
-              value={tripData.trip_headsign}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="col-md-6 mb-3">
-            <label htmlFor="trip_short_name" className="form-label">
-              Kısa Ad:
-            </label>
-            <input
-              type="text"
-              id="trip_short_name"
-              name="trip_short_name"
-              className="form-control"
-              value={tripData.trip_short_name}
-              onChange={handleChange}
-            />
-          </div>
+        <div className="mb-2">
+          <label htmlFor="service_id" className="form-label">
+            Servis
+          </label>
+          <select
+            id="service_id"
+            name="service_id"
+            className="form-control"
+            value={tripData.service_id}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Bir servis seçin</option>
+            {calendars.map((calendar) => (
+              <option key={calendar.service_id} value={calendar.service_id}>
+                {getServiceName(calendar)}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="row">
-          <div className="col-md-6 mb-3">
-            <label htmlFor="direction_id" className="form-label">
-              Yön ID (0/1):
-            </label>
-            <select
-              id="direction_id"
-              name="direction_id"
-              className="form-select"
-              value={tripData.direction_id ?? ""}
-              onChange={handleChange}
-            >
-              <option value="">Seçiniz</option>
-              <option value="0">0 - Gidiş</option>
-              <option value="1">1 - Dönüş</option>
-            </select>
-          </div>
+        <div className="mb-2">
+          <label htmlFor="trip_headsign" className="form-label">
+            Trip Başlığı
+          </label>
+          <input
+            type="text"
+            id="trip_headsign"
+            name="trip_headsign"
+            className="form-control"
+            value={tripData.trip_headsign}
+            onChange={handleChange}
+            required
+          />
         </div>
-        <div className="d-flex gap-2">
+        <div className="mb-2">
+          <label htmlFor="trip_short_name" className="form-label">
+            Kısa Ad
+          </label>
+          <input
+            type="text"
+            id="trip_short_name"
+            name="trip_short_name"
+            className="form-control"
+            value={tripData.trip_short_name}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="direction_id" className="form-label">
+            Yön
+          </label>
+          <select
+            id="direction_id"
+            name="direction_id"
+            className="form-control"
+            value={tripData.direction_id ?? ""}
+            onChange={handleChange}
+          >
+            <option value="">Seçiniz</option>
+            <option value="0">0 - Gidiş</option>
+            <option value="1">1 - Dönüş</option>
+          </select>
+        </div>
+        <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
             Ekle
           </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() =>
-              navigate(`/map/${project_id}`, { state: { selectedRoute } })
-            }
-          >
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
             İptal
           </button>
         </div>
       </form>
     </div>
   );
+};
+
+TripAddPage.propTypes = {
+  project_id: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+  setTrips: PropTypes.func.isRequired,
 };
 
 export default TripAddPage;

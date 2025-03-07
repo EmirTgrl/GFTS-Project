@@ -7,7 +7,7 @@ export const fetchAgenciesByProjectId = async (projectId, token) => {
   if (!response.ok) {
     const errorText = await response.text();
     console.error("Failed to fetch agencies:", response.status, errorText);
-    throw new Error("Failed to fetch agencies by project");
+    throw new Error(`Failed to fetch agencies: ${errorText}`);
   }
   return response.json();
 };
@@ -44,9 +44,17 @@ export const updateAgency = async (agencyData, token) => {
   return response.json();
 };
 
-export const deleteAgencyById = async (agencyId, projectId, token) => {
+export const deleteAgencyById = async (agencyId, token) => {
+  if (!agencyId  || !token) {
+    throw new Error(
+      "Missing required parameters: " +
+        (!agencyId ? "agencyId " : "") +
+        (!token ? "token" : "")
+    );
+  }
+
   const response = await fetch(
-    `${API_BASE_URL}/${agencyId}?project_id=${projectId}`,
+    `${API_BASE_URL}/delete/${agencyId}`,
     {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
@@ -56,5 +64,5 @@ export const deleteAgencyById = async (agencyId, projectId, token) => {
     const errorText = await response.text();
     throw new Error(`Failed to delete agency: ${errorText}`);
   }
-  return response.json();
+  return response.status === 204 ? {} : response.json();
 };

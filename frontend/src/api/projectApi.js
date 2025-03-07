@@ -34,7 +34,7 @@ export const deleteProject = async (projectId, token) => {
 };
 
 export const exportProject = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}/export/${projectId}`, {
+  const response = await fetch(`${API_BASE_URL}/io/export/${projectId}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -47,5 +47,29 @@ export const exportProject = async (projectId, token) => {
       `HTTP error! Status: ${response.status}, Message: ${errorText}`
     );
   }
-  return response.blob(); 
+  const blob = await response.blob();
+  const link = response.headers
+    .get("content-disposition")
+    .split("filename=")[1]
+    .replaceAll('"', "");
+  return { blob, link };
+};
+
+export const createProject = async (projectName, token) => {
+  const response = await fetch(`${API_BASE_URL}/projects/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ file_name: projectName }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("HTTP error in createProject!", response.status, errorText);
+    throw new Error(
+      `HTTP error! Status: ${response.status}, Message: ${errorText}`
+    );
+  }
+  return response.json();
 };

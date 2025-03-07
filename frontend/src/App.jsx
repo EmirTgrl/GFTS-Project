@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,14 +10,8 @@ import { AuthProvider } from "./components/Auth/AuthProvider";
 import { AuthContext } from "./components/Auth/AuthContext";
 import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
 import MapPage from "./pages/MapPage";
-import StopTimeEditPage from "./pages/StopTimeEditPage";
-import StopTimeAddPage from "./pages/StopTimeAddPage";
-import TripAddPage from "./pages/TripAddPage";
-import TripEditPage from "./pages/TripEditPage";
-import RouteAddPage from "./pages/RouteAddPage";
-import RouteEditPage from "./pages/RouteEditPage";
-import ImportPage from "./pages/ImportPage"; // Yeni eklenen sayfa
-import ProjectsPage from "./pages/ProjectsPage"; // Yeni eklenen sayfa
+import ImportPage from "./pages/ImportPage";
+import ProjectsPage from "./pages/ProjectsPage";
 import AuthPage from "./pages/AuthPage";
 import Header from "./components/Header";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -36,6 +31,8 @@ function App() {
 const AppContent = () => {
   const { isLoggedOut, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [calendars, setCalendars] = useState([]);
+  const [agencies, setAgencies] = useState([]);
 
   useEffect(() => {
     if (isLoggedOut && !isAuthenticated) {
@@ -69,55 +66,12 @@ const AppContent = () => {
             path="/map/:project_id"
             element={
               <ProtectedRoute>
-                <MapPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/edit-stop-time/:project_id/:trip_id/:stop_id"
-            element={
-              <ProtectedRoute>
-                <StopTimeEditPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/add-stop-time/:project_id/:trip_id"
-            element={
-              <ProtectedRoute>
-                <StopTimeAddPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/add-trip/:project_id"
-            element={
-              <ProtectedRoute>
-                <TripAddPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/edit-trip/:project_id/:trip_id"
-            element={
-              <ProtectedRoute>
-                <TripEditPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/add-route/:project_id"
-            element={
-              <ProtectedRoute>
-                <RouteAddPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/edit-route/:project_id/:route_id"
-            element={
-              <ProtectedRoute>
-                <RouteEditPage />
+                <MapPage
+                  calendars={calendars}
+                  setCalendars={setCalendars}
+                  agencies={agencies}
+                  setAgencies={setAgencies}
+                />
               </ProtectedRoute>
             }
           />

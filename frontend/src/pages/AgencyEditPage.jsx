@@ -1,17 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect, useContext } from "react";
+import { updateAgency, fetchAgenciesByProjectId } from "../api/agencyApi";
+import Swal from "sweetalert2";
 import PropTypes from "prop-types";
-import { updateAgency } from "../api/agencyApi";
+import { AuthContext } from "../components/Auth/AuthContext";
 
-const AgencyEditPage = ({
-  token,
-  project_id,
-  agency,
-  setAgencies,
-  onClose,
-}) => {
-  const [formData, setFormData] = useState({ ...agency });
+const AgencyEditPage = ({ project_id, agency_id, onClose, setAgencies }) => {
+  const { token } = useContext(AuthContext);
+  const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadAgency = async () => {
+      try {
+        const agencies = await fetchAgenciesByProjectId(project_id, token);
+        const agency = agencies.find(
+          (ag) => String(ag.agency_id) === agency_id
+        );
+        if (agency) {
+          setFormData({
+            agency_id: agency.agency_id,
+            agency_name: agency.agency_name || "",
+            agency_url: agency.agency_url || "",
+            agency_timezone: agency.agency_timezone || "",
+            agency_lang: agency.agency_lang || "",
+            agency_phone: agency.agency_phone || "",
+          });
+        } else {
+          Swal.fire("Hata!", "Ajans bulunamadı.", "error");
+          onClose();
+        }
+      } catch (error) {
+        Swal.fire(
+          "Hata!",
+          `Ajans yüklenirken hata oluştu: ${error.message}`,
+          "error"
+        );
+      }
+    };
+    loadAgency();
+  }, [token, project_id, agency_id, onClose]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,133 +48,139 @@ const AgencyEditPage = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (
-      !formData.agency_name ||
-      !formData.agency_url ||
-      !formData.agency_timezone
+      !formData?.agency_name ||
+      !formData?.agency_url ||
+      !formData?.agency_timezone
     ) {
-      setError("Agency adı, URL ve zaman dilimi zorunludur!");
+      Swal.fire("Hata!", "Ajans adı, URL ve zaman dilimi zorunludur!", "error");
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-      const agencyData = {
-        agency_id: agency.agency_id,
-        project_id,
-        ...formData,
-      };
-      await updateAgency(agencyData, token);
-      setAgencies((prev) =>
-        prev.map((a) =>
-          a.agency_id === agency.agency_id ? { ...a, ...agencyData } : a
-        )
-      );
-      onClose(); 
-    } catch (err) {
-      setError("Agency güncellenirken bir hata oluştu.");
-      console.error("Error updating agency:", err);
-    } finally {
-      setLoading(false);
+    const result = await Swal.fire({
+      title: "Emin misiniz?",
+      text: "Bu ajansı güncellemek istediğinize emin misiniz?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Evet, güncelle!",
+      cancelButtonText: "Hayır",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        setLoading(true);
+        const agencyData = { project_id, ...formData };
+        const updatedAgency = await updateAgency(agencyData, token);
+        setAgencies((prev) =>
+          prev.map((ag) => (ag.agency_id === agency_id ? updatedAgency : ag))
+        ); // Liste güncelle
+        Swal.fire("Güncellendi!", "Ajans başarıyla güncellendi.", "success");
+        onClose();
+      } catch (error) {
+        Swal.fire(
+          "Hata!",
+          `Ajans güncellenirken hata oluştu: ${error.message}`,
+          "error"
+        );
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
+  if (!formData) return <p>Yükleniyor...</p>;
+
   return (
-    <div className="card mb-3">
-      <div className="card-header">Ajansı Düzenle</div>
-      <div className="card-body">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label htmlFor="agency_name" className="form-label">
-            Agency Adı
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="agency_name"
-              name="agency_name"
-              value={formData.agency_name}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="agency_url" className="form-label">
-            Agency URL
-            </label>
-            <input
-              type="url"
-              className="form-control"
-              id="agency_url"
-              name="agency_url"
-              value={formData.agency_url || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="agency_timezone" className="form-label">
-              Zaman Dilimi
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="agency_timezone"
-              name="agency_timezone"
-              value={formData.agency_timezone || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="agency_lang" className="form-label">
-              Dil (Opsiyonel)
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="agency_lang"
-              name="agency_lang"
-              value={formData.agency_lang || ""}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="agency_phone" className="form-label">
-              Telefon (Opsiyonel)
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="agency_phone"
-              name="agency_phone"
-              value={formData.agency_phone || ""}
-              onChange={handleChange}
-            />
-          </div>
-          {error && <div className="alert alert-danger">{error}</div>}
-          <button
-            type="submit"
-            className="btn btn-primary me-2"
-            disabled={loading}
-          >
+    <div className="form-container">
+      <h5>Ajans Düzenle</h5>
+      <form onSubmit={handleSubmit}>
+        <div className="mb-2">
+          <label htmlFor="agency_name" className="form-label">
+            Ajans Adı
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="agency_name"
+            name="agency_name"
+            value={formData.agency_name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="agency_url" className="form-label">
+            Ajans URL
+          </label>
+          <input
+            type="url"
+            className="form-control"
+            id="agency_url"
+            name="agency_url"
+            value={formData.agency_url}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="agency_timezone" className="form-label">
+            Zaman Dilimi
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="agency_timezone"
+            name="agency_timezone"
+            value={formData.agency_timezone}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="agency_lang" className="form-label">
+            Dil (Opsiyonel)
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="agency_lang"
+            name="agency_lang"
+            value={formData.agency_lang}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="agency_phone" className="form-label">
+            Telefon (Opsiyonel)
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="agency_phone"
+            name="agency_phone"
+            value={formData.agency_phone}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="d-flex justify-content-end gap-2">
+          <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? "Kaydediliyor..." : "Kaydet"}
           </button>
           <button type="button" className="btn btn-secondary" onClick={onClose}>
-            Kapat
+            İptal
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 };
 
 AgencyEditPage.propTypes = {
-  token: PropTypes.string.isRequired,
   project_id: PropTypes.string.isRequired,
-  agency: PropTypes.object.isRequired,
-  setAgencies: PropTypes.func.isRequired,
+  agency_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
+  setAgencies: PropTypes.func.isRequired,
 };
 
 export default AgencyEditPage;

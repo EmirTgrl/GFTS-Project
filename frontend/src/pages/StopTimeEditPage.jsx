@@ -1,27 +1,18 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom"; // useLocation eklendi
+import { useState, useEffect, useContext } from "react";
 import { fetchStopTimeById, updateStopTime } from "../api/stopTimeApi";
-import { useContext } from "react";
-import { AuthContext } from "../components/Auth/AuthContext";
 import Swal from "sweetalert2";
+import PropTypes from "prop-types";
+import { AuthContext } from "../components/Auth/AuthContext";
 
-const StopTimeEditPage = () => {
+const StopTimeEditPage = ({
+  project_id,
+  trip_id,
+  stop_id,
+  onClose,
+  setStopsAndTimes,
+}) => {
   const { token } = useContext(AuthContext);
-  const { project_id, trip_id, stop_id } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation(); // Önceki seçimleri almak için
-  const { selectedRoute, selectedTrip } = location.state || {}; // State’ten seçimleri al
-
-  const [stopTime, setStopTime] = useState({
-    arrival_time: "",
-    departure_time: "",
-    stop_sequence: "",
-    stop_headsign: "",
-    pickup_type: null,
-    drop_off_type: null,
-    shape_dist_traveled: null,
-    timepoint: null,
-  });
+  const [stopTime, setStopTime] = useState(null);
 
   useEffect(() => {
     const loadStopTime = async () => {
@@ -32,31 +23,20 @@ const StopTimeEditPage = () => {
           departure_time: data.departure_time || "",
           stop_sequence: data.stop_sequence || "",
           stop_headsign: data.stop_headsign || "",
-          pickup_type:
-            data.pickup_type !== undefined && data.pickup_type !== null
-              ? data.pickup_type
-              : null,
+          pickup_type: data.pickup_type !== undefined ? data.pickup_type : null,
           drop_off_type:
-            data.drop_off_type !== undefined && data.drop_off_type !== null
-              ? data.drop_off_type
-              : null,
+            data.drop_off_type !== undefined ? data.drop_off_type : null,
           shape_dist_traveled:
-            data.shape_dist_traveled !== undefined &&
-            data.shape_dist_traveled !== null
+            data.shape_dist_traveled !== undefined
               ? data.shape_dist_traveled
               : null,
-          timepoint:
-            data.timepoint !== undefined && data.timepoint !== null
-              ? data.timepoint
-              : null,
+          timepoint: data.timepoint !== undefined ? data.timepoint : null,
         });
       } catch (error) {
         console.error("Error fetching stop time:", error);
       }
     };
-    if (token && trip_id && stop_id) {
-      loadStopTime();
-    }
+    loadStopTime();
   }, [trip_id, stop_id, token]);
 
   const handleChange = (e) => {
@@ -88,144 +68,137 @@ const StopTimeEditPage = () => {
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
       confirmButtonText: "Evet, güncelle!",
-      cancelButtonText: "Hayır, iptal et",
+      cancelButtonText: "Hayır",
     });
 
     if (result.isConfirmed) {
       try {
-        await updateStopTime(
-          {
-            trip_id,
-            stop_id,
-            project_id,
-            ...stopTime,
-          },
+        const updatedStopTime = await updateStopTime(
+          { trip_id, stop_id, project_id, ...stopTime },
           token
         );
+        setStopsAndTimes((prev) =>
+          prev.map((st) => (st.stop_id === stop_id ? updatedStopTime : st))
+        ); // Liste güncelle
         Swal.fire(
           "Güncellendi!",
           "Durak zamanı başarıyla güncellendi.",
           "success"
         );
-        navigate(`/map/${project_id}`, {
-          state: { selectedRoute, selectedTrip },
-        });
+        onClose();
       } catch (error) {
-        console.error("Error updating stop time:", error);
         Swal.fire(
           "Hata!",
-          "Durak zamanı güncellenirken bir hata oluştu.",
+          `Durak zamanı güncellenirken hata oluştu: ${error.message}`,
           "error"
         );
       }
     }
   };
 
+  if (!stopTime) return <p>Yükleniyor...</p>;
+
   return (
-    <div className="container mt-5">
-      <h2 className="mb-4">Durak Zamanını Düzenle</h2>
+    <div className="form-container">
+      <h5>Durak Zamanı Düzenle</h5>
       <form onSubmit={handleSubmit}>
-        <div className="row">
-          <div className="col-md-6 mb-3">
-            <label htmlFor="arrival_time" className="form-label">
-              Varış Zamanı (HH:MM:SS):
-            </label>
-            <input
-              type="text"
-              id="arrival_time"
-              name="arrival_time"
-              className="form-control"
-              value={stopTime.arrival_time}
-              onChange={handleChange}
-              placeholder="Ör: 12:30:00"
-            />
-          </div>
-          <div className="col-md-6 mb-3">
-            <label htmlFor="departure_time" className="form-label">
-              Kalkış Zamanı (HH:MM:SS):
-            </label>
-            <input
-              type="text"
-              id="departure_time"
-              name="departure_time"
-              className="form-control"
-              value={stopTime.departure_time}
-              onChange={handleChange}
-              placeholder="Ör: 12:35:00"
-            />
-          </div>
+        <div className="mb-2">
+          <label htmlFor="arrival_time" className="form-label">
+            Varış Zamanı
+          </label>
+          <input
+            type="text"
+            id="arrival_time"
+            name="arrival_time"
+            className="form-control"
+            value={stopTime.arrival_time}
+            onChange={handleChange}
+            placeholder="Ör: 12:30:00"
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="departure_time" className="form-label">
+            Kalkış Zamanı
+          </label>
+          <input
+            type="text"
+            id="departure_time"
+            name="departure_time"
+            className="form-control"
+            value={stopTime.departure_time}
+            onChange={handleChange}
+            placeholder="Ör: 12:35:00"
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="stop_sequence" className="form-label">
+            Sıra Numarası
+          </label>
+          <input
+            type="number"
+            id="stop_sequence"
+            name="stop_sequence"
+            className="form-control"
+            value={stopTime.stop_sequence || ""}
+            onChange={handleChange}
+            min="1"
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="stop_headsign" className="form-label">
+            Durak Başlığı
+          </label>
+          <input
+            type="text"
+            id="stop_headsign"
+            name="stop_headsign"
+            className="form-control"
+            value={stopTime.stop_headsign}
+            onChange={handleChange}
+          />
         </div>
         <div className="row">
-          <div className="col-md-6 mb-3">
-            <label htmlFor="stop_sequence" className="form-label">
-              Sıra Numarası:
-            </label>
-            <input
-              type="number"
-              id="stop_sequence"
-              name="stop_sequence"
-              className="form-control"
-              value={stopTime.stop_sequence || ""}
-              onChange={handleChange}
-              min="1"
-            />
-          </div>
-          <div className="col-md-6 mb-3">
-            <label htmlFor="stop_headsign" className="form-label">
-              Durak Başlığı:
-            </label>
-            <input
-              type="text"
-              id="stop_headsign"
-              name="stop_headsign"
-              className="form-control"
-              value={stopTime.stop_headsign}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-        <div className="row">
-          <div className="col-md-6 mb-3">
+          <div className="col-6 mb-2">
             <label htmlFor="pickup_type" className="form-label">
-              Alış Türü:
+              Alış Türü
             </label>
             <select
               id="pickup_type"
               name="pickup_type"
-              className="form-select"
+              className="form-control"
               value={stopTime.pickup_type ?? ""}
               onChange={handleChange}
             >
               <option value="">Seçiniz</option>
-              <option value="0">0 - Normal Alış</option>
-              <option value="1">1 - Alış Yok</option>
-              <option value="2">2 - Ajansla İletişim Gerekiyor</option>
-              <option value="3">3 - Sürücüyle İletişim Gerekiyor</option>
+              <option value="0">0 - Normal</option>
+              <option value="1">1 - Yok</option>
+              <option value="2">2 - Ajansla İletişim</option>
+              <option value="3">3 - Sürücüyle İletişim</option>
             </select>
           </div>
-          <div className="col-md-6 mb-3">
+          <div className="col-6 mb-2">
             <label htmlFor="drop_off_type" className="form-label">
-              Bırakış Türü:
+              Bırakış Türü
             </label>
             <select
               id="drop_off_type"
               name="drop_off_type"
-              className="form-select"
+              className="form-control"
               value={stopTime.drop_off_type ?? ""}
               onChange={handleChange}
             >
               <option value="">Seçiniz</option>
-              <option value="0">0 - Normal Bırakış</option>
-              <option value="1">1 - Bırakış Yok</option>
-              <option value="2">2 - Ajansla İletişim Gerekiyor</option>
-              <option value="3">3 - Sürücüyle İletişim Gerekiyor</option>
+              <option value="0">0 - Normal</option>
+              <option value="1">1 - Yok</option>
+              <option value="2">2 - Ajansla İletişim</option>
+              <option value="3">3 - Sürücüyle İletişim</option>
             </select>
           </div>
         </div>
         <div className="row">
-          <div className="col-md-6 mb-3">
+          <div className="col-6 mb-2">
             <label htmlFor="shape_dist_traveled" className="form-label">
-              Şekil Mesafesi (metre):
+              Şekil Mesafesi
             </label>
             <input
               type="number"
@@ -237,42 +210,42 @@ const StopTimeEditPage = () => {
               step="0.01"
             />
           </div>
-          <div className="col-md-6 mb-3">
+          <div className="col-6 mb-2">
             <label htmlFor="timepoint" className="form-label">
-              Zaman Noktası:
+              Zaman Noktası
             </label>
             <select
               id="timepoint"
               name="timepoint"
-              className="form-select"
+              className="form-control"
               value={stopTime.timepoint ?? ""}
               onChange={handleChange}
             >
               <option value="">Seçiniz</option>
               <option value="1">1 - Tam Zaman</option>
-              <option value="0">0 - Yaklaşık Zaman</option>
+              <option value="0">0 - Yaklaşık</option>
             </select>
           </div>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
             Kaydet
           </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() =>
-              navigate(`/map/${project_id}`, {
-                state: { selectedRoute, selectedTrip },
-              })
-            }
-          >
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
             İptal
           </button>
         </div>
       </form>
     </div>
   );
+};
+
+StopTimeEditPage.propTypes = {
+  project_id: PropTypes.string.isRequired,
+  trip_id: PropTypes.string.isRequired,
+  stop_id: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+  setStopsAndTimes: PropTypes.func.isRequired,
 };
 
 export default StopTimeEditPage;

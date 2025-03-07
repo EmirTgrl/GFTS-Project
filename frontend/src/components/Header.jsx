@@ -5,8 +5,7 @@ import { Navbar, Nav, NavDropdown, Container } from "react-bootstrap";
 import {
   PersonCircle,
   Upload,
-  List,
-} from "react-bootstrap-icons"; // İkonlar
+} from "react-bootstrap-icons";
 import "../styles/Header.css";
 
 const Header = () => {
@@ -36,14 +35,6 @@ const Header = () => {
                   title="Import"
                 >
                   <Upload size={20} />
-                </Nav.Link>
-                <Nav.Link
-                  as={Link}
-                  to="/projects"
-                  className="nav-link-custom"
-                  title="Projects"
-                >
-                  <List size={20} />
                 </Nav.Link>
                 <NavDropdown
                   title={<PersonCircle size={20} />}

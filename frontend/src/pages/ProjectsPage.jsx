@@ -5,9 +5,18 @@ import {
   fetchProjects,
   deleteProject,
   exportProject,
+  createProject,
 } from "../api/projectApi.js";
-import { Container, Card, Button, Pagination, Row, Col } from "react-bootstrap";
-import { XCircle, Trash, Download, Eye } from "react-bootstrap-icons"; 
+import {
+  Container,
+  Card,
+  Button,
+  Table,
+  Pagination,
+  Row,
+  Col,
+} from "react-bootstrap";
+import { XCircle, Trash, Download, Eye } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import "../styles/ProjectsPage.css";
 
@@ -16,6 +25,7 @@ const ProjectsPage = () => {
   const [projectName, setProjectName] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [exportLoading, setExportLoading] = useState(false);
   const projectsPerPage = 6;
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
@@ -40,25 +50,11 @@ const ProjectsPage = () => {
 
   const handleCreateProject = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/projects/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ file_name: projectName }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const projectId = data.project_id;
-        await loadProjects();
-        navigate(`/map/${projectId}`);
-        setShowModal(false);
-      } else {
-        console.error("Failed to create project:", response.status);
-        setShowModal(false);
-      }
+      const data = await createProject(projectName, token);
+      const projectId = data.project_id;
+      await loadProjects();
+      navigate(`/map/${projectId}`);
+      setShowModal(false);
     } catch (error) {
       console.error("Error creating project:", error);
       setShowModal(false);
@@ -89,21 +85,24 @@ const ProjectsPage = () => {
     }
   };
 
-  const handleExportProject = async (projectId, projectName) => {
+  const handleExportProject = async (projectId) => {
+    setExportLoading(true);
     try {
-      const blob = await exportProject(projectId, token);
+      const { blob, link } = await exportProject(projectId, token);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${projectName}_export.zip`;
+      a.download = link;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
       Swal.fire("Success!", "Your project has been exported.", "success");
     } catch (error) {
-      console.error("Error exporting project:", error);
+      console.error("Export error:", error);
       Swal.fire("Error!", "Failed to export the project.", "error");
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -119,7 +118,6 @@ const ProjectsPage = () => {
     setProjectName(e.target.value);
   };
 
-  // Pagination hesaplamaları
   const indexOfLastProject = currentPage * projectsPerPage;
   const indexOfFirstProject = indexOfLastProject - projectsPerPage;
   const currentProjects = projects.slice(
@@ -145,44 +143,48 @@ const ProjectsPage = () => {
                 </Button>
               </div>
               <hr className="mb-4" />
-              <Row>
-                {currentProjects.length > 0 ? (
-                  currentProjects.map((project) => (
-                    <Col key={project.project_id} md={6} className="mb-3">
-                      <Card className="project-card shadow-sm h-100">
-                        <Card.Body className="d-flex flex-column justify-content-between">
-                          <div>
-                            <Card.Title className="h6 fw-semibold mb-2">
-                              {project.file_name}
-                            </Card.Title>
-                            <Card.Text className="text-muted small">
-                              Created:{" "}
-                              {new Date(
-                                project.import_date
-                              ).toLocaleDateString()}
-                            </Card.Text>
-                          </div>
-                          <div className="d-flex justify-content-end gap-2 mt-2">
+              {currentProjects.length > 0 ? (
+                <>
+                  <Table striped bordered hover responsive>
+                    <thead>
+                      <tr>
+                        <th>Project Name</th>
+                        <th>Created Date</th>
+                        <th style={{ width: "150px" }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentProjects.map((project) => (
+                        <tr key={project.project_id}>
+                          <td>{project.file_name}</td>
+                          <td>
+                            {new Date(project.import_date).toLocaleDateString()}
+                          </td>
+                          <td className="d-flex justify-content-around">
                             <Button
                               variant="outline-primary"
                               size="sm"
                               onClick={() =>
                                 navigate(`/map/${project.project_id}`)
                               }
+                              title="View"
                             >
-                              <Eye size={16} /> {/* View ikonu */}
+                              <Eye size={16} />
                             </Button>
                             <Button
                               variant="outline-success"
                               size="sm"
                               onClick={() =>
-                                handleExportProject(
-                                  project.project_id,
-                                  project.file_name
-                                )
+                                handleExportProject(project.project_id)
                               }
+                              disabled={exportLoading}
+                              title="Export"
                             >
-                              <Download size={16} />
+                              {exportLoading ? (
+                                <span className="spinner-border spinner-border-sm me-1" />
+                              ) : (
+                                <Download size={16} />
+                              )}
                             </Button>
                             <Button
                               variant="outline-danger"
@@ -193,59 +195,57 @@ const ProjectsPage = () => {
                                   project.file_name
                                 )
                               }
+                              title="Delete"
                             >
                               <Trash size={16} />
                             </Button>
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  ))
-                ) : (
-                  <Col>
-                    <p className="text-muted text-center py-3 fw-medium">
-                      No projects yet. Create one or import a GTFS file!
-                    </p>
-                  </Col>
-                )}
-              </Row>
-
-              {projects.length > projectsPerPage && (
-                <div className="pagination-section mt-4 text-center">
-                  <Pagination className="justify-content-center mb-2">
-                    <Pagination.First
-                      onClick={() => handlePageChange(1)}
-                      disabled={currentPage === 1}
-                    />
-                    <Pagination.Prev
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    />
-                    {Array.from({ length: totalPages }, (_, index) => (
-                      <Pagination.Item
-                        key={index + 1}
-                        active={index + 1 === currentPage}
-                        onClick={() => handlePageChange(index + 1)}
-                      >
-                        {index + 1}
-                      </Pagination.Item>
-                    ))}
-                    <Pagination.Next
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    />
-                    <Pagination.Last
-                      onClick={() => handlePageChange(totalPages)}
-                      disabled={currentPage === totalPages}
-                    />
-                  </Pagination>
-                  <small className="text-muted">
-                    Page {currentPage} of {totalPages} (
-                    {indexOfFirstProject + 1}-
-                    {Math.min(indexOfLastProject, projects.length)} of{" "}
-                    {projects.length} projects)
-                  </small>
-                </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                  {projects.length > projectsPerPage && (
+                    <div className="pagination-section mt-4 text-center">
+                      <Pagination className="justify-content-center mb-2">
+                        <Pagination.First
+                          onClick={() => handlePageChange(1)}
+                          disabled={currentPage === 1}
+                        />
+                        <Pagination.Prev
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        />
+                        {Array.from({ length: totalPages }, (_, index) => (
+                          <Pagination.Item
+                            key={index + 1}
+                            active={index + 1 === currentPage}
+                            onClick={() => handlePageChange(index + 1)}
+                          >
+                            {index + 1}
+                          </Pagination.Item>
+                        ))}
+                        <Pagination.Next
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        />
+                        <Pagination.Last
+                          onClick={() => handlePageChange(totalPages)}
+                          disabled={currentPage === totalPages}
+                        />
+                      </Pagination>
+                      <small className="text-muted">
+                        Page {currentPage} of {totalPages} (
+                        {indexOfFirstProject + 1}-
+                        {Math.min(indexOfLastProject, projects.length)} of{" "}
+                        {projects.length} projects)
+                      </small>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-muted text-center py-3 fw-medium">
+                  No projects yet. Create one or import a GTFS file!
+                </p>
               )}
             </Card.Body>
           </Card>

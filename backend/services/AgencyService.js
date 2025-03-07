@@ -115,14 +115,14 @@ const agencyService = {
   deleteAgencyById: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { agency_id, project_id } = req.params;
+      const { agency_id } = req.params;
 
       const [result] = await pool.execute(
         `
         DELETE FROM agency
-        WHERE agency_id = ? AND project_id = ? AND user_id = ?
+        WHERE agency_id = ? AND user_id = ?
         `,
-        [agency_id, project_id, user_id]
+        [agency_id, user_id]
       );
 
       if (result.affectedRows === 0) {

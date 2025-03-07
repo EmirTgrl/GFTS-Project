@@ -1,22 +1,54 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { fetchRoutesByProjectId, deleteRouteById } from "../../api/routeApi";
-import { fetchTripsByRouteId, deleteTripById } from "../../api/tripApi";
+import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
+import { fetchTripsByRouteId } from "../../api/tripApi";
+import { fetchStopsAndStopTimesByTripId } from "../../api/stopTimeApi";
 import {
-  fetchStopsAndStopTimesByTripId,
-  deleteStopTimeById,
-} from "../../api/stopTimeApi";
-import { fetchCalendarByServiceId } from "../../api/calendarApi";
+  fetchCalendarByServiceId,
+  fetchCalendarsByProjectId,
+  deleteCalendarById,
+} from "../../api/calendarApi";
 import {
   fetchAgenciesByProjectId,
   deleteAgencyById,
 } from "../../api/agencyApi";
-import AgencyAdd from "../../pages/AgencyAddPage";
-import AgencyEdit from "../../pages/AgencyEditPage";
-import CalendarAdd from "../../pages/CalendarAddPage";
-import CalendarEdit from "../../pages/CalendarEditPage";
-import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Map,
+  BusFront,
+  Clock,
+  PlusCircle,
+  PencilSquare,
+  Trash2,
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  Building,
+} from "react-bootstrap-icons";
+import {
+  Accordion,
+  Pagination,
+  Button,
+  Card,
+  OverlayTrigger,
+  Tooltip,
+} from "react-bootstrap";
+import StopList from "./StopList";
+import TripList from "./TripList";
+import CalendarInfo from "./CalendarInfo";
+import AgencyAddPage from "../../pages/AgencyAddPage";
+import AgencyEditPage from "../../pages/AgencyEditPage";
+import RouteAddPage from "../../pages/RouteAddPage";
+import RouteEditPage from "../../pages/RouteEditPage";
+import TripAddPage from "../../pages/TripAddPage";
+import TripEditPage from "../../pages/TripEditPage";
+import StopTimeAddPage from "../../pages/StopTimeAddPage";
+import StopTimeEditPage from "../../pages/StopTimeEditPage";
+import CalendarAddPage from "../../pages/CalendarAddPage";
+import CalendarEditPage from "../../pages/CalendarEditPage";
+import "../../styles/Sidebar.css";
 
 const Sidebar = ({
   token,
@@ -33,279 +65,210 @@ const Sidebar = ({
   setStopsAndTimes,
   calendar,
   setCalendar,
+  calendars,
+  setCalendars,
+  agencies,
+  setAgencies,
   setMapCenter,
   setZoom,
-  location,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState("routes");
-  const [agencies, setAgencies] = useState([]);
-  const [showAgencyAdd, setShowAgencyAdd] = useState(false);
-  const [showAgencyEdit, setShowAgencyEdit] = useState(null);
-  const [showCalendarAdd, setShowCalendarAdd] = useState(false);
-  const [showCalendarEdit, setShowCalendarEdit] = useState(false);
-  const navigate = useNavigate();
+  const [activeKey, setActiveKey] = useState("0"); 
+  const [pageAgencies, setPageAgencies] = useState(1);
+  const [pageRoutes, setPageRoutes] = useState(1);
+  const [pageTrips, setPageTrips] = useState(1);
+  const [pageStops, setPageStops] = useState(1);
+  const [pageCalendars, setPageCalendars] = useState(1);
+  const [selectedAgency, setSelectedAgency] = useState(null);
+  const [selectedCalendar, setSelectedCalendar] = useState(null);
+  const itemsPerPage = 8;
+
+  const [agencyFormMode, setAgencyFormMode] = useState(null); 
+  const [agencyEditId, setAgencyEditId] = useState(null);
+  const [routeFormMode, setRouteFormMode] = useState(null);
+  const [routeEditId, setRouteEditId] = useState(null);
+  const [tripFormMode, setTripFormMode] = useState(null);
+  const [tripEditId, setTripEditId] = useState(null);
+  const [stopTimeFormMode, setStopTimeFormMode] = useState(null);
+  const [stopTimeEditId, setStopTimeEditId] = useState(null);
+  const [calendarFormMode, setCalendarFormMode] = useState(null);
+  const [calendarEditId, setCalendarEditId] = useState(null);
 
   useEffect(() => {
     const loadAgencies = async () => {
       try {
         const data = await fetchAgenciesByProjectId(project_id, token);
-        setAgencies(data);
+        setAgencies(Array.isArray(data) ? data : []);
+        setPageAgencies(1);
       } catch (error) {
         console.error("Error fetching agencies:", error);
         setAgencies([]);
       }
     };
-    if (token && project_id) loadAgencies();
-  }, [token, project_id]);
 
-  useEffect(() => {
-    const loadInitialData = async () => {
+    const loadCalendars = async () => {
       try {
-        const data = await fetchRoutesByProjectId(project_id, token);
-        setRoutes(Array.isArray(data) ? data : []);
+        const data = await fetchCalendarsByProjectId(project_id, token);
+        setCalendars(Array.isArray(data) ? data : []);
+        setPageCalendars(1);
       } catch (error) {
-        console.error("Error fetching routes:", error);
-        setRoutes([]);
+        console.error("Error fetching calendars:", error);
+        setCalendars([]);
       }
     };
-    if (token && project_id) loadInitialData();
-  }, [token, project_id, setRoutes]);
 
-  useEffect(() => {
-    const { refresh } = location.state || {};
-    if (refresh) {
-      if (activeTab === "routes") {
-        fetchRoutesByProjectId(project_id, token)
-          .then(setRoutes)
-          .catch(console.error);
-      } else if (activeTab === "trips" && selectedRoute) {
-        fetchTripsByRouteId(selectedRoute, token)
-          .then(setTrips)
-          .catch(console.error);
-      } else if (activeTab === "stops" && selectedTrip) {
-        fetchStopsAndStopTimesByTripId(selectedTrip, project_id, token)
-          .then(setStopsAndTimes)
-          .catch(console.error);
-      }
-      navigate(`/map/${project_id}`, {
-        replace: true,
-        state: { selectedRoute, selectedTrip },
-      });
+    if (token && project_id) {
+      loadAgencies();
+      loadCalendars();
     }
-  }, [
-    location.state,
-    activeTab,
-    selectedRoute,
-    selectedTrip,
-    project_id,
-    token,
-    navigate,
-    setRoutes,
-    setTrips,
-    setStopsAndTimes,
-  ]);
+  }, [token, project_id, setAgencies, setCalendars]);
 
-  const handleTripSelect = useCallback(
-    async (tripId) => {
-      setSelectedTrip(tripId);
-      setCalendar(null);
-      try {
-        const stopsAndTimesData = await fetchStopsAndStopTimesByTripId(
-          tripId,
-          project_id,
+  const handleAgencySelect = async (agencyId) => {
+    setSelectedAgency(agencyId);
+    setSelectedRoute(null);
+    setSelectedTrip(null);
+    setTrips([]);
+    setStopsAndTimes([]);
+    setActiveKey("1"); 
+    setPageRoutes(1);
+    try {
+      const routesData = await fetchRoutesByAgencyId(
+        agencyId,
+        project_id,
+        token
+      );
+      setRoutes(Array.isArray(routesData) ? routesData : []);
+    } catch (error) {
+      console.error("Error fetching routes by agency:", error);
+      setRoutes([]);
+    }
+  };
+
+  const handleRouteSelect = async (routeId) => {
+    setSelectedRoute(routeId);
+    setSelectedTrip(null);
+    setStopsAndTimes([]);
+    setActiveKey("2"); 
+    setPageTrips(1);
+    try {
+      const tripsData = await fetchTripsByRouteId(routeId, token);
+      setTrips(Array.isArray(tripsData) ? tripsData : []);
+    } catch (error) {
+      console.error("Error fetching trips:", error);
+      setTrips([]);
+    }
+  };
+
+  const handleTripSelect = async (tripId) => {
+    setSelectedTrip(tripId);
+    setCalendar(null);
+    setActiveKey("3"); 
+    setPageStops(1);
+    try {
+      const stopsAndTimesData = await fetchStopsAndStopTimesByTripId(
+        tripId,
+        project_id,
+        token
+      );
+      setStopsAndTimes(stopsAndTimesData);
+
+      const selectedTripData = trips.find((trip) => trip.trip_id === tripId);
+      if (selectedTripData?.service_id) {
+        const calendarData = await fetchCalendarByServiceId(
+          selectedTripData.service_id,
           token
         );
-        setStopsAndTimes(stopsAndTimesData);
-
-        const selectedTripData = trips.find((trip) => trip.trip_id === tripId);
-        if (selectedTripData?.service_id) {
-          const calendarData = await fetchCalendarByServiceId(
-            selectedTripData.service_id,
-            token
-          );
-          console.log("Fetched calendar data:", calendarData);
-          setCalendar(calendarData || null);
-        } else {
-          console.log("No service_id found for trip:", selectedTripData);
-        }
-
-        if (stopsAndTimesData.length > 0) {
-          const validStops = stopsAndTimesData.filter(
-            (stop) =>
-              stop.stop_lat &&
-              stop.stop_lon &&
-              !isNaN(parseFloat(stop.stop_lat)) &&
-              !isNaN(parseFloat(stop.stop_lon))
-          );
-          if (validStops.length > 0) {
-            const centerLat =
-              validStops.reduce(
-                (sum, stop) => sum + parseFloat(stop.stop_lat),
-                0
-              ) / validStops.length;
-            const centerLon =
-              validStops.reduce(
-                (sum, stop) => sum + parseFloat(stop.stop_lon),
-                0
-              ) / validStops.length;
-            setMapCenter([centerLat, centerLon]);
-            setZoom(14);
-          }
-        }
-      } catch (error) {
-        console.error("Error in handleTripSelect:", error);
-        setStopsAndTimes([]);
+        setCalendar(calendarData || null);
+        setSelectedCalendar(selectedTripData.service_id);
       }
-    },
-    [
-      project_id,
-      token,
-      trips,
-      setSelectedTrip,
-      setStopsAndTimes,
-      setCalendar,
-      setMapCenter,
-      setZoom,
-    ]
-  );
 
-  const handleRouteSelect = useCallback(
-    async (routeId) => {
-      setSelectedRoute(routeId);
-      setSelectedTrip(null);
-      setActiveTab("trips");
-      try {
-        const tripsData = await fetchTripsByRouteId(routeId, token);
-        setTrips(Array.isArray(tripsData) ? tripsData : []);
-      } catch (error) {
-        console.error("Error fetching trips:", error);
-        setTrips([]);
-      }
-    },
-    [token, setSelectedRoute, setSelectedTrip, setTrips, setActiveTab]
-  );
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "Belirtilmemiş";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) throw new Error("Geçersiz tarih");
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const year = date.getFullYear();
-      return `${day}.${month}.${year}`;
-    } catch (error) {
-      console.error("Error formatting date:", dateString, error);
-      return "Hatalı Tarih";
-    }
-  };
-
-  const formatDays = (calendar) => {
-    if (!calendar) return "Yok";
-    const dayMap = {
-      monday: "Pazartesi",
-      tuesday: "Salı",
-      wednesday: "Çarşamba",
-      thursday: "Perşembe",
-      friday: "Cuma",
-      saturday: "Cumartesi",
-      sunday: "Pazar",
-    };
-    const activeDays = Object.keys(calendar)
-      .filter((k) =>
-        [
-          "monday",
-          "tuesday",
-          "wednesday",
-          "thursday",
-          "friday",
-          "saturday",
-          "sunday",
-        ].includes(k)
-      )
-      .filter((k) => {
-        const value = calendar[k];
-        return value === "1" || value === 1 || value === true;
-      })
-      .map((k) => dayMap[k]);
-    return activeDays.length > 0 ? activeDays.join(", ") : "Yok";
-  };
-
-  const handleDeleteRoute = async (routeId) => {
-    const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu rotayı silmek istediğinize emin misiniz?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, sil!",
-      cancelButtonText: "Hayır, iptal et",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await deleteRouteById(routeId, project_id, token);
-        setRoutes((prev) => prev.filter((route) => route.route_id !== routeId));
-        if (selectedRoute === routeId) setSelectedRoute(null);
-        Swal.fire("Silindi!", "Rota başarıyla silindi.", "success");
-      } catch (error) {
-        console.error("Error deleting route:", error);
-        Swal.fire("Hata!", "Rota silinirken bir hata oluştu.", "error");
-      }
-    }
-  };
-
-  const handleDeleteTrip = async (tripId) => {
-    const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu tripi silmek istediğinize emin misiniz?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, sil!",
-      cancelButtonText: "Hayır, iptal et",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await deleteTripById(tripId, token);
-        setTrips((prev) => prev.filter((trip) => trip.trip_id !== tripId));
-        if (selectedTrip === tripId) setSelectedTrip(null);
-        Swal.fire("Silindi!", "Trip başarıyla silindi.", "success");
-      } catch (error) {
-        console.error("Error deleting trip:", error);
-        Swal.fire("Hata!", "Trip silinirken bir hata oluştu.", "error");
-      }
-    }
-  };
-
-  const handleDeleteStop = async (tripId, stopId) => {
-    const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu durağı silmek istediğinize emin misiniz?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, sil!",
-      cancelButtonText: "Hayır, iptal et",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await deleteStopTimeById(tripId, stopId, project_id, token);
-        setStopsAndTimes((prev) =>
-          prev.filter((stop) => stop.stop_id !== stopId)
+      if (stopsAndTimesData.length > 0) {
+        const validStops = stopsAndTimesData.filter(
+          (stop) =>
+            stop.stop_lat &&
+            stop.stop_lon &&
+            !isNaN(parseFloat(stop.stop_lat)) &&
+            !isNaN(parseFloat(stop.stop_lon))
         );
-        Swal.fire("Silindi!", "Durak başarıyla silindi.", "success");
-      } catch (error) {
-        console.error("Error deleting stop time:", error);
-        Swal.fire("Hata!", "Durak silinirken bir hata oluştu.", "error");
+        if (validStops.length > 0) {
+          const centerLat =
+            validStops.reduce(
+              (sum, stop) => sum + parseFloat(stop.stop_lat),
+              0
+            ) / validStops.length;
+          const centerLon =
+            validStops.reduce(
+              (sum, stop) => sum + parseFloat(stop.stop_lon),
+              0
+            ) / validStops.length;
+          setMapCenter([centerLat, centerLon]);
+          setZoom(14);
+        }
       }
+    } catch (error) {
+      console.error("Error in handleTripSelect:", error);
+      setStopsAndTimes([]);
     }
+  };
+
+  const handleCalendarSelect = (serviceId) => {
+    setSelectedCalendar(serviceId);
+    setCalendar(calendars.find((cal) => cal.service_id === serviceId) || null);
+  };
+
+  const openAgencyForm = (mode, agencyId = null) => {
+    setAgencyFormMode(mode);
+    setAgencyEditId(agencyId);
+    setActiveKey("0");
+  };
+
+  const closeAgencyForm = () => {
+    setAgencyFormMode(null);
+    setAgencyEditId(null);
+  };
+
+  const openRouteForm = (mode, routeId = null) => {
+    setRouteFormMode(mode);
+    setRouteEditId(routeId);
+    setActiveKey("1");
+  };
+
+  const closeRouteForm = () => {
+    setRouteFormMode(null);
+    setRouteEditId(null);
+  };
+
+  const openTripForm = (mode, tripId = null) => {
+    setTripFormMode(mode);
+    setTripEditId(tripId);
+    setActiveKey("2");
+  };
+
+  const closeTripForm = () => {
+    setTripFormMode(null);
+    setTripEditId(null);
+  };
+
+  const openStopTimeForm = (mode, stopId = null) => {
+    setStopTimeFormMode(mode);
+    setStopTimeEditId(stopId);
+    setActiveKey("3");
+  };
+
+  const closeStopTimeForm = () => {
+    setStopTimeFormMode(null);
+    setStopTimeEditId(null);
+  };
+
+  const openCalendarForm = (mode, serviceId = null) => {
+    setCalendarFormMode(mode);
+    setCalendarEditId(serviceId);
+    setActiveKey("4");
+  };
+
+  const closeCalendarForm = () => {
+    setCalendarFormMode(null);
+    setCalendarEditId(null);
   };
 
   const handleDeleteAgency = async (agencyId) => {
@@ -314,418 +277,505 @@ const Sidebar = ({
       text: "Bu ajansı silmek istediğinize emin misiniz?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
       confirmButtonText: "Evet, sil!",
-      cancelButtonText: "Hayır, iptal et",
+      cancelButtonText: "Hayır",
     });
-
     if (result.isConfirmed) {
       try {
         await deleteAgencyById(agencyId, project_id, token);
-        setAgencies((prev) =>
-          prev.filter((agency) => agency.agency_id !== agencyId)
-        );
+        setAgencies((prev) => prev.filter((ag) => ag.agency_id !== agencyId));
+        setPageAgencies(1);
+        if (selectedAgency === agencyId) {
+          setSelectedAgency(null);
+          setRoutes([]);
+          setTrips([]);
+          setStopsAndTimes([]);
+        }
         Swal.fire("Silindi!", "Ajans başarıyla silindi.", "success");
       } catch (error) {
-        console.error("Error deleting agency:", error);
-        Swal.fire("Hata!", "Ajans silinirken bir hata oluştu.", "error");
+        Swal.fire(
+          "Hata!",
+          `Ajans silinirken bir hata oluştu: ${error.message}`,
+          "error"
+        );
+      }
+    }
+  };
+
+  const handleDeleteRoute = async (routeId) => {
+    const result = await Swal.fire({
+      title: "Emin misiniz?",
+      text: "Bu rotayı silmek istediğinize emin misiniz?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Evet, sil!",
+      cancelButtonText: "Hayır",
+    });
+    if (result.isConfirmed) {
+      try {
+        await deleteRouteById(routeId, project_id, token);
+        setRoutes((prev) => prev.filter((route) => route.route_id !== routeId));
+        setPageRoutes(1);
+        if (selectedRoute === routeId) {
+          setSelectedRoute(null);
+          setTrips([]);
+          setStopsAndTimes([]);
+        }
+        Swal.fire("Silindi!", "Rota başarıyla silindi.", "success");
+      } catch (error) {
+        Swal.fire("Hata!", "Rota silinirken bir hata oluştu:", "error");
+      }
+    }
+  };
+
+  const handleDeleteCalendar = async (serviceId) => {
+    const result = await Swal.fire({
+      title: "Emin misiniz?",
+      text: "Bu takvimi silmek istediğinize emin misiniz?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Evet, sil!",
+      cancelButtonText: "Hayır",
+    });
+    if (result.isConfirmed) {
+      try {
+        await deleteCalendarById(serviceId, token);
+        setCalendars((prev) =>
+          prev.filter((cal) => cal.service_id !== serviceId)
+        );
+        setPageCalendars(1);
+        if (selectedCalendar === serviceId) setSelectedCalendar(null);
+        Swal.fire("Silindi!", "Takvim başarıyla silindi.", "success");
+      } catch (error) {
+        Swal.fire(
+          "Hata!",
+          `Takvim silinirken bir hata oluştu: ${error.message}`,
+          "error"
+        );
       }
     }
   };
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
+  const paginateItems = (items, currentPage) => {
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return items.slice(indexOfFirstItem, indexOfLastItem);
+  };
+
+  const renderPagination = (items, currentPage, setCurrentPage) => {
+    const totalPages = Math.ceil(items.length / itemsPerPage);
+    if (totalPages <= 1) return null;
+
+    return (
+      <Pagination size="sm" className="justify-content-center mt-2">
+        <Pagination.First
+          onClick={() => setCurrentPage(1)}
+          disabled={currentPage === 1}
+        />
+        <Pagination.Prev
+          onClick={() => setCurrentPage(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <ArrowLeft size={16} />
+        </Pagination.Prev>
+        <span className="page-info">
+          {currentPage} / {totalPages}
+        </span>
+        <Pagination.Next
+          onClick={() => setCurrentPage(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          <ArrowRight size={16} />
+        </Pagination.Next>
+        <Pagination.Last
+          onClick={() => setCurrentPage(totalPages)}
+          disabled={currentPage === totalPages}
+        />
+      </Pagination>
+    );
+  };
+
+  const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
+
+  const getActiveDays = (calendar) => {
+    const days = [];
+    if (calendar?.monday === 1) days.push("Pzt");
+    if (calendar?.tuesday === 1) days.push("Sal");
+    if (calendar?.wednesday === 1) days.push("Çar");
+    if (calendar?.thursday === 1) days.push("Per");
+    if (calendar?.friday === 1) days.push("Cum");
+    if (calendar?.saturday === 1) days.push("Cmt");
+    if (calendar?.sunday === 1) days.push("Paz");
+    return days.length > 0 ? days.join(", ") : "Hiçbir gün";
+  };
+
   return (
-    <>
-      <button
-        className={`toggle-sidebar-btn ${!isSidebarOpen ? "show" : ""}`}
-        onClick={toggleSidebar}
-      >
-        ☰
-      </button>
-      <div
-        className={`sidebar ${isSidebarOpen ? "open" : "closed"}`}
-        tabIndex={0}
-      >
-        <div className="sidebar-header mb-3">
-          <h2 className="sidebar-title">Proje Kontrol Paneli</h2>
-          <button
-            className="btn btn-outline-secondary btn-sm"
-            onClick={toggleSidebar}
-          >
-            ✕
-          </button>
-        </div>
+    <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
+      <div className="sidebar-header">
+        <h3 className="sidebar-title">Proje Yönetimi</h3>
+        <Button variant="link" onClick={toggleSidebar} className="toggle-btn">
+          {isSidebarOpen ? (
+            <ChevronLeft size={24} />
+          ) : (
+            <ChevronRight size={24} />
+          )}
+        </Button>
+      </div>
 
-        {isSidebarOpen && (
-          <div className="d-flex flex-column h-100">
-            <ul className="nav nav-tabs mb-3">
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${
-                    activeTab === "routes" ? "active" : ""
-                  }`}
-                  onClick={() => setActiveTab("routes")}
-                >
-                  Rotalar
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${
-                    activeTab === "trips" ? "active" : ""
-                  }`}
-                  onClick={() => setActiveTab("trips")}
-                  disabled={!selectedRoute}
-                >
-                  Tripler
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${
-                    activeTab === "stops" ? "active" : ""
-                  }`}
-                  onClick={() => setActiveTab("stops")}
-                  disabled={!selectedTrip}
-                >
-                  Duraklar
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${
-                    activeTab === "calendar" ? "active" : ""
-                  }`}
-                  onClick={() => setActiveTab("calendar")}
-                >
-                  Takvim
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${
-                    activeTab === "agencies" ? "active" : ""
-                  }`}
-                  onClick={() => setActiveTab("agencies")}
-                >
-                  Ajanslar
-                </button>
-              </li>
-            </ul>
-
-            <div
-              className="tab-content flex-grow-1"
-              style={{ overflowY: "auto" }}
-            >
-              {activeTab === "routes" && (
-                <div className="p-2">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="mb-0">Rotalar</h5>
-                    <button
-                      className="btn btn-success btn-sm"
-                      onClick={() => navigate(`/add-route/${project_id}`)}
-                    >
-                      Yeni
-                    </button>
-                  </div>
-                  <div>
-                    {routes.length > 0 ? (
-                      routes.map((route) => (
-                        <div key={route.route_id} className="card mb-2">
-                          <div className="card-body d-flex justify-content-between align-items-center p-2">
+      {isSidebarOpen && (
+        <Accordion
+          activeKey={activeKey}
+          onSelect={(key) => setActiveKey(key)}
+          className="sidebar-accordion"
+        >
+          {/* Agencies */}
+          <Accordion.Item eventKey="0">
+            <Accordion.Header>
+              <Building size={20} className="me-2" /> Ajanslar
+            </Accordion.Header>
+            <Accordion.Body>
+              {agencyFormMode === "add" ? (
+                <AgencyAddPage
+                  project_id={project_id}
+                  onClose={closeAgencyForm}
+                  setAgencies={setAgencies}
+                />
+              ) : agencyFormMode === "edit" && agencyEditId ? (
+                <AgencyEditPage
+                  project_id={project_id}
+                  agency_id={agencyEditId}
+                  onClose={closeAgencyForm}
+                  setAgencies={setAgencies}
+                />
+              ) : (
+                <>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    className="mb-3 w-100"
+                    onClick={() => openAgencyForm("add")}
+                  >
+                    <PlusCircle size={16} className="me-2" /> Yeni Ajans
+                  </Button>
+                  {agencies.length > 0 ? (
+                    paginateItems(agencies, pageAgencies).map((agency) => (
+                      <Card key={agency.agency_id} className="mb-2 item-card">
+                        <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                          <OverlayTrigger
+                            placement="top"
+                            overlay={renderTooltip(agency.agency_name)}
+                          >
                             <span
-                              className="text-truncate"
-                              style={{ maxWidth: "60%" }}
-                              title={route.route_long_name}
+                              className="item-title"
+                              onClick={() =>
+                                handleAgencySelect(agency.agency_id)
+                              }
+                            >
+                              {agency.agency_name}
+                            </span>
+                          </OverlayTrigger>
+                          <div>
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              className="me-1"
+                              onClick={() =>
+                                openAgencyForm("edit", agency.agency_id)
+                              }
+                            >
+                              <PencilSquare size={14} />
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() =>
+                                handleDeleteAgency(agency.agency_id)
+                              }
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    ))
+                  ) : (
+                    <p className="text-muted text-center">Ajans bulunamadı.</p>
+                  )}
+                  {renderPagination(agencies, pageAgencies, setPageAgencies)}
+                </>
+              )}
+            </Accordion.Body>
+          </Accordion.Item>
+
+          {/* Routes */}
+          <Accordion.Item eventKey="1">
+            <Accordion.Header>
+              <Map size={20} className="me-2" /> Rotalar
+            </Accordion.Header>
+            <Accordion.Body>
+              {routeFormMode === "add" ? (
+                <RouteAddPage
+                  project_id={project_id}
+                  onClose={closeRouteForm}
+                  setRoutes={setRoutes}
+                />
+              ) : routeFormMode === "edit" && routeEditId ? (
+                <RouteEditPage
+                  project_id={project_id}
+                  route_id={routeEditId}
+                  onClose={closeRouteForm}
+                  setRoutes={setRoutes}
+                />
+              ) : (
+                <>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    className="mb-3 w-100"
+                    onClick={() => openRouteForm("add")}
+                    disabled={!selectedAgency}
+                  >
+                    <PlusCircle size={16} className="me-2" /> Yeni Rota
+                  </Button>
+                  {routes.length > 0 ? (
+                    paginateItems(routes, pageRoutes).map((route) => (
+                      <Card key={route.route_id} className="mb-2 item-card">
+                        <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                          <OverlayTrigger
+                            placement="top"
+                            overlay={renderTooltip(
+                              route.route_long_name || route.route_id
+                            )}
+                          >
+                            <span
+                              className="item-title"
                               onClick={() => handleRouteSelect(route.route_id)}
                             >
                               {route.route_long_name || route.route_id}
                             </span>
-                            <div>
-                              <button
-                                className="btn btn-outline-primary btn-sm me-1"
-                                onClick={() =>
-                                  navigate(
-                                    `/edit-route/${project_id}/${route.route_id}`
-                                  )
-                                }
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() =>
-                                  handleDeleteRoute(route.route_id)
-                                }
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p>Henüz rota bulunmamaktadır.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-              {activeTab === "trips" && selectedRoute && (
-                <div className="p-2">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="mb-0">Tripler</h5>
-                    <button
-                      className="btn btn-success btn-sm"
-                      onClick={() =>
-                        navigate(`/add-trip/${project_id}`, {
-                          state: { selectedRoute },
-                        })
-                      }
-                    >
-                      Yeni
-                    </button>
-                  </div>
-                  <div>
-                    {trips.length > 0 ? (
-                      trips.map((trip) => (
-                        <div key={trip.trip_id} className="card mb-2">
-                          <div className="card-body d-flex justify-content-between align-items-center p-2">
-                            <span
-                              className="text-truncate"
-                              style={{ maxWidth: "60%" }}
-                              title={trip.trip_headsign}
-                              onClick={() => handleTripSelect(trip.trip_id)}
+                          </OverlayTrigger>
+                          <div>
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              className="me-1"
+                              onClick={() =>
+                                openRouteForm("edit", route.route_id)
+                              }
                             >
-                              {trip.trip_headsign || trip.trip_id}
-                            </span>
-                            <div>
-                              <button
-                                className="btn btn-outline-primary btn-sm me-1"
-                                onClick={() =>
-                                  navigate(
-                                    `/edit-trip/${project_id}/${trip.trip_id}`,
-                                    {
-                                      state: { selectedRoute },
-                                    }
-                                  )
-                                }
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() => handleDeleteTrip(trip.trip_id)}
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p>Henüz trip bulunmamaktadır.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-              {activeTab === "stops" && selectedTrip && (
-                <div className="p-2">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="mb-0">Duraklar</h5>
-                    <button
-                      className="btn btn-success btn-sm"
-                      onClick={() =>
-                        navigate(
-                          `/add-stop-time/${project_id}/${selectedTrip}`,
-                          {
-                            state: { selectedRoute, selectedTrip },
-                          }
-                        )
-                      }
-                    >
-                      Yeni
-                    </button>
-                  </div>
-                  <div>
-                    {stopsAndTimes.length > 0 ? (
-                      stopsAndTimes.map((stop) => (
-                        <div key={stop.stop_id} className="card mb-2">
-                          <div className="card-body d-flex justify-content-between align-items-center p-2">
-                            <span
-                              className="text-truncate"
-                              style={{ maxWidth: "60%" }}
-                              title={stop.stop_name}
-                              onClick={() => {
-                                if (stop.stop_lat && stop.stop_lon) {
-                                  setMapCenter([
-                                    parseFloat(stop.stop_lat),
-                                    parseFloat(stop.stop_lon),
-                                  ]);
-                                  setZoom(16);
-                                }
-                              }}
+                              <PencilSquare size={14} />
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => handleDeleteRoute(route.route_id)}
                             >
-                              {stop.stop_name || stop.stop_id}
-                            </span>
-                            <div>
-                              <button
-                                className="btn btn-outline-primary btn-sm me-1"
-                                onClick={() =>
-                                  navigate(
-                                    `/edit-stop-time/${project_id}/${selectedTrip}/${stop.stop_id}`,
-                                    { state: { selectedRoute, selectedTrip } }
-                                  )
-                                }
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() =>
-                                  handleDeleteStop(selectedTrip, stop.stop_id)
-                                }
-                              >
-                                🗑️
-                              </button>
-                            </div>
+                              <Trash2 size={14} />
+                            </Button>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p>Henüz durak bulunmamaktadır.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-              {activeTab === "calendar" && (
-                <div className="p-2">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="mb-0">Takvim</h5>
-                    <div>
-                      <button
-                        className="btn btn-success btn-sm me-1"
-                        onClick={() => setShowCalendarAdd(true)}
-                      >
-                        Yeni
-                      </button>
-                      {calendar && (
-                        <button
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() => setShowCalendarEdit(true)}
-                        >
-                          ✏️
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {showCalendarAdd && (
-                    <CalendarAdd
-                      token={token}
-                      project_id={project_id}
-                      setCalendar={setCalendar}
-                      onClose={() => setShowCalendarAdd(false)}
-                    />
-                  )}
-                  {showCalendarEdit && calendar && (
-                    <CalendarEdit
-                      token={token}
-                      project_id={project_id}
-                      calendar={calendar}
-                      setCalendar={setCalendar}
-                      onClose={() => setShowCalendarEdit(false)}
-                    />
-                  )}
-                  {calendar ? (
-                    <>
-                      <div className="mb-2">
-                        <strong>Aktif Günler:</strong> {formatDays(calendar)}
-                      </div>
-                      <div className="mb-2">
-                        <strong>Başlangıç Tarihi:</strong>{" "}
-                        {formatDate(calendar.start_date)}
-                      </div>
-                      <div>
-                        <strong>Bitiş Tarihi:</strong>{" "}
-                        {formatDate(calendar.end_date)}
-                      </div>
-                    </>
+                        </Card.Body>
+                      </Card>
+                    ))
                   ) : (
-                    <p>Henüz takvim bilgisi bulunmamaktadır.</p>
+                    <p className="text-muted text-center">
+                      {selectedAgency
+                        ? "Rota bulunamadı."
+                        : "Önce bir ajans seçin."}
+                    </p>
                   )}
-                </div>
+                  {renderPagination(routes, pageRoutes, setPageRoutes)}
+                </>
               )}
-              {activeTab === "agencies" && (
-                <div className="p-2">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="mb-0">Ajanslar</h5>
-                    <button
-                      className="btn btn-success btn-sm"
-                      onClick={() => setShowAgencyAdd(true)}
-                    >
-                      Yeni
-                    </button>
-                  </div>
-                  {showAgencyAdd && (
-                    <AgencyAdd
-                      token={token}
-                      project_id={project_id}
-                      setAgencies={setAgencies}
-                      onClose={() => setShowAgencyAdd(false)}
-                    />
-                  )}
-                  {showAgencyEdit && (
-                    <AgencyEdit
-                      token={token}
-                      project_id={project_id}
-                      agency={showAgencyEdit}
-                      setAgencies={setAgencies}
-                      onClose={() => setShowAgencyEdit(null)}
-                    />
-                  )}
-                  <div>
-                    {agencies.length > 0 ? (
-                      agencies.map((agency) => (
-                        <div key={agency.agency_id} className="card mb-2">
-                          <div className="card-body d-flex justify-content-between align-items-center p-2">
+            </Accordion.Body>
+          </Accordion.Item>
+
+          {/* Trips */}
+          <Accordion.Item eventKey="2">
+            <Accordion.Header>
+              <BusFront size={20} className="me-2" /> Tripler
+            </Accordion.Header>
+            <Accordion.Body>
+              {tripFormMode === "add" ? (
+                <TripAddPage
+                  project_id={project_id}
+                  onClose={closeTripForm}
+                  setTrips={setTrips}
+                />
+              ) : tripFormMode === "edit" && tripEditId ? (
+                <TripEditPage
+                  project_id={project_id}
+                  trip_id={tripEditId}
+                  onClose={closeTripForm}
+                  setTrips={setTrips}
+                />
+              ) : (
+                <>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    className="mb-3 w-100"
+                    onClick={() => openTripForm("add")}
+                    disabled={!selectedRoute}
+                  >
+                    <PlusCircle size={16} className="me-2" /> Yeni Trip
+                  </Button>
+                  <TripList
+                    token={token}
+                    project_id={project_id}
+                    trips={paginateItems(trips, pageTrips)}
+                    setTrips={setTrips}
+                    selectedTrip={selectedTrip}
+                    setSelectedTrip={setSelectedTrip}
+                    setStopsAndTimes={setStopsAndTimes}
+                    handleTripSelect={handleTripSelect}
+                    openForm={openTripForm}
+                  />
+                  {renderPagination(trips, pageTrips, setPageTrips)}
+                </>
+              )}
+            </Accordion.Body>
+          </Accordion.Item>
+
+          {/* Stops */}
+          <Accordion.Item eventKey="3">
+            <Accordion.Header>
+              <Clock size={20} className="me-2" /> Duraklar
+            </Accordion.Header>
+            <Accordion.Body>
+              {stopTimeFormMode === "add" && selectedTrip ? (
+                <StopTimeAddPage
+                  project_id={project_id}
+                  trip_id={selectedTrip}
+                  onClose={closeStopTimeForm}
+                  setStopsAndTimes={setStopsAndTimes}
+                />
+              ) : stopTimeFormMode === "edit" &&
+                stopTimeEditId &&
+                selectedTrip ? (
+                <StopTimeEditPage
+                  project_id={project_id}
+                  trip_id={selectedTrip}
+                  stop_id={stopTimeEditId}
+                  onClose={closeStopTimeForm}
+                  setStopsAndTimes={setStopsAndTimes}
+                />
+              ) : (
+                <>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    className="mb-3 w-100"
+                    onClick={() => openStopTimeForm("add")}
+                    disabled={!selectedTrip}
+                  >
+                    <PlusCircle size={16} className="me-2" /> Yeni Durak Zamanı
+                  </Button>
+                  <StopList
+                    token={token}
+                    project_id={project_id}
+                    stopsAndTimes={paginateItems(stopsAndTimes, pageStops)}
+                    setStopsAndTimes={setStopsAndTimes}
+                    selectedTrip={selectedTrip}
+                    openForm={openStopTimeForm}
+                  />
+                  {renderPagination(stopsAndTimes, pageStops, setPageStops)}
+                </>
+              )}
+            </Accordion.Body>
+          </Accordion.Item>
+
+          {/* Calendars */}
+          <Accordion.Item eventKey="4">
+            <Accordion.Header>
+              <Calendar size={20} className="me-2" /> Takvimler
+            </Accordion.Header>
+            <Accordion.Body>
+              {calendarFormMode === "add" ? (
+                <CalendarAddPage
+                  project_id={project_id}
+                  onClose={closeCalendarForm}
+                  setCalendars={setCalendars}
+                />
+              ) : calendarFormMode === "edit" && calendarEditId ? (
+                <CalendarEditPage
+                  project_id={project_id}
+                  service_id={calendarEditId}
+                  onClose={closeCalendarForm}
+                  setCalendars={setCalendars}
+                />
+              ) : (
+                <>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    className="mb-3 w-100"
+                    onClick={() => openCalendarForm("add")}
+                  >
+                    <PlusCircle size={16} className="me-2" /> Yeni Takvim
+                  </Button>
+                  {calendars.length > 0 ? (
+                    paginateItems(calendars, pageCalendars).map((cal) => (
+                      <Card key={cal.service_id} className="mb-2 item-card">
+                        <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                          <OverlayTrigger
+                            placement="top"
+                            overlay={renderTooltip(getActiveDays(cal))}
+                          >
                             <span
-                              className="text-truncate"
-                              style={{ maxWidth: "60%" }}
-                              title={agency.agency_name}
+                              className="item-title"
+                              onClick={() =>
+                                handleCalendarSelect(cal.service_id)
+                              }
                             >
-                              {agency.agency_name}
+                              {getActiveDays(cal)}
                             </span>
-                            <div>
-                              <button
-                                className="btn btn-outline-primary btn-sm me-1"
-                                onClick={() => setShowAgencyEdit(agency)}
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() =>
-                                  handleDeleteAgency(agency.agency_id)
-                                }
-                              >
-                                🗑️
-                              </button>
-                            </div>
+                          </OverlayTrigger>
+                          <div>
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              className="me-1"
+                              onClick={() =>
+                                openCalendarForm("edit", cal.service_id)
+                              }
+                            >
+                              <PencilSquare size={14} />
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() =>
+                                handleDeleteCalendar(cal.service_id)
+                              }
+                            >
+                              <Trash2 size={14} />
+                            </Button>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p>Henüz ajans bulunmamaktadır.</p>
-                    )}
-                  </div>
-                </div>
+                        </Card.Body>
+                      </Card>
+                    ))
+                  ) : (
+                    <p className="text-muted text-center">Takvim bulunamadı.</p>
+                  )}
+                  {selectedCalendar && calendar && (
+                    <CalendarInfo calendar={calendar} />
+                  )}
+                  {renderPagination(calendars, pageCalendars, setPageCalendars)}
+                </>
               )}
-            </div>
-          </div>
-        )}
-      </div>
-    </>
+            </Accordion.Body>
+          </Accordion.Item>
+        </Accordion>
+      )}
+    </div>
   );
 };
 
@@ -744,11 +794,12 @@ Sidebar.propTypes = {
   setStopsAndTimes: PropTypes.func.isRequired,
   calendar: PropTypes.object,
   setCalendar: PropTypes.func.isRequired,
-  mapCenter: PropTypes.arrayOf(PropTypes.number).isRequired,
+  calendars: PropTypes.array.isRequired,
+  setCalendars: PropTypes.func.isRequired,
+  agencies: PropTypes.array.isRequired,
+  setAgencies: PropTypes.func.isRequired,
   setMapCenter: PropTypes.func.isRequired,
-  zoom: PropTypes.number.isRequired,
   setZoom: PropTypes.func.isRequired,
-  location: PropTypes.object.isRequired,
 };
 
 export default Sidebar;

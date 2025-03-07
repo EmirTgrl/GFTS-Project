@@ -18,6 +18,21 @@ export const fetchRoutesByProjectId = async (projectId, token) => {
   return response.json();
 };
 
+export const fetchRoutesByAgencyId = async (agencyId, projectId, token) => {
+  const response = await fetch(
+    `${API_BASE_URL}/agency/${agencyId}?project_id=${projectId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Failed to fetch routes by agency:", response.status, errorText);
+    throw new Error(`Failed to fetch routes by agency: ${errorText}`);
+  }
+  return response.json();
+};
+
 export const fetchRouteById = async (routeId, projectId, token) => {
   const response = await fetch(`${API_BASE_URL}/${projectId}/${routeId}`, {
     headers: { Authorization: `Bearer ${token}` },
