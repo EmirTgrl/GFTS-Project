@@ -13,9 +13,12 @@ const AgencyEditPage = ({ project_id, agency_id, onClose, setAgencies }) => {
     const loadAgency = async () => {
       try {
         const agencies = await fetchAgenciesByProjectId(project_id, token);
+        console.log("Fetched agencies:", agencies); // Debugging
+        console.log("Looking for agency_id:", agency_id); // Debugging
+
         const agency = agencies.find(
-          (ag) => String(ag.agency_id) === agency_id
-        );
+          (ag) => ag.agency_id === parseInt(agency_id)
+        ); // int türünde karşılaştırma
         if (agency) {
           setFormData({
             agency_id: agency.agency_id,
@@ -72,9 +75,12 @@ const AgencyEditPage = ({ project_id, agency_id, onClose, setAgencies }) => {
         setLoading(true);
         const agencyData = { project_id, ...formData };
         const updatedAgency = await updateAgency(agencyData, token);
-        setAgencies((prev) =>
-          prev.map((ag) => (ag.agency_id === agency_id ? updatedAgency : ag))
-        ); // Liste güncelle
+        setAgencies(
+          (prev) =>
+            prev.map((ag) =>
+              ag.agency_id === parseInt(agency_id) ? updatedAgency : ag
+            ) // int türünde karşılaştırma
+        );
         Swal.fire("Güncellendi!", "Ajans başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {

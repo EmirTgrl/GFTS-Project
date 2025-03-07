@@ -73,7 +73,7 @@ const Sidebar = ({
   setZoom,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeKey, setActiveKey] = useState("0"); 
+  const [activeKey, setActiveKey] = useState("0");
   const [pageAgencies, setPageAgencies] = useState(1);
   const [pageRoutes, setPageRoutes] = useState(1);
   const [pageTrips, setPageTrips] = useState(1);
@@ -83,7 +83,7 @@ const Sidebar = ({
   const [selectedCalendar, setSelectedCalendar] = useState(null);
   const itemsPerPage = 8;
 
-  const [agencyFormMode, setAgencyFormMode] = useState(null); 
+  const [agencyFormMode, setAgencyFormMode] = useState(null);
   const [agencyEditId, setAgencyEditId] = useState(null);
   const [routeFormMode, setRouteFormMode] = useState(null);
   const [routeEditId, setRouteEditId] = useState(null);
@@ -129,7 +129,7 @@ const Sidebar = ({
     setSelectedTrip(null);
     setTrips([]);
     setStopsAndTimes([]);
-    setActiveKey("1"); 
+    setActiveKey("1");
     setPageRoutes(1);
     try {
       const routesData = await fetchRoutesByAgencyId(
@@ -148,7 +148,7 @@ const Sidebar = ({
     setSelectedRoute(routeId);
     setSelectedTrip(null);
     setStopsAndTimes([]);
-    setActiveKey("2"); 
+    setActiveKey("2");
     setPageTrips(1);
     try {
       const tripsData = await fetchTripsByRouteId(routeId, token);
@@ -162,7 +162,7 @@ const Sidebar = ({
   const handleTripSelect = async (tripId) => {
     setSelectedTrip(tripId);
     setCalendar(null);
-    setActiveKey("3"); 
+    setActiveKey("3");
     setPageStops(1);
     try {
       const stopsAndTimesData = await fetchStopsAndStopTimesByTripId(
@@ -284,7 +284,7 @@ const Sidebar = ({
     });
     if (result.isConfirmed) {
       try {
-        await deleteAgencyById(agencyId, project_id, token);
+        await deleteAgencyById(agencyId, token); // Düzeltildi
         setAgencies((prev) => prev.filter((ag) => ag.agency_id !== agencyId));
         setPageAgencies(1);
         if (selectedAgency === agencyId) {
