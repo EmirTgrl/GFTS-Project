@@ -35,7 +35,7 @@ CREATE TABLE `calendar` (
   `end_date` date NOT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  PRIMARY KEY (`service_id`,`user_id`,`project_id`),
+  PRIMARY KEY (`service_id`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
   CONSTRAINT `calendar_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),

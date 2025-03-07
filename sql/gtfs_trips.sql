@@ -23,8 +23,8 @@ DROP TABLE IF EXISTS `trips`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `trips` (
-  `route_id` int NOT NULL,
-  `service_id` int NOT NULL,
+  `route_id` int DEFAULT NULL,
+  `service_id` int DEFAULT NULL,
   `trip_id` int NOT NULL AUTO_INCREMENT,
   `trip_headsign` varchar(255) DEFAULT NULL,
   `trip_short_name` varchar(255) DEFAULT NULL,
@@ -35,15 +35,15 @@ CREATE TABLE `trips` (
   `bikes_allowed` tinyint DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  PRIMARY KEY (`trip_id`,`user_id`,`project_id`),
-  KEY `route_id` (`route_id`,`user_id`,`project_id`),
-  KEY `service_id` (`service_id`,`user_id`,`project_id`),
-  KEY `shape_id` (`shape_id`,`user_id`,`project_id`),
+  PRIMARY KEY (`trip_id`),
+  KEY `route_id` (`route_id`),
+  KEY `service_id` (`service_id`),
+  KEY `shape_id` (`shape_id`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
-  CONSTRAINT `trips_ibfk_1` FOREIGN KEY (`route_id`, `user_id`, `project_id`) REFERENCES `routes` (`route_id`, `user_id`, `project_id`),
-  CONSTRAINT `trips_ibfk_2` FOREIGN KEY (`service_id`, `user_id`, `project_id`) REFERENCES `calendar` (`service_id`, `user_id`, `project_id`),
-  CONSTRAINT `trips_ibfk_3` FOREIGN KEY (`shape_id`, `user_id`, `project_id`) REFERENCES `shapes` (`shape_id`, `user_id`, `project_id`),
+  CONSTRAINT `trips_ibfk_1` FOREIGN KEY (`route_id`) REFERENCES `routes` (`route_id`) ON DELETE SET NULL,
+  CONSTRAINT `trips_ibfk_2` FOREIGN KEY (`service_id`) REFERENCES `calendar` (`service_id`) ON DELETE SET NULL,
+  CONSTRAINT `trips_ibfk_3` FOREIGN KEY (`shape_id`) REFERENCES `shapes` (`shape_id`) ON DELETE SET NULL,
   CONSTRAINT `trips_ibfk_4` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `trips_ibfk_5` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

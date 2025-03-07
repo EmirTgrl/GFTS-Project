@@ -35,11 +35,11 @@ CREATE TABLE `routes` (
   `route_sort_order` int DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  PRIMARY KEY (`route_id`,`user_id`,`project_id`),
-  KEY `agency_id` (`agency_id`,`user_id`,`project_id`),
+  PRIMARY KEY (`route_id`),
+  KEY `agency_id` (`agency_id`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
-  CONSTRAINT `routes_ibfk_1` FOREIGN KEY (`agency_id`, `user_id`, `project_id`) REFERENCES `agency` (`agency_id`, `user_id`, `project_id`),
+  CONSTRAINT `routes_ibfk_1` FOREIGN KEY (`agency_id`) REFERENCES `agency` (`agency_id`) ON DELETE SET NULL,
   CONSTRAINT `routes_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `routes_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
