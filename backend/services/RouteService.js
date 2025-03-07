@@ -108,12 +108,8 @@ const routeService = {
         return res.status(404).json({ error: "Route not found" });
       }
 
-      // Güncellenmiş rotayı döndür
-      const [updatedRows] = await pool.execute(
-        `SELECT * FROM routes WHERE route_id = ? AND user_id = ?`,
-        [route_id, user_id]
-      );
-      res.status(200).json(updatedRows[0]);
+      
+      res.status(200).json({message: "successfully updated"});
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: "Server Error", details: e.message });
