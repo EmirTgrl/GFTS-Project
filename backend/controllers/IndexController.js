@@ -11,6 +11,7 @@ const tripController = require("./TripController.js");
 const projectController = require("./ProjectController.js");
 const impExpController = require("./ImpExpController.js")
 const agencyController = require("./AgencyController.js");
+const adminController = require("./AdminController.js")
 
 // routes
 router.use("/auth", authController);
@@ -22,5 +23,6 @@ router.use("/trips", tripController);
 router.use("/projects", projectController);
 router.use("/io", impExpController);
 router.use("/agencies", agencyController);
+router.use("/admin", adminController)
 
 module.exports = router;
