@@ -49,8 +49,8 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
       try {
         setLoading(true);
         const calendarData = { project_id, ...formData };
-        const newCalendar = await saveCalendar(calendarData, token);
-        setCalendars((prev) => [...prev, newCalendar]); // Liste güncelle
+        const service_id = await saveCalendar(calendarData, token);
+        setCalendars((prev) => [...prev, { ...calendarData, service_id }]);
         Swal.fire("Eklendi!", "Takvim başarıyla eklendi.", "success");
         onClose(); // Formu kapat
       } catch (error) {
