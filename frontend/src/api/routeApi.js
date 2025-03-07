@@ -1,7 +1,7 @@
 const API_BASE_URL = "http://localhost:5000/api/routes";
 
 export const fetchRoutesByProjectId = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+  const response = await fetch(`${API_BASE_URL}?project_id=${projectId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -19,7 +19,7 @@ export const fetchRoutesByProjectId = async (projectId, token) => {
 };
 
 export const fetchRouteById = async (routeId, projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}/${projectId}/${routeId}`, {
+  const response = await fetch(`${API_BASE_URL}?project_id=${projectId},route_id=${routeId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) throw new Error("Failed to fetch route");

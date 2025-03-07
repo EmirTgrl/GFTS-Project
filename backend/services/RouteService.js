@@ -1,36 +1,48 @@
 const { pool } = require("../db.js");
 
 const routeService = {
-  getRoutesByProjectId: async (req, res) => {
+  getRoutesByQuery: async (req, res) => {
+    const user_id = req.user.id;
+    const validFields = [
+      "route_id",
+      "project_id",
+      "agency_id",
+      "route_short_name",
+      "route_long_name",
+      "route_desc",
+      "route_type",
+      "route_url",
+      "route_color",
+      "route_text_color",
+      "route_sort_order"
+    ];
+  
+    const fields = [];
+    const values = [];
+    let whereClause = `WHERE user_id = ?`; // Base where clause
+    values.push(user_id);
+  
+    for (const param in req.query) {
+      if (validFields.includes(param)) {
+        fields.push(param); // Store the field name
+        whereClause += ` AND ${param} = ?`; // Add to the WHERE clause
+        values.push(req.query[param]); // Add the value
+      } else {
+        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+      }
+    }
+  
+    let query = `SELECT * FROM routes ${whereClause}`;
+  
     try {
-      const user_id = req.user.id;
-      const { project_id } = req.params;
-      const [rows] = await pool.execute(
-        `SELECT * FROM routes 
-         WHERE project_id = ? AND user_id = ?`,
-        [project_id, user_id]
-      );
+      const [rows] = await pool.execute(query, values);
       res.json(rows.length > 0 ? rows : []);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
-  getRouteById: async (req, res) => {
-    try {
-      const user_id = req.user.id;
-      const { route_id, project_id } = req.params;
-      const [rows] = await pool.execute(
-        `SELECT * FROM routes 
-         WHERE user_id = ? AND route_id = ? AND project_id = ?`,
-        [user_id, route_id, project_id] 
-      );
-      res.json(rows.length > 0 ? rows[0] : null);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server Error", details: error.message });
-    }
-  },
+  
   deleteRouteById: async (req, res) => {
     try {
       const user_id = req.user.id;
