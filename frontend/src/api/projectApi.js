@@ -17,7 +17,7 @@ export const fetchProjects = async (token) => {
 };
 
 export const deleteProject = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+  const response = await fetch(`${API_BASE_URL}/projects/delete/${projectId}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
