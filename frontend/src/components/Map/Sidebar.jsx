@@ -284,7 +284,7 @@ const Sidebar = ({
     });
     if (result.isConfirmed) {
       try {
-        await deleteAgencyById(agencyId, token); // Düzeltildi
+        await deleteAgencyById(agencyId, token);
         setAgencies((prev) => prev.filter((ag) => ag.agency_id !== agencyId));
         setPageAgencies(1);
         if (selectedAgency === agencyId) {
@@ -317,7 +317,7 @@ const Sidebar = ({
     });
     if (result.isConfirmed) {
       try {
-        await deleteRouteById(routeId, project_id, token);
+        await deleteRouteById(routeId, token);
         setRoutes((prev) => prev.filter((route) => route.route_id !== routeId));
         setPageRoutes(1);
         if (selectedRoute === routeId) {
@@ -327,6 +327,7 @@ const Sidebar = ({
         }
         Swal.fire("Silindi!", "Rota başarıyla silindi.", "success");
       } catch (error) {
+        console.log(error);
         Swal.fire("Hata!", "Rota silinirken bir hata oluştu:", "error");
       }
     }
@@ -636,7 +637,7 @@ const Sidebar = ({
                     setSelectedTrip={setSelectedTrip}
                     setStopsAndTimes={setStopsAndTimes}
                     handleTripSelect={handleTripSelect}
-                    openForm={openTripForm}
+                    openForm={openTripForm} // openTripForm prop olarak geçiyor
                   />
                   {renderPagination(trips, pageTrips, setPageTrips)}
                 </>
@@ -676,7 +677,7 @@ const Sidebar = ({
                     onClick={() => openStopTimeForm("add")}
                     disabled={!selectedTrip}
                   >
-                    <PlusCircle size={16} className="me-2" /> Yeni Durak Zamanı
+                    <PlusCircle size={16} className="me-2" /> Yeni Durak
                   </Button>
                   <StopList
                     token={token}

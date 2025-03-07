@@ -43,8 +43,8 @@ export const deleteTripById = async (tripId, token) => {
   return response.json();
 };
 
-export const updateTrip = async (tripData, tripId, token) => {
-  const response = await fetch(`${API_BASE_URL}/update/${tripId}`, {
+export const updateTrip = async (tripData, token) => {
+  const response = await fetch(`${API_BASE_URL}/update/${tripData.trip_id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

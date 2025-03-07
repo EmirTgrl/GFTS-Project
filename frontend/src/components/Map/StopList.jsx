@@ -46,21 +46,12 @@ const StopList = ({
     });
   };
 
-  const handleAddStopTime = () => {
-    navigate(`/add-stop-time/${project_id}/${selectedTrip}`, {
-      state: { selectedRoute: null, selectedTrip },
-    });
-  };
-
   const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
 
   return (
     <div className="tab-pane fade show active h-100">
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h5 className="mb-0">Duraklar</h5>
-        <button className="btn btn-success btn-sm" onClick={handleAddStopTime}>
-          Yeni Durak
-        </button>
       </div>
       <div>
         {stopsAndTimes.map((stopAndTime) => (

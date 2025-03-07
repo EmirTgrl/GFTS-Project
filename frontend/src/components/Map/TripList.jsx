@@ -5,14 +5,13 @@ import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 const TripList = ({
   token,
-  project_id,
   trips,
   setTrips,
   selectedTrip,
   setSelectedTrip,
   setStopsAndTimes,
-  navigate,
   handleTripSelect,
+  openForm, // openForm prop’u eklendi
 }) => {
   const handleDeleteTrip = async (tripId) => {
     const result = await Swal.fire({
@@ -45,15 +44,7 @@ const TripList = ({
   };
 
   const handleEditTrip = (tripId) => {
-    navigate(`/edit-trip/${project_id}/${tripId}`, {
-      state: { selectedRoute: null, selectedTrip },
-    });
-  };
-
-  const handleAddTrip = () => {
-    navigate(`/add-trip/${project_id}`, {
-      state: { selectedRoute: null, selectedTrip },
-    });
+    openForm("edit", tripId); // navigate yerine openForm kullanılıyor
   };
 
   const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
@@ -62,9 +53,6 @@ const TripList = ({
     <div className="tab-pane fade show active h-100">
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h5 className="mb-0">Tripler</h5>
-        <button className="btn btn-success btn-sm" onClick={handleAddTrip}>
-          Yeni Trip
-        </button>
       </div>
       <div>
         {trips.length > 0 ? (
@@ -125,8 +113,8 @@ TripList.propTypes = {
   selectedTrip: PropTypes.string,
   setSelectedTrip: PropTypes.func.isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
-  navigate: PropTypes.func.isRequired,
   handleTripSelect: PropTypes.func.isRequired,
+  openForm: PropTypes.func.isRequired, // openForm prop’u eklendi
 };
 
 export default TripList;

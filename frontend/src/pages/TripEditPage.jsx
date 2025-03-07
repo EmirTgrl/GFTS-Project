@@ -94,10 +94,10 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
 
     if (result.isConfirmed) {
       try {
-        const updatedTrip = await updateTrip(tripData, token);
+        const updatedTrip = await updateTrip(tripData, token); 
         setTrips((prev) =>
           prev.map((t) => (t.trip_id === trip_id ? updatedTrip : t))
-        ); // Liste güncelle
+        );
         Swal.fire("Güncellendi!", "Trip başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {
