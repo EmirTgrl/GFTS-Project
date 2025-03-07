@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `stop_times`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stop_times` (
-  `trip_id` int NOT NULL,
+  `trip_id` int DEFAULT NULL,
   `arrival_time` time DEFAULT NULL,
   `departure_time` time DEFAULT NULL,
   `stop_id` int NOT NULL,
@@ -35,7 +35,6 @@ CREATE TABLE `stop_times` (
   `timepoint` tinyint DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  PRIMARY KEY (`trip_id`,`stop_sequence`),
   KEY `trip_id` (`trip_id`),
   KEY `stop_id` (`stop_id`),
   KEY `user_id` (`user_id`),

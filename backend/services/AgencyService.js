@@ -77,16 +77,10 @@ const agencyService = {
       `;
 
       const [result] = await pool.execute(query, values);
-      "agency_id",
-        "agency_name",
-        "agency_url",
-        "agency_timezone",
-        "agency_lang",
-        "agency_phone",
-        "project_id";
+  
       res.status(201).json({
         message: "Agency saved successfully",
-        agency_id: result.insertId,
+        agency_id: result.insertId
       });
     } catch (error) {
       console.error("Error in saveAgency:", error);
