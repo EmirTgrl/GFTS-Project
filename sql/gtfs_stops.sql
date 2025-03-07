@@ -37,11 +37,11 @@ CREATE TABLE `stops` (
   `wheelchair_boarding` tinyint DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  PRIMARY KEY (`stop_id`,`user_id`,`project_id`),
-  KEY `parent_station` (`parent_station`,`user_id`,`project_id`),
+  PRIMARY KEY (`stop_id`),
+  KEY `parent_station` (`parent_station`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
-  CONSTRAINT `stops_ibfk_1` FOREIGN KEY (`parent_station`, `user_id`, `project_id`) REFERENCES `stops` (`stop_id`, `user_id`, `project_id`),
+  CONSTRAINT `stops_ibfk_1` FOREIGN KEY (`parent_station`) REFERENCES `stops` (`stop_id`) ON DELETE SET NULL,
   CONSTRAINT `stops_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `stops_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

@@ -31,7 +31,7 @@ CREATE TABLE `agency` (
   `agency_phone` varchar(255) DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  PRIMARY KEY (`agency_id`,`user_id`,`project_id`),
+  PRIMARY KEY (`agency_id`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
   CONSTRAINT `agency_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),

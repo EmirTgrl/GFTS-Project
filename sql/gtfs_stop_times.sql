@@ -35,13 +35,13 @@ CREATE TABLE `stop_times` (
   `timepoint` tinyint DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  PRIMARY KEY (`trip_id`,`stop_sequence`,`user_id`,`project_id`),
-  KEY `trip_id` (`trip_id`,`user_id`,`project_id`),
-  KEY `stop_id` (`stop_id`,`user_id`,`project_id`),
+  PRIMARY KEY (`trip_id`,`stop_sequence`),
+  KEY `trip_id` (`trip_id`),
+  KEY `stop_id` (`stop_id`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
-  CONSTRAINT `stop_times_ibfk_1` FOREIGN KEY (`trip_id`, `user_id`, `project_id`) REFERENCES `trips` (`trip_id`, `user_id`, `project_id`),
-  CONSTRAINT `stop_times_ibfk_2` FOREIGN KEY (`stop_id`, `user_id`, `project_id`) REFERENCES `stops` (`stop_id`, `user_id`, `project_id`),
+  CONSTRAINT `stop_times_ibfk_1` FOREIGN KEY (`trip_id`) REFERENCES `trips` (`trip_id`) ON DELETE SET NULL,
+  CONSTRAINT `stop_times_ibfk_2` FOREIGN KEY (`stop_id`) REFERENCES `stops` (`stop_id`) ON DELETE CASCADE,
   CONSTRAINT `stop_times_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `stop_times_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
