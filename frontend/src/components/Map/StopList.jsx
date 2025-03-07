@@ -54,7 +54,7 @@ const StopList = ({
         {stopsAndTimes.length > 0 ? (
           stopsAndTimes.map((stopAndTime) => (
             <div
-              key={stopAndTime.stop_id + stopAndTime.stop_sequence}
+              key={stopAndTime.stop_id + "-" + stopAndTime.stop_sequence}
               className="card mb-2"
             >
               <div className="card-body p-2">
