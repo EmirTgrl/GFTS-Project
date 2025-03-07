@@ -67,7 +67,8 @@ const calendarService = {
   updateCalendar: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { service_id, ...params } = req.body;
+      const {service_id} = req.params;
+      const {...params } = req.body;
       const validFields = [
         "service_id",
         "monday",

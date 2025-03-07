@@ -67,6 +67,7 @@ const tripService = {
   updateTrip: async (req, res) => {
     try {
       const user_id = req.user.id;
+      const {trip_id} = req.params;
       const validFields = [
         "route_id",
         "service_id",
@@ -80,7 +81,7 @@ const tripService = {
         "bikes_allowed",
         "project_id",
       ];
-      const { trip_id, ...params } = req.body;
+      const { ...params } = req.body;
       
       const fields = [];
       const values = [];

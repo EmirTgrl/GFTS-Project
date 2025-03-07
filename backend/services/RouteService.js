@@ -46,12 +46,12 @@ const routeService = {
   deleteRouteById: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { route_id, project_id } = req.params;
+      const { route_id} = req.params;
       const [results] = await pool.execute(
         `
         DELETE FROM routes 
-        WHERE route_id = ? AND user_id = ? AND project_id = ?`,
-        [route_id, user_id, project_id]
+        WHERE route_id = ? AND user_id = ?`,
+        [route_id, user_id]
       );
       if (results.affectedRows === 0) {
         return res.status(404).json({ error: "Route not found" });
@@ -65,6 +65,7 @@ const routeService = {
   updateRoute: async (req, res) => {
     try {
       const user_id = req.user.id;
+      const {route_id} = req.params;
       const validFields = [
         "route_id",
         "project_id",
@@ -78,7 +79,7 @@ const routeService = {
         "route_text_color",
         "route_sort_order"
       ];
-      const { route_id, ...params } = req.body;
+      const { ...params } = req.body;
       
       const fields = [];
       const values = [];

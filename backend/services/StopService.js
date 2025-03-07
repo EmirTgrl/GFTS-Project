@@ -67,6 +67,7 @@ const stopService = {
   updateStop: async (req, res) => {
     try {
       const user_id = req.user.id;
+      const {stop_id} = req.params; 
       const validFields = [
         "stop_id",
         "stop_code",
@@ -83,7 +84,7 @@ const stopService = {
         "project_id"        
       ]
       
-      const {stop_id, ...params} = req.body;
+      const {...params} = req.body;
 
       const fields = [];
       const values = [];

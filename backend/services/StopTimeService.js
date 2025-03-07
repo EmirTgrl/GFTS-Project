@@ -78,6 +78,7 @@ const stopTimeService = {
   updateStopTime: async (req, res) => {
     try {
       const user_id = req.user.id;
+      const {trip_id, stop_id} = req.params;
       const validFields = [
         "trip_id",
         "stop_id",
@@ -92,7 +93,7 @@ const stopTimeService = {
         "timepoint"
       ];
 
-      const {trip_id , stop_id, ...params} = req.body;
+      const {...params} = req.body;
 
       const fields = [];
       const values = [];

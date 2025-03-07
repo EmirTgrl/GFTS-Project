@@ -38,7 +38,8 @@ const projectService = {
     updateProject: async (req, res) => {
         try {
             const user_id = req.user.id;
-            const { project_id, file_name } = req.body;
+            const {project_id} = req.params;
+            const { file_name } = req.body;
             const [result] = await pool.query(`
                 UPDATE projects
                 SET

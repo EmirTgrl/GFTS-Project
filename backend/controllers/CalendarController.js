@@ -6,10 +6,9 @@ const authService = require("../services/AuthService.js");
 
 router.use(authService.auth);
 
-router.get("/project/:project_id", calendarService.getCalendarsByProjectId);
-router.get("/:service_id", calendarService.getCalendarById);
-router.delete("/:service_id", calendarService.deleteCalendarById);
-router.put("/", calendarService.updateCalendar);
-router.post("/", calendarService.saveCalendar);
+router.get("", calendarService.getCalendarByQuery);
+router.delete("/delete/:service_id", calendarService.deleteCalendarById);
+router.put("/update/:service_id", calendarService.updateCalendar);
+router.post("/create", calendarService.saveCalendar);
 
 module.exports = router;

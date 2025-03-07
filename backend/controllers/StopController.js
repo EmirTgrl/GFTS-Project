@@ -6,10 +6,9 @@ const authService = require("../services/AuthService.js");
 
 router.use(authService.auth);
 
-router.get("/project/:project_id", stopService.getStopsByProjectId);
-router.get("/:stop_id", stopService.getStopById);
-router.delete("/:stop_id", stopService.deleteStopByStopId);
-router.put("/", stopService.updateStop);
-router.post("/", stopService.saveStop);
+router.get("", stopService.getStopsByQuery);
+router.delete("/delete/:stop_id", stopService.deleteStopByStopId);
+router.put("/update/:stop_id", stopService.updateStop);
+router.post("/create", stopService.saveStop);
 
 module.exports = router;

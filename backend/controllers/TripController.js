@@ -6,11 +6,9 @@ const authService = require("../services/AuthService.js");
 
 router.use(authService.auth);
 
-router.get("/project/:project_id", tripService.getTripsByProjectId);
-router.get("/:trip_id",tripService.getTripById);
-router.get("/route/:route_id",tripService.getTripsByRouteId);
-router.put("/", tripService.updateTrip);
-router.delete("/:trip_id", tripService.deleteTripById);
-router.post("/", tripService.saveTrip)
+router.get("", tripService.getTripsByQuery);
+router.put("/update/:trip_id", tripService.updateTrip);
+router.delete("/delete/:trip_id", tripService.deleteTripById);
+router.post("/create", tripService.saveTrip)
 
 module.exports = router;
