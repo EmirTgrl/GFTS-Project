@@ -11,9 +11,10 @@ import { AuthContext } from "../components/Auth/AuthContext";
 const RouteEditPage = ({
   agencies,
   route_id,
-  initialRouteData,
+  routes,
   onClose,
   setRoutes,
+  project_id
 }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState(null);
@@ -23,6 +24,10 @@ const RouteEditPage = ({
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log("ROUTES ",routes)
+        const initialRouteData = routes.find(
+          (rt)=>rt.route_id === route_id
+        );
         const prepareRouteData = (data) => ({
           agency_id: data?.agency_id || "",
           project_id: data?.project_id || project_id,
@@ -54,7 +59,7 @@ const RouteEditPage = ({
     };
 
     loadData();
-  }, [initialRouteData]);
+  }, [routes,route_id, project_id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -250,7 +255,6 @@ const RouteEditPage = ({
 RouteEditPage.propTypes = {
   project_id: PropTypes.string.isRequired,
   route_id: PropTypes.string.isRequired,
-  initialRouteData: PropTypes.object,
   onClose: PropTypes.func.isRequired,
   setRoutes: PropTypes.func.isRequired,
 };
