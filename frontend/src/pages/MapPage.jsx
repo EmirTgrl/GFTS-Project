@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../components/Auth/AuthContext";
 import Sidebar from "../components/Map/Sidebar.jsx";
 import MapView from "../components/Map/MapView";
-import { fetchCalendarsByProjectId } from "../api/calendarApi";
 import { fetchAgenciesByProjectId } from "../api/agencyApi";
 import "../styles/Map.css";
 
@@ -34,8 +33,6 @@ const MapPage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const calendarData = await fetchCalendarsByProjectId(project_id, token);
-        setCalendars(Array.isArray(calendarData) ? calendarData : []);
         const agencyData = await fetchAgenciesByProjectId(project_id, token);
         setAgencies(Array.isArray(agencyData) ? agencyData : []);
       } catch (error) {

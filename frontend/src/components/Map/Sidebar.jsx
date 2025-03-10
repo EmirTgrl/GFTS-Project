@@ -5,7 +5,6 @@ import { fetchTripsByRouteId } from "../../api/tripApi";
 import { fetchStopsAndStopTimesByTripId } from "../../api/stopTimeApi";
 import {
   fetchCalendarByServiceId,
-  fetchCalendarsByProjectId,
   deleteCalendarById,
 } from "../../api/calendarApi";
 import {
@@ -37,7 +36,7 @@ import {
 } from "react-bootstrap";
 import StopList from "./StopList";
 import TripList from "./TripList";
-import CalendarInfo from "./CalendarInfo"; 
+import CalendarInfo from "./CalendarInfo";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -98,30 +97,18 @@ const Sidebar = ({
     const loadAgencies = async () => {
       try {
         const data = await fetchAgenciesByProjectId(project_id, token);
-        setAgencies(Array.isArray(data) ? data : []);
+        console.log("a", data);
+        setAgencies(data);
         setPageAgencies(1);
       } catch (error) {
         console.error("Error fetching agencies:", error);
         setAgencies([]);
       }
     };
-
-    const loadCalendars = async () => {
-      try {
-        const data = await fetchCalendarsByProjectId(project_id, token);
-        setCalendars(Array.isArray(data) ? data : []);
-        setPageCalendars(1);
-      } catch (error) {
-        console.error("Error fetching calendars:", error);
-        setCalendars([]);
-      }
-    };
-
     if (token && project_id) {
       loadAgencies();
-      loadCalendars();
     }
-  }, [token, project_id, setAgencies, setCalendars]);
+  }, [token, project_id, setAgencies]);
 
   const handleAgencySelect = async (agencyId) => {
     setSelectedAgency(agencyId);

@@ -1,10 +1,10 @@
-import { useState, useEffect, useContext } from "react";
-import { saveRoute, fetchAgenciesByProjectId } from "../api/routeApi";
+import { useState, useContext } from "react";
+import { saveRoute } from "../api/routeApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 
-const RouteAddPage = ({onClose, setRoutes, selectedAgency, project_id }) => {
+const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState({
     agency_id: "",
@@ -23,7 +23,7 @@ const RouteAddPage = ({onClose, setRoutes, selectedAgency, project_id }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(name,value)
+    console.log(name, value);
     setRouteData((prev) => ({
       ...prev,
       [name]:
@@ -34,9 +34,9 @@ const RouteAddPage = ({onClose, setRoutes, selectedAgency, project_id }) => {
             ? null
             : parseInt(value, 10) || null
           : value,
-        }));
-      };
-      console.log(routeData)
+    }));
+  };
+  console.log(routeData);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,7 +53,8 @@ const RouteAddPage = ({onClose, setRoutes, selectedAgency, project_id }) => {
     if (result.isConfirmed) {
       try {
         const newRoute = { ...routeData, agency_id: selectedAgency };
-        const route_id = await saveRoute(newRoute, token);
+        const response = await saveRoute(newRoute, token);
+        const route_id = response.route_id;
         setRoutes((prev) => [...prev, { ...newRoute, route_id }]);
         Swal.fire("Eklendi!", "Rota başarıyla eklendi.", "success");
         onClose();
