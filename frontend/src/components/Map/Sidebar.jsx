@@ -536,9 +536,9 @@ const Sidebar = ({
             <Accordion.Body>
               {routeFormMode === "add" ? (
                 <RouteAddPage
-                  project_id={project_id}
                   onClose={closeRouteForm}
                   setRoutes={setRoutes}
+                  selectedAgency={selectedAgency}
                 />
               ) : routeFormMode === "edit" && routeEditId ? (
                 <RouteEditPage
