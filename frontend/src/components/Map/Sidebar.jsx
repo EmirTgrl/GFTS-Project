@@ -466,6 +466,7 @@ const Sidebar = ({
                   agency_id={agencyEditId}
                   onClose={closeAgencyForm}
                   setAgencies={setAgencies}
+                  agencies={agencies}
                 />
               ) : (
                 <>
