@@ -138,7 +138,7 @@ const Sidebar = ({
         project_id,
         token
       );
-      setRoutes(Array.isArray(routesData) ? routesData : []);
+      setRoutes(routesData);
     } catch (error) {
       console.error("Error fetching routes by agency:", error);
       setRoutes([]);
@@ -540,8 +540,10 @@ const Sidebar = ({
                 <RouteEditPage
                   agencies={agencies}
                   route_id={routeEditId}
+                  routes={routes}
                   onClose={closeRouteForm}
                   setRoutes={setRoutes}
+                  project_id={project_id}
                 />
               ) : (
                 <>
