@@ -19,26 +19,32 @@ const routeService = {
 
     const fields = [];
     const values = [];
+
+    // Her zaman user_id ile filtrele
     fields.push("user_id = ?");
     values.push(user_id);
 
+    // Query parametrelerini kontrol et
     for (const param in req.query) {
       if (validFields.includes(param)) {
         fields.push(`${param} = ?`);
         values.push(req.query[param]);
       } else {
-        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+        console.warn(`Unexpected query parameter: ${param}`);
       }
     }
 
-    let query = `SELECT * FROM routes 
-    WHERE ${fields.join(" AND ")}`;
+    // SQL sorgusunu oluştur
+    const query = `
+      SELECT * FROM routes 
+      WHERE ${fields.join(" AND ")}
+    `;
 
     try {
       const [rows] = await pool.execute(query, values);
       res.json(rows.length > 0 ? rows : []);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching routes:", error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
@@ -108,8 +114,7 @@ const routeService = {
         return res.status(404).json({ error: "Route not found" });
       }
 
-      
-      res.status(200).json({message: "successfully updated"});
+      res.status(200).json({ message: "successfully updated" });
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: "Server Error", details: e.message });

@@ -8,60 +8,71 @@ import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 
-const RouteEditPage = ({ project_id, route_id, onClose, setRoutes }) => {
+const RouteEditPage = ({
+  project_id,
+  route_id,
+  initialRouteData,
+  onClose,
+  setRoutes,
+}) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState(null);
   const [agencies, setAgencies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const route = await fetchRouteById(route_id, project_id, token);
-        console.log("Fetched route:", route); // Debugging
-        if (!route) {
-          throw new Error("Route data not found");
-        }
-        setRouteData({
-          agency_id: route.agency_id || "",
-          project_id: route.project_id || project_id,
-          route_short_name: route.route_short_name || "",
-          route_long_name: route.route_long_name || "",
-          route_desc: route.route_desc || "",
-          route_type: route.route_type || "",
-          route_url: route.route_url || "",
-          route_color: route.route_color || "",
-          route_text_color: route.route_text_color || "",
+        const prepareRouteData = (data) => ({
+          agency_id: data?.agency_id || "",
+          project_id: data?.project_id || project_id,
+          route_short_name: data?.route_short_name || "",
+          route_long_name: data?.route_long_name || "",
+          route_desc: data?.route_desc || "",
+          route_type: data?.route_type || "",
+          route_url: data?.route_url || "",
+          route_color: data?.route_color || "",
+          route_text_color: data?.route_text_color || "",
           route_sort_order:
-            route.route_sort_order !== undefined
-              ? route.route_sort_order
-              : null,
+            data?.route_sort_order !== undefined ? data.route_sort_order : null,
           continuous_pickup:
-            route.continuous_pickup !== undefined
-              ? route.continuous_pickup
+            data?.continuous_pickup !== undefined
+              ? data.continuous_pickup
               : null,
           continuous_drop_off:
-            route.continuous_drop_off !== undefined
-              ? route.continuous_drop_off
+            data?.continuous_drop_off !== undefined
+              ? data.continuous_drop_off
               : null,
         });
 
-        const agencyData = await fetchAgenciesByProjectId(project_id, token);
-        console.log("Fetched agencies:", agencyData); // Debugging
-        setAgencies(agencyData);
-      } catch (error) {
-        Swal.fire(
-          "Hata!",
-          `Rota yüklenirken hata oluştu: ${error.message}`,
-          "error"
+        const route =
+          initialRouteData ||
+          (await fetchRouteById(route_id, project_id, token));
+
+        if (!route) {
+          throw new Error("Route data not found");
+        }
+
+        console.log(
+          "Route data source:",
+          initialRouteData ? "Prop" : "API",
+          route
         );
-        onClose();
+        setRouteData(prepareRouteData(route));
+
+        const agencyData = await fetchAgenciesByProjectId(project_id, token);
+        setAgencies(Array.isArray(agencyData) ? agencyData : []);
+      } catch (err) {
+        console.error("Error loading route data:", err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
+
     loadData();
-  }, [route_id, project_id, token, onClose]);
+  }, [route_id, project_id, token, initialRouteData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -93,12 +104,11 @@ const RouteEditPage = ({ project_id, route_id, onClose, setRoutes }) => {
 
     if (result.isConfirmed) {
       try {
-        // route_id’yi routeData’ya ekleyerek gönderiyoruz
         const updatedRouteData = { route_id, ...routeData };
-        const updatedRoute = await updateRoute(updatedRouteData, token);
+        await updateRoute(updatedRouteData, token);
         setRoutes((prev) =>
           prev.map((r) =>
-            r.route_id === parseInt(route_id) ? updatedRoute : r
+            r.route_id === route_id ? { ...r, ...updatedRouteData } : r
           )
         );
         Swal.fire("Güncellendi!", "Rota başarıyla güncellendi.", "success");
@@ -113,7 +123,9 @@ const RouteEditPage = ({ project_id, route_id, onClose, setRoutes }) => {
     }
   };
 
-  if (loading || !routeData) return <p>Yükleniyor...</p>;
+  if (loading) return <p>Yükleniyor...</p>;
+  if (error) return <p>Hata: {error}</p>;
+  if (!routeData) return <p>Veri bulunamadı.</p>;
 
   return (
     <div className="form-container">
@@ -256,6 +268,7 @@ const RouteEditPage = ({ project_id, route_id, onClose, setRoutes }) => {
 RouteEditPage.propTypes = {
   project_id: PropTypes.string.isRequired,
   route_id: PropTypes.string.isRequired,
+  initialRouteData: PropTypes.object,
   onClose: PropTypes.func.isRequired,
   setRoutes: PropTypes.func.isRequired,
 };

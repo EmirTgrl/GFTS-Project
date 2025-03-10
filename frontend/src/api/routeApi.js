@@ -20,7 +20,7 @@ export const fetchRoutesByProjectId = async (projectId, token) => {
 
 export const fetchRoutesByAgencyId = async (agencyId, projectId, token) => {
   const response = await fetch(
-    `${API_BASE_URL}?project_id=${projectId},agency_id=${agencyId}`,
+    `${API_BASE_URL}?project_id=${projectId}&agency_id=${agencyId}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }

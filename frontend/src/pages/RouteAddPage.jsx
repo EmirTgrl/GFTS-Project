@@ -42,6 +42,7 @@ const RouteAddPage = ({ project_id, onClose, setRoutes }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    console.log(name,value)
     setRouteData((prev) => ({
       ...prev,
       [name]:
@@ -52,8 +53,9 @@ const RouteAddPage = ({ project_id, onClose, setRoutes }) => {
             ? null
             : parseInt(value, 10) || null
           : value,
-    }));
-  };
+        }));
+      };
+      console.log(routeData)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,12 +69,14 @@ const RouteAddPage = ({ project_id, onClose, setRoutes }) => {
       confirmButtonText: "Evet, ekle!",
       cancelButtonText: "Hayır",
     });
-
     if (result.isConfirmed) {
+      console.log("bbbb",project_id)
+      console.log("geldi",result)
       try {
-        const routeData = { project_id, ...routeData };
-        const route_id = await saveRoute(routeData, token);
-        setRoutes((prev) => [...prev, { ...routeData, route_id }]);
+        console.log("aaa",routeData)
+        const routeData2 = { project_id, ...routeData };
+        const route_id = await saveRoute(routeData2, token);
+        setRoutes((prev) => [...prev, { ...routeData2, route_id }]);
         Swal.fire("Eklendi!", "Rota başarıyla eklendi.", "success");
         onClose();
       } catch (error) {

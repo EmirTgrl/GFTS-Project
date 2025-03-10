@@ -9,7 +9,7 @@ const TripList = ({
   setTrips,
   selectedTrip,
   setSelectedTrip,
-  setStopsAndTimes,
+  // setStopsAndTimes,
   handleTripSelect,
   openForm, // openForm prop’u eklendi
 }) => {
@@ -33,7 +33,7 @@ const TripList = ({
         );
         if (selectedTrip === tripId) {
           setSelectedTrip(null);
-          setStopsAndTimes([]);
+          // setStopsAndTimes([]);
         }
         Swal.fire("Silindi!", "Trip başarıyla silindi.", "success");
       } catch (error) {

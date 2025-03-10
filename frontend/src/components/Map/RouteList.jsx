@@ -98,8 +98,10 @@ const RouteList = ({
   };
 
   const handleEditRoute = (routeId) => {
+    const routeToEdit = routes.find((r) => r.route_id === routeId);
+    console.log("Editing route:", routeToEdit);
     navigate(`/edit-route/${project_id}/${routeId}`, {
-      state: { selectedRoute, selectedTrip: null },
+      state: { selectedRoute: routeToEdit, selectedTrip: null }, // Veriyi state ile geçiriyoruz
     });
   };
 

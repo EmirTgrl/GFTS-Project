@@ -72,21 +72,28 @@ const Sidebar = ({
   setMapCenter,
   setZoom,
 }) => {
+  // Sidebar durumları
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
+
+  // Sayfalama durumları
   const [pageAgencies, setPageAgencies] = useState(1);
   const [pageRoutes, setPageRoutes] = useState(1);
   const [pageTrips, setPageTrips] = useState(1);
   const [pageStops, setPageStops] = useState(1);
   const [pageCalendars, setPageCalendars] = useState(1);
-  const [selectedAgency, setSelectedAgency] = useState(null);
-  const [selectedCalendar, setSelectedCalendar] = useState(null);
   const itemsPerPage = 8;
 
+  // Seçim durumları
+  const [selectedAgency, setSelectedAgency] = useState(null);
+  const [selectedCalendar, setSelectedCalendar] = useState(null);
+
+  // Form modları ve düzenleme ID'leri
   const [agencyFormMode, setAgencyFormMode] = useState(null);
   const [agencyEditId, setAgencyEditId] = useState(null);
   const [routeFormMode, setRouteFormMode] = useState(null);
   const [routeEditId, setRouteEditId] = useState(null);
+  const [initialRouteData, setInitialRouteData] = useState(null); // Yeni: Rota için başlangıç verisi
   const [tripFormMode, setTripFormMode] = useState(null);
   const [tripEditId, setTripEditId] = useState(null);
   const [stopTimeFormMode, setStopTimeFormMode] = useState(null);
@@ -94,35 +101,30 @@ const Sidebar = ({
   const [calendarFormMode, setCalendarFormMode] = useState(null);
   const [calendarEditId, setCalendarEditId] = useState(null);
 
+  // İlk yükleme: Ajanslar ve takvimler
   useEffect(() => {
-    const loadAgencies = async () => {
+    const loadInitialData = async () => {
       try {
-        const data = await fetchAgenciesByProjectId(project_id, token);
-        setAgencies(Array.isArray(data) ? data : []);
+        const agencyData = await fetchAgenciesByProjectId(project_id, token);
+        setAgencies(Array.isArray(agencyData) ? agencyData : []);
         setPageAgencies(1);
-      } catch (error) {
-        console.error("Error fetching agencies:", error);
-        setAgencies([]);
-      }
-    };
 
-    const loadCalendars = async () => {
-      try {
-        const data = await fetchCalendarsByProjectId(project_id, token);
-        setCalendars(Array.isArray(data) ? data : []);
+        const calendarData = await fetchCalendarsByProjectId(project_id, token);
+        setCalendars(Array.isArray(calendarData) ? calendarData : []);
         setPageCalendars(1);
       } catch (error) {
-        console.error("Error fetching calendars:", error);
+        console.error("Error fetching initial data:", error);
+        setAgencies([]);
         setCalendars([]);
       }
     };
 
     if (token && project_id) {
-      loadAgencies();
-      loadCalendars();
+      loadInitialData();
     }
   }, [token, project_id, setAgencies, setCalendars]);
 
+  // Ajans seçimi
   const handleAgencySelect = async (agencyId) => {
     setSelectedAgency(agencyId);
     setSelectedRoute(null);
@@ -144,6 +146,7 @@ const Sidebar = ({
     }
   };
 
+  // Rota seçimi
   const handleRouteSelect = async (routeId) => {
     setSelectedRoute(routeId);
     setSelectedTrip(null);
@@ -159,6 +162,7 @@ const Sidebar = ({
     }
   };
 
+  // Trip seçimi
   const handleTripSelect = async (tripId) => {
     setSelectedTrip(tripId);
     setCalendar(null);
@@ -211,11 +215,13 @@ const Sidebar = ({
     }
   };
 
+  // Takvim seçimi
   const handleCalendarSelect = (serviceId) => {
     setSelectedCalendar(serviceId);
     setCalendar(calendars.find((cal) => cal.service_id === serviceId) || null);
   };
 
+  // Form açma/kapama fonksiyonları
   const openAgencyForm = (mode, agencyId = null) => {
     setAgencyFormMode(mode);
     setAgencyEditId(agencyId);
@@ -227,15 +233,17 @@ const Sidebar = ({
     setAgencyEditId(null);
   };
 
-  const openRouteForm = (mode, routeId = null) => {
+  const openRouteForm = (mode, routeId = null, initialData = null) => {
     setRouteFormMode(mode);
     setRouteEditId(routeId);
+    setInitialRouteData(initialData); // Başlangıç verisini ayarla
     setActiveKey("1");
   };
 
   const closeRouteForm = () => {
     setRouteFormMode(null);
     setRouteEditId(null);
+    setInitialRouteData(null);
   };
 
   const openTripForm = (mode, tripId = null) => {
@@ -271,6 +279,7 @@ const Sidebar = ({
     setCalendarEditId(null);
   };
 
+  // Silme işlemleri
   const handleDeleteAgency = async (agencyId) => {
     const result = await Swal.fire({
       title: "Emin misiniz?",
@@ -327,8 +336,8 @@ const Sidebar = ({
         }
         Swal.fire("Silindi!", "Rota başarıyla silindi.", "success");
       } catch (error) {
-        console.log(error);
-        Swal.fire("Hata!", "Rota silinirken bir hata oluştu:", "error");
+        console.error("Error deleting route:", error);
+        Swal.fire("Hata!", "Rota silinirken bir hata oluştu.", "error");
       }
     }
   };
@@ -363,6 +372,7 @@ const Sidebar = ({
     }
   };
 
+  // Yardımcı fonksiyonlar
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   const paginateItems = (items, currentPage) => {
@@ -418,6 +428,7 @@ const Sidebar = ({
     return days.length > 0 ? days.join(", ") : "Hiçbir gün";
   };
 
+  // JSX Render
   return (
     <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
       <div className="sidebar-header">
@@ -437,7 +448,7 @@ const Sidebar = ({
           onSelect={(key) => setActiveKey(key)}
           className="sidebar-accordion"
         >
-          {/* Agencies */}
+          {/* Ajanslar */}
           <Accordion.Item eventKey="0">
             <Accordion.Header>
               <Building size={20} className="me-2" /> Ajanslar
@@ -516,7 +527,7 @@ const Sidebar = ({
             </Accordion.Body>
           </Accordion.Item>
 
-          {/* Routes */}
+          {/* Rotalar */}
           <Accordion.Item eventKey="1">
             <Accordion.Header>
               <Map size={20} className="me-2" /> Rotalar
@@ -532,6 +543,7 @@ const Sidebar = ({
                 <RouteEditPage
                   project_id={project_id}
                   route_id={routeEditId}
+                  initialRouteData={initialRouteData} // Başlangıç verisi prop olarak geçiyor
                   onClose={closeRouteForm}
                   setRoutes={setRoutes}
                 />
@@ -569,8 +581,8 @@ const Sidebar = ({
                               size="sm"
                               className="me-1"
                               onClick={() =>
-                                openRouteForm("edit", route.route_id)
-                              }
+                                openRouteForm("edit", route.route_id, route)
+                              } // Rota verisini geçiyoruz
                             >
                               <PencilSquare size={14} />
                             </Button>
@@ -598,7 +610,7 @@ const Sidebar = ({
             </Accordion.Body>
           </Accordion.Item>
 
-          {/* Trips */}
+          {/* Tripler */}
           <Accordion.Item eventKey="2">
             <Accordion.Header>
               <BusFront size={20} className="me-2" /> Tripler
@@ -635,9 +647,8 @@ const Sidebar = ({
                     setTrips={setTrips}
                     selectedTrip={selectedTrip}
                     setSelectedTrip={setSelectedTrip}
-                    setStopsAndTimes={setStopsAndTimes}
                     handleTripSelect={handleTripSelect}
-                    openForm={openTripForm} // openTripForm prop olarak geçiyor
+                    openForm={openTripForm}
                   />
                   {renderPagination(trips, pageTrips, setPageTrips)}
                 </>
@@ -645,7 +656,7 @@ const Sidebar = ({
             </Accordion.Body>
           </Accordion.Item>
 
-          {/* Stops */}
+          {/* Duraklar */}
           <Accordion.Item eventKey="3">
             <Accordion.Header>
               <Clock size={20} className="me-2" /> Duraklar
@@ -693,7 +704,7 @@ const Sidebar = ({
             </Accordion.Body>
           </Accordion.Item>
 
-          {/* Calendars */}
+          {/* Takvimler */}
           <Accordion.Item eventKey="4">
             <Accordion.Header>
               <Calendar size={20} className="me-2" /> Takvimler
