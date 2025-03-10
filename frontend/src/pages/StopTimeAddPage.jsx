@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useContext } from "react";
 import { saveStopTime } from "../api/stopTimeApi";
 import { saveStop } from "../api/stopApi";
 import Swal from "sweetalert2";
@@ -94,9 +94,7 @@ const StopTimeAddPage = ({
         };
 
         const response = await saveStop(stopDataForApi, token);
-        console.log(response)
         stopTimeDataForApi.stop_id = response.stop_id;
-        console.log(stopDataForApi)
         saveStopTime(stopTimeDataForApi, token);
         
         setStopsAndTimes((prev) => [...prev, {...stopDataForApi, stopTimeDataForApi}]);
@@ -313,7 +311,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_url" className="form-label">
-            Durak URL'si
+            Durak URL si
           </label>
           <input
             type="text"
