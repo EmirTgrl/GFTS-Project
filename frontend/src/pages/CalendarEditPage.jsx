@@ -9,6 +9,7 @@ const CalendarEditPage = ({
   service_id,
   onClose,
   setCalendars,
+  setCalendar,
 }) => {
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState(null);
@@ -18,35 +19,41 @@ const CalendarEditPage = ({
     const loadCalendar = async () => {
       try {
         const calendar = await fetchCalendarByServiceId(service_id, token);
-        if (calendar) {
+        console.log("Edit page fetched calendar:", calendar);
+        if (calendar && calendar.service_id) {
           setFormData({
-            service_id: calendar.service_id,
-            monday: calendar.monday || 0,
-            tuesday: calendar.tuesday || 0,
-            wednesday: calendar.wednesday || 0,
-            thursday: calendar.thursday || 0,
-            friday: calendar.friday || 0,
-            saturday: calendar.saturday || 0,
-            sunday: calendar.sunday || 0,
+            service_id: calendar.service_id || "",
+            monday: Number(calendar.monday) || 0,
+            tuesday: Number(calendar.tuesday) || 0,
+            wednesday: Number(calendar.wednesday) || 0,
+            thursday: Number(calendar.thursday) || 0,
+            friday: Number(calendar.friday) || 0,
+            saturday: Number(calendar.saturday) || 0,
+            sunday: Number(calendar.sunday) || 0,
             start_date: calendar.start_date
               ? calendar.start_date.slice(0, 10)
               : "",
             end_date: calendar.end_date ? calendar.end_date.slice(0, 10) : "",
+            project_id: calendar.project_id || project_id,
           });
         } else {
           Swal.fire("Hata!", "Takvim bulunamadı.", "error");
           onClose();
         }
       } catch (error) {
+        console.error("Takvim yükleme hatası:", error);
         Swal.fire(
           "Hata!",
           `Takvim yüklenirken hata oluştu: ${error.message}`,
           "error"
         );
+        onClose();
       }
     };
-    loadCalendar();
-  }, [token, service_id, onClose]);
+    if (token && service_id) {
+      loadCalendar();
+    }
+  }, [token, service_id, onClose, project_id]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -77,13 +84,14 @@ const CalendarEditPage = ({
     if (result.isConfirmed) {
       try {
         setLoading(true);
-        const calendarData = { project_id, ...formData };
+        const calendarData = { ...formData };
         const updatedCalendar = await updateCalendar(calendarData, token);
         setCalendars((prev) =>
           prev.map((cal) =>
             cal.service_id === service_id ? updatedCalendar : cal
           )
-        ); // Liste güncelle
+        );
+        setCalendar(updatedCalendar); // Ana takvim state'ini güncelle
         Swal.fire("Güncellendi!", "Takvim başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {
@@ -175,6 +183,7 @@ CalendarEditPage.propTypes = {
   service_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setCalendars: PropTypes.func.isRequired,
+  setCalendar: PropTypes.func.isRequired,
 };
 
 export default CalendarEditPage;

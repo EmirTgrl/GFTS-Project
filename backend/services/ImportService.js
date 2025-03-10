@@ -193,7 +193,10 @@ class ImportService {
   async importGTFSData(req, res) {
     try {
       const userId = req.user.id;
-      console.log("📤 Import request received from user:", userId);
+      const importMode = req.body.importMode || "parallel"; // "sequential" veya "parallel" olabilir
+      console.log(
+        `📤 Import request received from user: ${userId}, mode: ${importMode}`
+      );
 
       if (!req.file) {
         console.log("⚠️ No file uploaded");
@@ -257,35 +260,42 @@ class ImportService {
         req.file.originalname
       );
       console.log(
-        "🚀 Starting parallel file imports with projectId:",
+        `🚀 Starting ${importMode} file imports with projectId:`,
         projectId
       );
 
-      const independentPromises = this.independentTables.map((tableName) => {
-        const filename = `${tableName}.txt`;
-        const buffer = files[filename];
+      const importTable = async (tableName, buffer) => {
         if (!buffer) {
-          console.log(`⚠️ ${filename} not found in ZIP, skipping`);
-          return Promise.resolve();
+          console.log(`⚠️ ${tableName}.txt not found in ZIP, skipping`);
+          return;
         }
-        return this.processTable(tableName, buffer, userId, projectId);
-      });
+        await this.processTable(tableName, buffer, userId, projectId);
+      };
 
-      await Promise.all(independentPromises);
-      console.log("✅ All independent tables imported");
-
-      const dependentPromises = this.dependentTables.map((tableName) => {
-        const filename = `${tableName}.txt`;
-        const buffer = files[filename];
-        if (!buffer) {
-          console.log(`⚠️ ${filename} not found in ZIP, skipping`);
-          return Promise.resolve();
+      if (importMode === "sequential") {
+        // Sıralı içe aktarma
+        for (const tableName of this.tableOrder) {
+          const filename = `${tableName}.txt`;
+          await importTable(tableName, files[filename]);
         }
-        return this.processTable(tableName, buffer, userId, projectId);
-      });
+      } else {
+        // Paralel içe aktarma (mevcut mantık)
+        const independentPromises = this.independentTables.map((tableName) => {
+          const filename = `${tableName}.txt`;
+          return importTable(tableName, files[filename]);
+        });
 
-      await Promise.all(dependentPromises);
-      console.log("✅ All dependent tables imported");
+        await Promise.all(independentPromises);
+        console.log("✅ All independent tables imported");
+
+        const dependentPromises = this.dependentTables.map((tableName) => {
+          const filename = `${tableName}.txt`;
+          return importTable(tableName, files[filename]);
+        });
+
+        await Promise.all(dependentPromises);
+        console.log("✅ All dependent tables imported");
+      }
 
       for (const [filename] of Object.entries(files)) {
         const tableName = filename.replace(".txt", "").toLowerCase();
@@ -296,7 +306,7 @@ class ImportService {
         }
       }
 
-      console.log("🎉 Parallel import process completed");
+      console.log(`🎉 ${importMode} import process completed`);
       return res.status(200).json({
         message: "GTFS data import completed",
         success: true,

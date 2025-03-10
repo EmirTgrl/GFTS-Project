@@ -16,6 +16,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
     sunday: 0,
     start_date: "",
     end_date: "",
+    project_id,
   });
   const [loading, setLoading] = useState(false);
 
@@ -48,11 +49,10 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
     if (result.isConfirmed) {
       try {
         setLoading(true);
-        const calendarData = { project_id, ...formData };
-        const service_id = await saveCalendar(calendarData, token);
-        setCalendars((prev) => [...prev, { ...calendarData, service_id }]);
+        const newCalendar = await saveCalendar(formData, token);
+        setCalendars((prev) => [...prev, newCalendar]);
         Swal.fire("Eklendi!", "Takvim başarıyla eklendi.", "success");
-        onClose(); // Formu kapat
+        onClose();
       } catch (error) {
         Swal.fire(
           "Hata!",

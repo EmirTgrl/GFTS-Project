@@ -36,7 +36,6 @@ export const fetchTripById = async (tripId, token) => {
     throw new Error(`Failed to fetch trip: ${errorText}`);
   }
   const data = await response.json();
-  // Dönen veri bir dizi ise ilk elemanı al, değilse direk veriyi döndür
   return Array.isArray(data) && data.length > 0 ? data[0] : data;
 };
 

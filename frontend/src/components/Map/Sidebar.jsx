@@ -37,7 +37,7 @@ import {
 } from "react-bootstrap";
 import StopList from "./StopList";
 import TripList from "./TripList";
-import CalendarInfo from "./CalendarInfo";
+import CalendarInfo from "./CalendarInfo"; 
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -129,6 +129,7 @@ const Sidebar = ({
     setSelectedTrip(null);
     setTrips([]);
     setStopsAndTimes([]);
+    setCalendar(null);
     setActiveKey("1");
     setPageRoutes(1);
     try {
@@ -148,6 +149,7 @@ const Sidebar = ({
     setSelectedRoute(routeId);
     setSelectedTrip(null);
     setStopsAndTimes([]);
+    setCalendar(null);
     setActiveKey("2");
     setPageTrips(1);
     try {
@@ -178,6 +180,7 @@ const Sidebar = ({
           selectedTripData.service_id,
           token
         );
+        console.log("Trip-selected calendar:", calendarData);
         setCalendar(calendarData || null);
         setSelectedCalendar(selectedTripData.service_id);
       }
@@ -213,7 +216,8 @@ const Sidebar = ({
 
   const handleCalendarSelect = (serviceId) => {
     setSelectedCalendar(serviceId);
-    setCalendar(calendars.find((cal) => cal.service_id === serviceId) || null);
+    const selectedCal = calendars.find((cal) => cal.service_id === serviceId);
+    setCalendar(selectedCal || null);
   };
 
   const openAgencyForm = (mode, agencyId = null) => {
@@ -351,7 +355,10 @@ const Sidebar = ({
           prev.filter((cal) => cal.service_id !== serviceId)
         );
         setPageCalendars(1);
-        if (selectedCalendar === serviceId) setSelectedCalendar(null);
+        if (selectedCalendar === serviceId) {
+          setSelectedCalendar(null);
+          setCalendar(null);
+        }
         Swal.fire("Silindi!", "Takvim başarıyla silindi.", "success");
       } catch (error) {
         Swal.fire(
@@ -407,14 +414,15 @@ const Sidebar = ({
   const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
 
   const getActiveDays = (calendar) => {
+    if (!calendar) return "Veri yok";
     const days = [];
-    if (calendar?.monday === 1) days.push("Pzt");
-    if (calendar?.tuesday === 1) days.push("Sal");
-    if (calendar?.wednesday === 1) days.push("Çar");
-    if (calendar?.thursday === 1) days.push("Per");
-    if (calendar?.friday === 1) days.push("Cum");
-    if (calendar?.saturday === 1) days.push("Cmt");
-    if (calendar?.sunday === 1) days.push("Paz");
+    if (calendar.monday === 1) days.push("Pzt");
+    if (calendar.tuesday === 1) days.push("Sal");
+    if (calendar.wednesday === 1) days.push("Çar");
+    if (calendar.thursday === 1) days.push("Per");
+    if (calendar.friday === 1) days.push("Cum");
+    if (calendar.saturday === 1) days.push("Cmt");
+    if (calendar.sunday === 1) days.push("Paz");
     return days.length > 0 ? days.join(", ") : "Hiçbir gün";
   };
 
@@ -437,7 +445,6 @@ const Sidebar = ({
           onSelect={(key) => setActiveKey(key)}
           className="sidebar-accordion"
         >
-          {/* Agencies */}
           <Accordion.Item eventKey="0">
             <Accordion.Header>
               <Building size={20} className="me-2" /> Ajanslar
@@ -517,7 +524,6 @@ const Sidebar = ({
             </Accordion.Body>
           </Accordion.Item>
 
-          {/* Routes */}
           <Accordion.Item eventKey="1">
             <Accordion.Header>
               <Map size={20} className="me-2" /> Rotalar
@@ -600,7 +606,6 @@ const Sidebar = ({
             </Accordion.Body>
           </Accordion.Item>
 
-          {/* Trips */}
           <Accordion.Item eventKey="2">
             <Accordion.Header>
               <BusFront size={20} className="me-2" /> Tripler
@@ -637,9 +642,8 @@ const Sidebar = ({
                     setTrips={setTrips}
                     selectedTrip={selectedTrip}
                     setSelectedTrip={setSelectedTrip}
-                    // setStopsAndTimes={setStopsAndTimes}
                     handleTripSelect={handleTripSelect}
-                    openForm={openTripForm} // openTripForm prop olarak geçiyor
+                    openForm={openTripForm}
                   />
                   {renderPagination(trips, pageTrips, setPageTrips)}
                 </>
@@ -647,7 +651,6 @@ const Sidebar = ({
             </Accordion.Body>
           </Accordion.Item>
 
-          {/* Stops */}
           <Accordion.Item eventKey="3">
             <Accordion.Header>
               <Clock size={20} className="me-2" /> Duraklar
@@ -695,7 +698,6 @@ const Sidebar = ({
             </Accordion.Body>
           </Accordion.Item>
 
-          {/* Calendars */}
           <Accordion.Item eventKey="4">
             <Accordion.Header>
               <Calendar size={20} className="me-2" /> Takvimler
@@ -713,6 +715,7 @@ const Sidebar = ({
                   service_id={calendarEditId}
                   onClose={closeCalendarForm}
                   setCalendars={setCalendars}
+                  setCalendar={setCalendar}
                 />
               ) : (
                 <>
@@ -724,30 +727,20 @@ const Sidebar = ({
                   >
                     <PlusCircle size={16} className="me-2" /> Yeni Takvim
                   </Button>
-                  {calendars.length > 0 ? (
-                    paginateItems(calendars, pageCalendars).map((cal) => (
-                      <Card key={cal.service_id} className="mb-2 item-card">
-                        <Card.Body className="d-flex justify-content-between align-items-center p-2">
-                          <OverlayTrigger
-                            placement="top"
-                            overlay={renderTooltip(getActiveDays(cal))}
-                          >
-                            <span
-                              className="item-title"
-                              onClick={() =>
-                                handleCalendarSelect(cal.service_id)
-                              }
-                            >
-                              {getActiveDays(cal)}
-                            </span>
-                          </OverlayTrigger>
+                  {selectedTrip && calendar ? (
+                    <Card className="mb-2 item-card">
+                      <Card.Body className="p-2">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <span className="item-title">
+                            Trip: {selectedTrip}
+                          </span>
                           <div>
                             <Button
                               variant="outline-primary"
                               size="sm"
                               className="me-1"
                               onClick={() =>
-                                openCalendarForm("edit", cal.service_id)
+                                openCalendarForm("edit", calendar.service_id)
                               }
                             >
                               <PencilSquare size={14} />
@@ -756,22 +749,74 @@ const Sidebar = ({
                               variant="outline-danger"
                               size="sm"
                               onClick={() =>
-                                handleDeleteCalendar(cal.service_id)
+                                handleDeleteCalendar(calendar.service_id)
                               }
                             >
                               <Trash2 size={14} />
                             </Button>
                           </div>
-                        </Card.Body>
-                      </Card>
-                    ))
+                        </div>
+                        <CalendarInfo calendar={calendar} />{" "}
+                        {/* CalendarInfo'yu ekledik */}
+                      </Card.Body>
+                    </Card>
                   ) : (
-                    <p className="text-muted text-center">Takvim bulunamadı.</p>
+                    <p className="text-muted text-center">
+                      {selectedTrip
+                        ? "Bu trip için takvim verisi yok."
+                        : "Lütfen bir trip seçin."}
+                    </p>
                   )}
-                  {selectedCalendar && calendar && (
-                    <CalendarInfo calendar={calendar} />
+                  {calendars.length > 0 && (
+                    <>
+                      <h6>Tüm Takvimler:</h6>
+                      {paginateItems(calendars, pageCalendars).map((cal) => (
+                        <Card key={cal.service_id} className="mb-2 item-card">
+                          <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={renderTooltip(getActiveDays(cal))}
+                            >
+                              <span
+                                className="item-title"
+                                onClick={() =>
+                                  handleCalendarSelect(cal.service_id)
+                                }
+                              >
+                                {getActiveDays(cal)}
+                              </span>
+                            </OverlayTrigger>
+                            <div>
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                className="me-1"
+                                onClick={() =>
+                                  openCalendarForm("edit", cal.service_id)
+                                }
+                              >
+                                <PencilSquare size={14} />
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteCalendar(cal.service_id)
+                                }
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      ))}
+                      {renderPagination(
+                        calendars,
+                        pageCalendars,
+                        setPageCalendars
+                      )}
+                    </>
                   )}
-                  {renderPagination(calendars, pageCalendars, setPageCalendars)}
                 </>
               )}
             </Accordion.Body>

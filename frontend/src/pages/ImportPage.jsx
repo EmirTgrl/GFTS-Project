@@ -8,6 +8,7 @@ import {
   Alert,
   Card,
   ProgressBar,
+  FormSelect,
 } from "react-bootstrap";
 import "../styles/ImportPage.css";
 
@@ -16,6 +17,7 @@ const ImportPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [importMode, setImportMode] = useState("parallel"); // Varsayılan: paralel
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
 
@@ -31,10 +33,14 @@ const ImportPage = () => {
     setUploadProgress(0);
   };
 
+  const handleModeChange = (e) => {
+    setImportMode(e.target.value);
+  };
+
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file) {
-      setError("Please select a file");
+      setError("Lütfen bir dosya seçin");
       return;
     }
 
@@ -42,6 +48,7 @@ const ImportPage = () => {
     setError("");
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("importMode", importMode); // İçe aktarma modunu ekle
 
     try {
       const xhr = new XMLHttpRequest();
@@ -63,7 +70,7 @@ const ImportPage = () => {
             reject(new Error(xhr.statusText));
           }
         };
-        xhr.onerror = () => reject(new Error("Network error occurred"));
+        xhr.onerror = () => reject(new Error("Ağ hatası oluştu"));
       });
 
       xhr.open("POST", "http://localhost:5000/api/io/import", true);
@@ -75,13 +82,13 @@ const ImportPage = () => {
       if (data.success) {
         setFile(null);
         setUploadProgress(0);
-        navigate("/projects"); 
+        navigate("/projects");
       } else {
-        setError(data.message || "An error occurred during import!");
+        setError(data.message || "İçe aktarma sırasında bir hata oluştu!");
       }
     } catch (error) {
-      console.error("Upload error:", error);
-      setError("Failed to connect to the server. Please try again.");
+      console.error("Yükleme hatası:", error);
+      setError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
     } finally {
       setLoading(false);
     }
@@ -94,9 +101,11 @@ const ImportPage = () => {
         style={{ maxWidth: "500px" }}
       >
         <Card.Body className="p-4">
-          <h2 className="card-title h4 mb-3 text-center">Import GTFS Data</h2>
+          <h2 className="card-title h4 mb-3 text-center">
+            GTFS Verilerini İçe Aktar
+          </h2>
           <p className="text-muted small mb-4 text-center">
-            Upload your GTFS ZIP file to manage transit data
+            GTFS ZIP dosyanızı yükleyerek toplu taşıma verilerini yönetin
           </p>
 
           <Form onSubmit={handleUpload}>
@@ -116,7 +125,25 @@ const ImportPage = () => {
                 size="sm"
               />
               <Form.Text className="text-muted small">
-                Only .zip files with valid GTFS data are accepted
+                Yalnızca geçerli GTFS verileri içeren .zip dosyaları kabul
+                edilir
+              </Form.Text>
+            </Form.Group>
+
+            <Form.Group className="mb-4">
+              <Form.Label className="small">İçe Aktarma Yöntemi</Form.Label>
+              <FormSelect
+                value={importMode}
+                onChange={handleModeChange}
+                disabled={loading}
+                size="sm"
+              >
+                <option value="parallel">Paralel</option>
+                <option value="sequential">Sıralı</option>
+              </FormSelect>
+              <Form.Text className="text-muted small">
+                Paralel: Bağımsız tablolar aynı anda işlenir. Sıralı: Tablolar
+                sırayla işlenir.
               </Form.Text>
             </Form.Group>
 
@@ -139,10 +166,10 @@ const ImportPage = () => {
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" />
-                  Uploading...
+                  Yükleniyor...
                 </>
               ) : (
-                "Upload GTFS Data"
+                "GTFS Verilerini Yükle"
               )}
             </Button>
           </Form>

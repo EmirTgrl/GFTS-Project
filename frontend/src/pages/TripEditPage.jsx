@@ -11,42 +11,44 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
   const [tripData, setTripData] = useState(null);
   const [routes, setRoutes] = useState([]);
   const [calendars, setCalendars] = useState([]);
-  const [loading, setLoading] = useState(true); // Yükleme durumu
-  const [error, setError] = useState(null); // Hata durumu
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log("Fetching trip with ID:", trip_id); // trip_id kontrolü
+        console.log("Fetching trip with ID:", trip_id);
         const tripResponse = await fetchTripById(trip_id, token);
-        console.log("Raw trip response:", tripResponse); // Ham yanıt
+        console.log("Raw trip response:", tripResponse);
 
-        // API bir dizi dönerse ilk elemanı al, değilse direk kullan
-        const trip =
-          Array.isArray(tripResponse) && tripResponse.length > 0
-            ? tripResponse[0]
-            : tripResponse;
+        let trip = tripResponse;
+        if (Array.isArray(tripResponse)) {
+          trip = tripResponse.length > 0 ? tripResponse[0] : null;
+        }
 
         if (!trip || !trip.trip_id) {
-          throw new Error("Trip data is empty or invalid");
+          throw new Error(
+            "Trip data is empty or invalid. Received: " +
+              JSON.stringify(tripResponse)
+          );
         }
 
         setTripData({
-          trip_id: trip.trip_id || trip_id, // trip_id prop’tan geliyor
+          trip_id: trip.trip_id || trip_id,
           service_id: trip.service_id || "",
           route_id: trip.route_id || "",
           project_id: trip.project_id || project_id,
           trip_headsign: trip.trip_headsign || "",
           trip_short_name: trip.trip_short_name || "",
           direction_id:
-            trip.direction_id !== undefined ? trip.direction_id : null,
+            trip.direction_id !== undefined ? trip.direction_id : "",
           block_id: trip.block_id || "",
           wheelchair_accessible:
             trip.wheelchair_accessible !== undefined
               ? trip.wheelchair_accessible
-              : null,
+              : "",
           bikes_allowed:
-            trip.bikes_allowed !== undefined ? trip.bikes_allowed : null,
+            trip.bikes_allowed !== undefined ? trip.bikes_allowed : "",
         });
 
         const routeData = await fetchRoutesByProjectId(project_id, token);
@@ -75,8 +77,8 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
         name === "wheelchair_accessible" ||
         name === "bikes_allowed"
           ? value === ""
-            ? null
-            : parseInt(value, 10) || null
+            ? ""
+            : parseInt(value, 10)
           : value,
     }));
   };
@@ -133,7 +135,7 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
 
   if (loading) return <p>Yükleniyor...</p>;
   if (error) return <p>Hata: {error}</p>;
-  if (!tripData) return <p>Veri bulunamadı.</p>;
+  if (!tripData) return <p>Bu trip için veri bulunamadı. Trip ID: {trip_id}</p>;
 
   return (
     <div className="form-container">
@@ -216,7 +218,7 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
             id="direction_id"
             name="direction_id"
             className="form-control"
-            value={tripData.direction_id ?? ""}
+            value={tripData.direction_id}
             onChange={handleChange}
           >
             <option value="">Seçiniz</option>
@@ -245,7 +247,7 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
             id="wheelchair_accessible"
             name="wheelchair_accessible"
             className="form-control"
-            value={tripData.wheelchair_accessible ?? ""}
+            value={tripData.wheelchair_accessible}
             onChange={handleChange}
           >
             <option value="">Seçiniz</option>
@@ -262,7 +264,7 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
             id="bikes_allowed"
             name="bikes_allowed"
             className="form-control"
-            value={tripData.bikes_allowed ?? ""}
+            value={tripData.bikes_allowed}
             onChange={handleChange}
           >
             <option value="">Seçiniz</option>
