@@ -455,6 +455,7 @@ const Sidebar = ({
                   agency_id={agencyEditId}
                   onClose={closeAgencyForm}
                   setAgencies={setAgencies}
+                  agencies={agencies}
                 />
               ) : (
                 <>
@@ -524,13 +525,14 @@ const Sidebar = ({
             <Accordion.Body>
               {routeFormMode === "add" ? (
                 <RouteAddPage
-                  project_id={project_id}
                   onClose={closeRouteForm}
                   setRoutes={setRoutes}
+                  selectedAgency={selectedAgency}
+                  project_id={project_id}
                 />
               ) : routeFormMode === "edit" && routeEditId ? (
                 <RouteEditPage
-                  project_id={project_id}
+                  agencies={agencies}
                   route_id={routeEditId}
                   onClose={closeRouteForm}
                   setRoutes={setRoutes}

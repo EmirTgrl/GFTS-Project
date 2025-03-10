@@ -4,7 +4,7 @@ import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 
-const AgencyEditPage = ({ project_id, agency_id, onClose, setAgencies }) => {
+const AgencyEditPage = ({ project_id, agency_id, onClose, setAgencies, agencies}) => {
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -12,11 +12,10 @@ const AgencyEditPage = ({ project_id, agency_id, onClose, setAgencies }) => {
   useEffect(() => {
     const loadAgency = async () => {
       try {
-        const agencies = await fetchAgenciesByProjectId(project_id, token);
-
         const agency = agencies.find(
           (ag) => ag.agency_id === parseInt(agency_id)
         ); 
+
         if (agency) {
           setFormData({
             agency_id: agency.agency_id,
@@ -39,7 +38,7 @@ const AgencyEditPage = ({ project_id, agency_id, onClose, setAgencies }) => {
       }
     };
     loadAgency();
-  }, [token, project_id, agency_id, onClose]);
+  }, [token, agencies, agency_id, onClose]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -72,13 +71,12 @@ const AgencyEditPage = ({ project_id, agency_id, onClose, setAgencies }) => {
       try {
         setLoading(true);
         const agencyData = { project_id, ...formData };
-        const updatedAgency = await updateAgency(agencyData, token);
-        setAgencies(
-          (prev) =>
-            prev.map((ag) =>
-              ag.agency_id === parseInt(agency_id) ? updatedAgency : ag
-            ) 
-        );
+        await updateAgency(agencyData, token);
+        setAgencies((prevAgencies) =>
+              prevAgencies.map((agency) =>
+                agency.agency_id === formData.agency_id ? { ...agency, ...formData } : agency
+              )
+            );
         Swal.fire("Güncellendi!", "Ajans başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {

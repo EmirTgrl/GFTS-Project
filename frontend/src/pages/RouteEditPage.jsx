@@ -9,7 +9,7 @@ import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 
 const RouteEditPage = ({
-  project_id,
+  agencies,
   route_id,
   initialRouteData,
   onClose,
@@ -17,7 +17,6 @@ const RouteEditPage = ({
 }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState(null);
-  const [agencies, setAgencies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -45,24 +44,7 @@ const RouteEditPage = ({
               ? data.continuous_drop_off
               : null,
         });
-
-        const route =
-          initialRouteData ||
-          (await fetchRouteById(route_id, project_id, token));
-
-        if (!route) {
-          throw new Error("Route data not found");
-        }
-
-        console.log(
-          "Route data source:",
-          initialRouteData ? "Prop" : "API",
-          route
-        );
-        setRouteData(prepareRouteData(route));
-
-        const agencyData = await fetchAgenciesByProjectId(project_id, token);
-        setAgencies(Array.isArray(agencyData) ? agencyData : []);
+        setRouteData(prepareRouteData(initialRouteData));
       } catch (err) {
         console.error("Error loading route data:", err);
         setError(err.message);
@@ -72,7 +54,7 @@ const RouteEditPage = ({
     };
 
     loadData();
-  }, [route_id, project_id, token, initialRouteData]);
+  }, [initialRouteData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
