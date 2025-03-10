@@ -539,10 +539,11 @@ const Sidebar = ({
                   onClose={closeRouteForm}
                   setRoutes={setRoutes}
                   selectedAgency={selectedAgency}
+                  project_id={project_id}
                 />
               ) : routeFormMode === "edit" && routeEditId ? (
                 <RouteEditPage
-                  project_id={project_id}
+                  agencies={agencies}
                   route_id={routeEditId}
                   initialRouteData={initialRouteData} // Başlangıç verisi prop olarak geçiyor
                   onClose={closeRouteForm}

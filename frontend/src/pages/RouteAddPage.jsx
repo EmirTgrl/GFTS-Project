@@ -4,7 +4,7 @@ import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 
-const RouteAddPage = ({onClose, setRoutes, selectedAgency }) => {
+const RouteAddPage = ({onClose, setRoutes, selectedAgency, project_id }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState({
     agency_id: "",
@@ -52,7 +52,7 @@ const RouteAddPage = ({onClose, setRoutes, selectedAgency }) => {
     });
     if (result.isConfirmed) {
       try {
-        const newRoute = { ...routeData, selectedAgency };
+        const newRoute = { ...routeData, agency_id: selectedAgency };
         const route_id = await saveRoute(newRoute, token);
         setRoutes((prev) => [...prev, { ...newRoute, route_id }]);
         Swal.fire("Eklendi!", "Rota başarıyla eklendi.", "success");
@@ -71,26 +71,6 @@ const RouteAddPage = ({onClose, setRoutes, selectedAgency }) => {
     <div className="form-container">
       <h5>Yeni Rota Ekle</h5>
       <form onSubmit={handleSubmit}>
-        <div className="mb-2">
-          <label htmlFor="agency_id" className="form-label">
-            Ajans
-          </label>
-          <select
-            id="agency_id"
-            name="agency_id"
-            className="form-control"
-            value={routeData.agency_id}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Bir ajans seçin</option>
-            {agencies.map((agency) => (
-              <option key={agency.agency_id} value={agency.agency_id}>
-                {agency.agency_name || agency.agency_id}
-              </option>
-            ))}
-          </select>
-        </div>
         <div className="mb-2">
           <label htmlFor="route_short_name" className="form-label">
             Kısa Ad
