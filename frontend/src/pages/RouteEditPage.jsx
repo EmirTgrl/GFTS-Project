@@ -9,7 +9,7 @@ import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 
 const RouteEditPage = ({
-  project_id, // project_id prop olarak eklendi
+  agencies,
   route_id,
   initialRouteData,
   onClose,
@@ -17,24 +17,12 @@ const RouteEditPage = ({
 }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState(null);
-  const [agencies, setAgencies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Backend’den güncel rota verisini çek
-        console.log("Fetching route with ID:", route_id);
-        const routeResponse = await fetchRouteById(route_id, token);
-        console.log("Raw route response:", routeResponse);
-
-        // Agencies’i project_id ile çek
-        const agencyData = await fetchAgenciesByProjectId(project_id, token);
-        console.log("Fetched agencies:", agencyData);
-        setAgencies(Array.isArray(agencyData) ? agencyData : []);
-
-        // Gelen veriyi hazırla
         const prepareRouteData = (data) => ({
           agency_id: data?.agency_id || "",
           project_id: data?.project_id || project_id,
@@ -46,17 +34,17 @@ const RouteEditPage = ({
           route_color: data?.route_color || "",
           route_text_color: data?.route_text_color || "",
           route_sort_order:
-            data?.route_sort_order !== undefined ? data.route_sort_order : "",
+            data?.route_sort_order !== undefined ? data.route_sort_order : null,
           continuous_pickup:
-            data?.continuous_pickup !== undefined ? data.continuous_pickup : "",
+            data?.continuous_pickup !== undefined
+              ? data.continuous_pickup
+              : null,
           continuous_drop_off:
             data?.continuous_drop_off !== undefined
               ? data.continuous_drop_off
-              : "",
+              : null,
         });
-
-        // Backend’den gelen veriyi kullan, yoksa initialRouteData’ya düş
-        setRouteData(prepareRouteData(routeResponse || initialRouteData));
+        setRouteData(prepareRouteData(initialRouteData));
       } catch (err) {
         console.error("Error loading route data:", err);
         setError(err.message);
@@ -65,13 +53,8 @@ const RouteEditPage = ({
       }
     };
 
-    if (token && project_id && route_id) {
-      loadData();
-    } else {
-      setError("Missing required props: token, project_id, or route_id");
-      setLoading(false);
-    }
-  }, [project_id, route_id, initialRouteData, token]);
+    loadData();
+  }, [initialRouteData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -82,8 +65,8 @@ const RouteEditPage = ({
         name === "continuous_pickup" ||
         name === "continuous_drop_off"
           ? value === ""
-            ? ""
-            : parseInt(value, 10)
+            ? null
+            : parseInt(value, 10) || null
           : value,
     }));
   };
@@ -104,17 +87,15 @@ const RouteEditPage = ({
     if (result.isConfirmed) {
       try {
         const updatedRouteData = { route_id, ...routeData };
-        console.log("Sending updated route data:", updatedRouteData);
-        const updatedRoute = await updateRoute(updatedRouteData, token);
+        await updateRoute(updatedRouteData, token);
         setRoutes((prev) =>
           prev.map((r) =>
-            r.route_id === route_id ? { ...r, ...updatedRoute } : r
+            r.route_id === route_id ? { ...r, ...updatedRouteData } : r
           )
         );
         Swal.fire("Güncellendi!", "Rota başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {
-        console.error("Update error:", error);
         Swal.fire(
           "Hata!",
           `Rota güncellenirken hata oluştu: ${error.message}`,
@@ -126,8 +107,7 @@ const RouteEditPage = ({
 
   if (loading) return <p>Yükleniyor...</p>;
   if (error) return <p>Hata: {error}</p>;
-  if (!routeData)
-    return <p>Bu rota için veri bulunamadı. Route ID: {route_id}</p>;
+  if (!routeData) return <p>Veri bulunamadı.</p>;
 
   return (
     <div className="form-container">
@@ -253,53 +233,6 @@ const RouteEditPage = ({
             onChange={handleChange}
             placeholder="Ör: 000000"
           />
-        </div>
-        <div className="mb-2">
-          <label htmlFor="route_sort_order" className="form-label">
-            Sıralama Düzeni
-          </label>
-          <input
-            type="number"
-            id="route_sort_order"
-            name="route_sort_order"
-            className="form-control"
-            value={routeData.route_sort_order}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="mb-2">
-          <label htmlFor="continuous_pickup" className="form-label">
-            Sürekli Biniş
-          </label>
-          <select
-            id="continuous_pickup"
-            name="continuous_pickup"
-            className="form-control"
-            value={routeData.continuous_pickup}
-            onChange={handleChange}
-          >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Sürekli biniş var</option>
-            <option value="1">1 - Sürekli biniş yok</option>
-            <option value="2">2 - Bilgi yok</option>
-          </select>
-        </div>
-        <div className="mb-2">
-          <label htmlFor="continuous_drop_off" className="form-label">
-            Sürekli İniş
-          </label>
-          <select
-            id="continuous_drop_off"
-            name="continuous_drop_off"
-            className="form-control"
-            value={routeData.continuous_drop_off}
-            onChange={handleChange}
-          >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Sürekli iniş var</option>
-            <option value="1">1 - Sürekli iniş yok</option>
-            <option value="2">2 - Bilgi yok</option>
-          </select>
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
