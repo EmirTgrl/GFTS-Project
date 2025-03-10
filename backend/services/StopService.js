@@ -33,7 +33,7 @@ const stopService = {
       }
     }
   
-    let query = `SELECT * FROM projects 
+    let query = `SELECT * FROM stops 
     WHERE ${fields.join(" AND ")}`;
   
     try {

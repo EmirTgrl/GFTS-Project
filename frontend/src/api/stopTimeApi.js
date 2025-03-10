@@ -6,7 +6,7 @@ export const fetchStopsAndStopTimesByTripId = async (
   token
 ) => {
   const response = await fetch(
-    `${API_BASE_URL}?project_id=${projectId},trip_id=${tripId}`,
+    `${API_BASE_URL}?project_id=${projectId}&trip_id=${tripId}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
