@@ -241,7 +241,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_url" className="form-label">
-            Durak URL'si
+            Durak URL si
           </label>
           <input
             type="text"
