@@ -672,6 +672,7 @@ const Sidebar = ({
                   stop_id={stopTimeEditId}
                   onClose={closeStopTimeForm}
                   setStopsAndTimes={setStopsAndTimes}
+                  stopsAndTimes={stopsAndTimes}
                 />
               ) : (
                 <>
