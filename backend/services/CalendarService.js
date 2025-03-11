@@ -36,7 +36,7 @@ const calendarService = {
     try {
       const [rows] = await pool.execute(query, values);
       if (rows.length > 0) {
-        res.json(rows[0]); // Tek bir takvim objesi dön
+        res.json(rows)
       } else {
         res.status(404).json({ error: "Calendar not found" });
       }

@@ -6,6 +6,7 @@ import { fetchStopsAndStopTimesByTripId } from "../../api/stopTimeApi";
 import {
   fetchCalendarByServiceId,
   deleteCalendarById,
+  fetchCalendarsByProjectId,
 } from "../../api/calendarApi";
 import {
   fetchAgenciesByProjectId,
@@ -62,8 +63,6 @@ const Sidebar = ({
   setSelectedTrip,
   stopsAndTimes,
   setStopsAndTimes,
-  calendar,
-  setCalendar,
   calendars,
   setCalendars,
   agencies,
@@ -97,9 +96,10 @@ const Sidebar = ({
     const loadAgencies = async () => {
       try {
         const data = await fetchAgenciesByProjectId(project_id, token);
-        console.log("a", data);
         setAgencies(data);
         setPageAgencies(1);
+        const calendarData = await fetchCalendarsByProjectId(project_id,token);
+        setCalendars(calendarData);
       } catch (error) {
         console.error("Error fetching agencies:", error);
         setAgencies([]);
@@ -116,7 +116,6 @@ const Sidebar = ({
     setSelectedTrip(null);
     setTrips([]);
     setStopsAndTimes([]);
-    setCalendar(null);
     setActiveKey("1");
     setPageRoutes(1);
     try {
@@ -136,7 +135,6 @@ const Sidebar = ({
     setSelectedRoute(routeId);
     setSelectedTrip(null);
     setStopsAndTimes([]);
-    setCalendar(null);
     setActiveKey("2");
     setPageTrips(1);
     try {
@@ -150,7 +148,6 @@ const Sidebar = ({
 
   const handleTripSelect = async (tripId) => {
     setSelectedTrip(tripId);
-    setCalendar(null);
     setActiveKey("3");
     setPageStops(1);
     try {
@@ -162,15 +159,7 @@ const Sidebar = ({
       setStopsAndTimes(stopsAndTimesData);
 
       const selectedTripData = trips.find((trip) => trip.trip_id === tripId);
-      if (selectedTripData?.service_id) {
-        const calendarData = await fetchCalendarByServiceId(
-          selectedTripData.service_id,
-          token
-        );
-        console.log("Trip-selected calendar:", calendarData);
-        setCalendar(calendarData || null);
-        setSelectedCalendar(selectedTripData.service_id);
-      }
+      
 
       if (stopsAndTimesData.length > 0) {
         const validStops = stopsAndTimesData.filter(
@@ -344,7 +333,6 @@ const Sidebar = ({
         setPageCalendars(1);
         if (selectedCalendar === serviceId) {
           setSelectedCalendar(null);
-          setCalendar(null);
         }
         Swal.fire("Silindi!", "Takvim başarıyla silindi.", "success");
       } catch (error) {
@@ -605,6 +593,8 @@ const Sidebar = ({
                   project_id={project_id}
                   onClose={closeTripForm}
                   setTrips={setTrips}
+                  calendars={calendars}
+                  selectedRoute={selectedRoute}
                 />
               ) : tripFormMode === "edit" && tripEditId ? (
                 <TripEditPage
@@ -717,46 +707,6 @@ const Sidebar = ({
                   >
                     <PlusCircle size={16} className="me-2" /> Yeni Takvim
                   </Button>
-                  {selectedTrip && calendar ? (
-                    <Card className="mb-2 item-card">
-                      <Card.Body className="p-2">
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <span className="item-title">
-                            Trip: {selectedTrip}
-                          </span>
-                          <div>
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              className="me-1"
-                              onClick={() =>
-                                openCalendarForm("edit", calendar.service_id)
-                              }
-                            >
-                              <PencilSquare size={14} />
-                            </Button>
-                            <Button
-                              variant="outline-danger"
-                              size="sm"
-                              onClick={() =>
-                                handleDeleteCalendar(calendar.service_id)
-                              }
-                            >
-                              <Trash2 size={14} />
-                            </Button>
-                          </div>
-                        </div>
-                        <CalendarInfo calendar={calendar} />{" "}
-                        {/* CalendarInfo'yu ekledik */}
-                      </Card.Body>
-                    </Card>
-                  ) : (
-                    <p className="text-muted text-center">
-                      {selectedTrip
-                        ? "Bu trip için takvim verisi yok."
-                        : "Lütfen bir trip seçin."}
-                    </p>
-                  )}
                   {calendars.length > 0 && (
                     <>
                       <h6>Tüm Takvimler:</h6>

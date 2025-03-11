@@ -33,7 +33,6 @@ const TripList = ({
         );
         if (selectedTrip === tripId) {
           setSelectedTrip(null);
-          // setStopsAndTimes([]);
         }
         Swal.fire("Silindi!", "Trip başarıyla silindi.", "success");
       } catch (error) {
