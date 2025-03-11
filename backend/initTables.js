@@ -26,7 +26,7 @@ async function initializeTables() {
       agency_phone VARCHAR(255) DEFAULT NULL,
       user_id INT NOT NULL,
       project_id INT NOT NULL,
-      PRIMARY KEY (agency_id, user_id, project_id),
+      PRIMARY KEY (agency_id),
       FOREIGN KEY (user_id) REFERENCES users(id),
       FOREIGN KEY (project_id) REFERENCES projects(project_id)
     )
@@ -48,7 +48,7 @@ async function initializeTables() {
       wheelchair_boarding TINYINT DEFAULT NULL,
       user_id INT NOT NULL,
       project_id INT NOT NULL,
-      PRIMARY KEY (stop_id, user_id, project_id),
+      PRIMARY KEY (stop_id),
       FOREIGN KEY (parent_station, user_id, project_id) REFERENCES stops(stop_id, user_id, project_id),
       FOREIGN KEY (user_id) REFERENCES users(id),
       FOREIGN KEY (project_id) REFERENCES projects(project_id)
@@ -69,7 +69,7 @@ async function initializeTables() {
       route_sort_order INT DEFAULT NULL,
       user_id INT NOT NULL,
       project_id INT NOT NULL,
-      PRIMARY KEY (route_id, user_id, project_id),
+      PRIMARY KEY (route_id),
       FOREIGN KEY (agency_id, user_id, project_id) REFERENCES agency(agency_id, user_id, project_id),
       FOREIGN KEY (user_id) REFERENCES users(id),
       FOREIGN KEY (project_id) REFERENCES projects(project_id)
@@ -90,7 +90,7 @@ async function initializeTables() {
       end_date DATE NOT NULL,
       user_id INT NOT NULL,
       project_id INT NOT NULL,
-      PRIMARY KEY (service_id, user_id, project_id),
+      PRIMARY KEY (service_id),
       FOREIGN KEY (user_id) REFERENCES users(id),
       FOREIGN KEY (project_id) REFERENCES projects(project_id)
     )
@@ -125,7 +125,7 @@ async function initializeTables() {
       bikes_allowed TINYINT DEFAULT NULL,
       user_id INT NOT NULL,
       project_id INT NOT NULL,
-      PRIMARY KEY (trip_id, user_id, project_id),
+      PRIMARY KEY (trip_id),
       FOREIGN KEY (route_id, user_id, project_id) REFERENCES routes(route_id, user_id, project_id),
       FOREIGN KEY (service_id, user_id, project_id) REFERENCES calendar(service_id, user_id, project_id),
       FOREIGN KEY (shape_id, user_id, project_id) REFERENCES shapes(shape_id, user_id, project_id),
@@ -148,7 +148,7 @@ async function initializeTables() {
       timepoint TINYINT DEFAULT NULL,
       user_id INT NOT NULL,
       project_id INT NOT NULL,
-      PRIMARY KEY (trip_id, stop_sequence, user_id, project_id),
+      PRIMARY KEY (trip_id, stop_sequence),
       FOREIGN KEY (trip_id, user_id, project_id) REFERENCES trips(trip_id, user_id, project_id),
       FOREIGN KEY (stop_id, user_id, project_id) REFERENCES stops(stop_id, user_id, project_id),
       FOREIGN KEY (user_id) REFERENCES users(id),

@@ -18,6 +18,8 @@ const MapPage = () => {
   const [agencies, setAgencies] = useState([]);
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
   const [zoom, setZoom] = useState(13);
+  const [clickedCoords, setClickedCoords] = useState(null);
+  const [shapes, setShapes] = useState([]);
   const { project_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,6 +46,14 @@ const MapPage = () => {
       loadData();
     }
   }, [token, project_id]);
+
+  const handleMapClick = (coords) => {
+    setClickedCoords(coords);
+  };
+
+  const resetClickedCoords = () => {
+    setClickedCoords(null);
+  };
 
   return (
     <div className="map-container">
@@ -72,12 +82,18 @@ const MapPage = () => {
         setZoom={setZoom}
         navigate={navigate}
         location={location}
+        clickedCoords={clickedCoords}
+        resetClickedCoords={resetClickedCoords}
+        shapes={shapes}
+        setShapes={setShapes}
       />
       <MapView
         mapCenter={mapCenter}
         zoom={zoom}
         stopsAndTimes={stopsAndTimes}
         selectedTrip={selectedTrip}
+        onMapClick={handleMapClick}
+        shapes={shapes}
       />
     </div>
   );

@@ -23,7 +23,7 @@ const agencyService = {
         fields.push(`${param} = ?`);
         values.push(req.query[param]);
       } else {
-        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+        console.warn(`Unexpected query parameter: ${param}`); 
       }
     }
 

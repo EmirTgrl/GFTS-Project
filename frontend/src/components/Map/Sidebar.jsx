@@ -158,9 +158,6 @@ const Sidebar = ({
       );
       setStopsAndTimes(stopsAndTimesData);
 
-      const selectedTripData = trips.find((trip) => trip.trip_id === tripId);
-      
-
       if (stopsAndTimesData.length > 0) {
         const validStops = stopsAndTimesData.filter(
           (stop) =>
@@ -193,6 +190,7 @@ const Sidebar = ({
   const handleCalendarSelect = (serviceId) => {
     setSelectedCalendar(serviceId);
     const selectedCal = calendars.find((cal) => cal.service_id === serviceId);
+
   };
 
   const openAgencyForm = (mode, agencyId = null) => {

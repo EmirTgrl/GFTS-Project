@@ -190,6 +190,7 @@ RouteAddPage.propTypes = {
   project_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setRoutes: PropTypes.func.isRequired,
+  selectedAgency: PropTypes.string.isRequired,
 };
 
 export default RouteAddPage;
