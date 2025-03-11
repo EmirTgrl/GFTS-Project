@@ -193,7 +193,6 @@ const Sidebar = ({
   const handleCalendarSelect = (serviceId) => {
     setSelectedCalendar(serviceId);
     const selectedCal = calendars.find((cal) => cal.service_id === serviceId);
-    setCalendar(selectedCal || null);
   };
 
   const openAgencyForm = (mode, agencyId = null) => {
@@ -695,7 +694,6 @@ const Sidebar = ({
                   service_id={calendarEditId}
                   onClose={closeCalendarForm}
                   setCalendars={setCalendars}
-                  setCalendar={setCalendar}
                 />
               ) : (
                 <>

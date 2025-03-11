@@ -115,12 +115,7 @@ const calendarService = {
         return res.status(404).json({ error: "Calendar not found" });
       }
 
-      // Güncellenmiş takvimi dön
-      const [updatedRows] = await pool.execute(
-        "SELECT * FROM calendar WHERE service_id = ? AND user_id = ?",
-        [service_id, user_id]
-      );
-      res.status(200).json(updatedRows[0]);
+      res.status(200).json({message:"updated successfully"});
     } catch (error) {
       console.error(`Error in updateCalendar:`, error);
       res.status(500).json({ error: "Server Error" });
