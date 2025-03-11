@@ -23,14 +23,14 @@ DROP TABLE IF EXISTS `shapes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `shapes` (
-  `shape_id` int NOT NULL AUTO_INCREMENT,
+  `shape_id` int NOT NULL,
   `shape_pt_lat` decimal(10,6) NOT NULL,
   `shape_pt_lon` decimal(10,6) NOT NULL,
   `shape_pt_sequence` int NOT NULL,
   `shape_dist_traveled` float DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  PRIMARY KEY (`shape_id`),
+  PRIMARY KEY (`shape_id`, `shape_pt_sequence`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
   CONSTRAINT `shapes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
