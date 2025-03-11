@@ -98,14 +98,14 @@ async function initializeTables() {
     // Shapes Tablosu (Bağımlılık: users, projects)
     `
     CREATE TABLE IF NOT EXISTS shapes (
-      shape_id INT NOT NULL AUTO_INCREMENT,
+      shape_id INT NOT NULL,
       shape_pt_lat DECIMAL(10,6) NOT NULL,
       shape_pt_lon DECIMAL(10,6) NOT NULL,
       shape_pt_sequence INT NOT NULL,
       shape_dist_traveled FLOAT DEFAULT NULL,
       user_id INT NOT NULL,
       project_id INT NOT NULL,
-      PRIMARY KEY (shape_id, user_id, project_id),
+      PRIMARY KEY (shape_id, shape_pt_sequence),
       FOREIGN KEY (user_id) REFERENCES users(id),
       FOREIGN KEY (project_id) REFERENCES projects(project_id)
     )
