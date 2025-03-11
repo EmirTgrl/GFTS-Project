@@ -9,9 +9,10 @@ const stopController = require("./StopController.js");
 const stopTimeController = require("./StopTimeController.js");
 const tripController = require("./TripController.js");
 const projectController = require("./ProjectController.js");
-const impExpController = require("./ImpExpController.js")
+const impExpController = require("./ImpExpController.js");
 const agencyController = require("./AgencyController.js");
-const adminController = require("./AdminController.js")
+const adminController = require("./AdminController.js");
+const shapeController = require("./ShapeController.js");
 
 // routes
 router.use("/auth", authController);
@@ -23,6 +24,7 @@ router.use("/trips", tripController);
 router.use("/projects", projectController);
 router.use("/io", impExpController);
 router.use("/agencies", agencyController);
-router.use("/admin", adminController)
+router.use("/shapes", shapeController);
+router.use("/admin", adminController);
 
 module.exports = router;

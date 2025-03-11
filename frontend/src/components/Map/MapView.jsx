@@ -5,7 +5,9 @@ import {
   Polyline,
   Popup,
   useMapEvents,
+  useMap,
 } from "react-leaflet";
+import { useEffect } from "react";
 import PropTypes from "prop-types";
 import L from "leaflet";
 
@@ -18,7 +20,6 @@ const stopIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-// Tıklama olayını işleyen bileşen
 const MapClickHandler = ({ onMapClick }) => {
   useMapEvents({
     click(e) {
@@ -33,12 +34,41 @@ MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
 };
 
+const ShapeLayer = ({ shapes }) => {
+  const map = useMap();
+
+  const shapePositions = shapes
+    .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
+    .map((shape) => {
+      const lat = parseFloat(shape.shape_pt_lat);
+      const lon = parseFloat(shape.shape_pt_lon);
+      return [lat, lon];
+    })
+    .filter((pos) => pos[0] && pos[1] && !isNaN(pos[0]) && !isNaN(pos[1]));
+
+  useEffect(() => {
+    if (shapePositions.length > 0) {
+      const bounds = L.latLngBounds(shapePositions);
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [shapePositions, map]);
+
+  return shapePositions.length > 0 ? (
+    <Polyline positions={shapePositions} color="#007bff" weight={5} />
+  ) : null;
+};
+
+ShapeLayer.propTypes = {
+  shapes: PropTypes.array.isRequired,
+};
+
 const MapView = ({
   mapCenter,
   zoom,
   stopsAndTimes,
   selectedTrip,
   onMapClick,
+  shapes,
 }) => {
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
@@ -71,20 +101,7 @@ const MapView = ({
             return null;
           })}
 
-      {stopsAndTimes.length > 1 && (
-        <Polyline
-          positions={stopsAndTimes
-            .sort((a, b) => a.stop_sequence - b.stop_sequence)
-            .map((stopTime) =>
-              stopTime && stopTime.stop_lat && stopTime.stop_lon
-                ? [parseFloat(stopTime.stop_lat), parseFloat(stopTime.stop_lon)]
-                : null
-            )
-            .filter((pos) => pos !== null)}
-          color="#007bff"
-          weight={5}
-        />
-      )}
+      <ShapeLayer shapes={shapes} />
     </MapContainer>
   );
 };
@@ -94,7 +111,8 @@ MapView.propTypes = {
   zoom: PropTypes.number.isRequired,
   stopsAndTimes: PropTypes.array.isRequired,
   selectedTrip: PropTypes.string,
-  onMapClick: PropTypes.func.isRequired, // Yeni prop
+  onMapClick: PropTypes.func.isRequired,
+  shapes: PropTypes.array.isRequired,
 };
 
 export default MapView;

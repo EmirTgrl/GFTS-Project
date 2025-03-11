@@ -20,6 +20,7 @@ const MapPage = () => {
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
   const [zoom, setZoom] = useState(13);
   const [clickedCoords, setClickedCoords] = useState(null);
+  const [shapes, setShapes] = useState([]);
   const { project_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,7 +52,6 @@ const MapPage = () => {
     setClickedCoords(coords);
   };
 
-  // Yeni fonksiyon: clickedCoords'u sıfırlamak için
   const resetClickedCoords = () => {
     setClickedCoords(null);
   };
@@ -86,7 +86,9 @@ const MapPage = () => {
         navigate={navigate}
         location={location}
         clickedCoords={clickedCoords}
-        resetClickedCoords={resetClickedCoords} 
+        resetClickedCoords={resetClickedCoords}
+        shapes={shapes}
+        setShapes={setShapes}
       />
       <MapView
         mapCenter={mapCenter}
@@ -94,6 +96,7 @@ const MapPage = () => {
         stopsAndTimes={stopsAndTimes}
         selectedTrip={selectedTrip}
         onMapClick={handleMapClick}
+        shapes={shapes}
       />
     </div>
   );

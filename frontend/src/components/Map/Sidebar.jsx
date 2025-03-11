@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
 import { fetchTripsByRouteId } from "../../api/tripApi";
 import { fetchStopsAndStopTimesByTripId } from "../../api/stopTimeApi";
+import { fetchShapesByTripId } from "../../api/shapeApi"; // Yeni import
 import {
   fetchCalendarByServiceId,
   deleteCalendarById,
@@ -72,6 +73,8 @@ const Sidebar = ({
   setZoom,
   clickedCoords,
   resetClickedCoords,
+  shapes,
+  setShapes,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -117,6 +120,7 @@ const Sidebar = ({
     setSelectedTrip(null);
     setTrips([]);
     setStopsAndTimes([]);
+    setShapes([]); // Şekilleri sıfırla
     setCalendar(null);
     setActiveKey("1");
     setPageRoutes(1);
@@ -137,6 +141,7 @@ const Sidebar = ({
     setSelectedRoute(routeId);
     setSelectedTrip(null);
     setStopsAndTimes([]);
+    setShapes([]); // Şekilleri sıfırla
     setCalendar(null);
     setActiveKey("2");
     setPageTrips(1);
@@ -160,7 +165,12 @@ const Sidebar = ({
         project_id,
         token
       );
+      console.log("Stops and Times Data:", stopsAndTimesData);
       setStopsAndTimes(stopsAndTimesData);
+
+      const shapesData = await fetchShapesByTripId(project_id, tripId, token);
+      console.log("Shapes Data:", JSON.stringify(shapesData, null, 2)); // Daha detaylı log
+      setShapes(shapesData);
 
       const selectedTripData = trips.find((trip) => trip.trip_id === tripId);
       if (selectedTripData?.service_id) {
@@ -198,6 +208,7 @@ const Sidebar = ({
     } catch (error) {
       console.error("Error in handleTripSelect:", error);
       setStopsAndTimes([]);
+      setShapes([]);
     }
   };
 
@@ -292,6 +303,7 @@ const Sidebar = ({
           setRoutes([]);
           setTrips([]);
           setStopsAndTimes([]);
+          setShapes([]); // Şekilleri sıfırla
         }
         Swal.fire("Silindi!", "Ajans başarıyla silindi.", "success");
       } catch (error) {
@@ -324,6 +336,7 @@ const Sidebar = ({
           setSelectedRoute(null);
           setTrips([]);
           setStopsAndTimes([]);
+          setShapes([]); // Şekilleri sıfırla
         }
         Swal.fire("Silindi!", "Rota başarıyla silindi.", "success");
       } catch (error) {
@@ -665,7 +678,7 @@ const Sidebar = ({
                   setStopsAndTimes={setStopsAndTimes}
                   initialLat={clickedCoords?.lat}
                   initialLon={clickedCoords?.lng}
-                  resetClickedCoords={resetClickedCoords} // Yeni prop
+                  resetClickedCoords={resetClickedCoords}
                 />
               ) : stopTimeFormMode === "edit" &&
                 stopTimeEditId &&
@@ -858,7 +871,9 @@ Sidebar.propTypes = {
   }),
   navigate: PropTypes.func.isRequired,
   location: PropTypes.object.isRequired,
-  resetClickedCoords: PropTypes.func.isRequired, 
+  resetClickedCoords: PropTypes.func.isRequired,
+  shapes: PropTypes.array.isRequired,
+  setShapes: PropTypes.func.isRequired,
 };
 
 export default Sidebar;
