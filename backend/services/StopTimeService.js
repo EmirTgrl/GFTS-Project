@@ -5,7 +5,7 @@ const stopTimeService = {
     const user_id = req.user.id;
     const validFieldsStopTime = [
       "trip_id",
-      "stop_id", // Explicitly handle the ambiguous stop_id
+      "stop_id", 
       "project_id",
       "arrival_time",
       "departure_time",

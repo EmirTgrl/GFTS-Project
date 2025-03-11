@@ -1,7 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import {
-  updateRoute,
-} from "../api/routeApi";
+import { updateRoute } from "../api/routeApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
@@ -12,7 +10,7 @@ const RouteEditPage = ({
   routes,
   onClose,
   setRoutes,
-  project_id
+  project_id,
 }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState(null);
@@ -22,10 +20,8 @@ const RouteEditPage = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log("ROUTES ",routes)
-        const initialRouteData = routes.find(
-          (rt)=>rt.route_id === route_id
-        );
+        console.log("ROUTES ", routes);
+        const initialRouteData = routes.find((rt) => rt.route_id === route_id);
         const prepareRouteData = (data) => ({
           agency_id: data?.agency_id || "",
           project_id: data?.project_id || project_id,
@@ -57,7 +53,7 @@ const RouteEditPage = ({
     };
 
     loadData();
-  }, [routes,route_id, project_id]);
+  }, [routes, route_id, project_id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -251,8 +247,10 @@ const RouteEditPage = ({
 };
 
 RouteEditPage.propTypes = {
+  agencies: PropTypes.array.isRequired,
   project_id: PropTypes.string.isRequired,
   route_id: PropTypes.string.isRequired,
+  routes: PropTypes.array.isRequired,
   onClose: PropTypes.func.isRequired,
   setRoutes: PropTypes.func.isRequired,
 };

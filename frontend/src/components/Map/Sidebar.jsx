@@ -70,6 +70,8 @@ const Sidebar = ({
   setAgencies,
   setMapCenter,
   setZoom,
+  clickedCoords,
+  resetClickedCoords,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -97,7 +99,6 @@ const Sidebar = ({
     const loadAgencies = async () => {
       try {
         const data = await fetchAgenciesByProjectId(project_id, token);
-        console.log("a", data);
         setAgencies(data);
         setPageAgencies(1);
       } catch (error) {
@@ -167,7 +168,6 @@ const Sidebar = ({
           selectedTripData.service_id,
           token
         );
-        console.log("Trip-selected calendar:", calendarData);
         setCalendar(calendarData || null);
         setSelectedCalendar(selectedTripData.service_id);
       }
@@ -205,6 +205,15 @@ const Sidebar = ({
     setSelectedCalendar(serviceId);
     const selectedCal = calendars.find((cal) => cal.service_id === serviceId);
     setCalendar(selectedCal || null);
+  };
+
+  const handleAddStop = () => {
+    if (!selectedTrip) {
+      Swal.fire("Hata!", "Lütfen önce bir trip seçin.", "error");
+      return;
+    }
+    setStopTimeFormMode("add");
+    setActiveKey("3");
   };
 
   const openAgencyForm = (mode, agencyId = null) => {
@@ -318,8 +327,11 @@ const Sidebar = ({
         }
         Swal.fire("Silindi!", "Rota başarıyla silindi.", "success");
       } catch (error) {
-        console.log(error);
-        Swal.fire("Hata!", "Rota silinirken bir hata oluştu:", "error");
+        Swal.fire(
+          "Hata!",
+          `Rota silinirken bir hata oluştu: ${error.message}`,
+          "error"
+        );
       }
     }
   };
@@ -651,6 +663,9 @@ const Sidebar = ({
                   trip_id={selectedTrip}
                   onClose={closeStopTimeForm}
                   setStopsAndTimes={setStopsAndTimes}
+                  initialLat={clickedCoords?.lat}
+                  initialLon={clickedCoords?.lng}
+                  resetClickedCoords={resetClickedCoords} // Yeni prop
                 />
               ) : stopTimeFormMode === "edit" &&
                 stopTimeEditId &&
@@ -669,10 +684,10 @@ const Sidebar = ({
                     variant="success"
                     size="sm"
                     className="mb-3 w-100"
-                    onClick={() => openStopTimeForm("add")}
+                    onClick={handleAddStop}
                     disabled={!selectedTrip}
                   >
-                    <PlusCircle size={16} className="me-2" /> Yeni Durak
+                    <PlusCircle size={16} className="me-2" /> Durak Ekle
                   </Button>
                   <StopList
                     token={token}
@@ -746,8 +761,7 @@ const Sidebar = ({
                             </Button>
                           </div>
                         </div>
-                        <CalendarInfo calendar={calendar} />{" "}
-                        {/* CalendarInfo'yu ekledik */}
+                        <CalendarInfo calendar={calendar} />
                       </Card.Body>
                     </Card>
                   ) : (
@@ -838,6 +852,13 @@ Sidebar.propTypes = {
   setAgencies: PropTypes.func.isRequired,
   setMapCenter: PropTypes.func.isRequired,
   setZoom: PropTypes.func.isRequired,
+  clickedCoords: PropTypes.shape({
+    lat: PropTypes.number,
+    lng: PropTypes.number,
+  }),
+  navigate: PropTypes.func.isRequired,
+  location: PropTypes.object.isRequired,
+  resetClickedCoords: PropTypes.func.isRequired, 
 };
 
 export default Sidebar;
