@@ -90,14 +90,16 @@ const MapPage = () => {
         shapes={shapes}
         setShapes={setShapes}
       />
-      <MapView
-        mapCenter={mapCenter}
-        zoom={zoom}
-        stopsAndTimes={stopsAndTimes}
-        selectedTrip={selectedTrip}
-        onMapClick={handleMapClick}
-        shapes={shapes}
-      />
+      <div className="map-view-container">
+        <MapView
+          mapCenter={mapCenter}
+          zoom={zoom}
+          stopsAndTimes={stopsAndTimes}
+          selectedTrip={selectedTrip}
+          onMapClick={handleMapClick}
+          shapes={shapes}
+        />
+      </div>
     </div>
   );
 };

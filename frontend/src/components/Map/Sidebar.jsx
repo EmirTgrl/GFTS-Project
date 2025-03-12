@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
 import { fetchTripsByRouteId } from "../../api/tripApi";
 import { fetchStopsAndStopTimesByTripId } from "../../api/stopTimeApi";
-import { fetchShapesByTripId } from "../../api/shapeApi"; // Yeni import
+import { fetchShapesByTripId } from "../../api/shapeApi";
 import {
   fetchCalendarByServiceId,
   deleteCalendarById,
@@ -73,7 +73,6 @@ const Sidebar = ({
   setZoom,
   clickedCoords,
   resetClickedCoords,
-  shapes,
   setShapes,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -120,7 +119,7 @@ const Sidebar = ({
     setSelectedTrip(null);
     setTrips([]);
     setStopsAndTimes([]);
-    setShapes([]); // Şekilleri sıfırla
+    setShapes([]);
     setCalendar(null);
     setActiveKey("1");
     setPageRoutes(1);
@@ -141,7 +140,7 @@ const Sidebar = ({
     setSelectedRoute(routeId);
     setSelectedTrip(null);
     setStopsAndTimes([]);
-    setShapes([]); // Şekilleri sıfırla
+    setShapes([]);
     setCalendar(null);
     setActiveKey("2");
     setPageTrips(1);
@@ -169,7 +168,7 @@ const Sidebar = ({
       setStopsAndTimes(stopsAndTimesData);
 
       const shapesData = await fetchShapesByTripId(project_id, tripId, token);
-      console.log("Shapes Data:", JSON.stringify(shapesData, null, 2)); // Daha detaylı log
+      console.log("Shapes Data:", JSON.stringify(shapesData, null, 2));
       setShapes(shapesData);
 
       const selectedTripData = trips.find((trip) => trip.trip_id === tripId);
@@ -303,7 +302,7 @@ const Sidebar = ({
           setRoutes([]);
           setTrips([]);
           setStopsAndTimes([]);
-          setShapes([]); // Şekilleri sıfırla
+          setShapes([]);
         }
         Swal.fire("Silindi!", "Ajans başarıyla silindi.", "success");
       } catch (error) {
@@ -336,7 +335,7 @@ const Sidebar = ({
           setSelectedRoute(null);
           setTrips([]);
           setStopsAndTimes([]);
-          setShapes([]); // Şekilleri sıfırla
+          setShapes([]);
         }
         Swal.fire("Silindi!", "Rota başarıyla silindi.", "success");
       } catch (error) {
@@ -439,19 +438,8 @@ const Sidebar = ({
   };
 
   return (
-    <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
-      <div className="sidebar-header">
-        <h3 className="sidebar-title">Proje Yönetimi</h3>
-        <Button variant="link" onClick={toggleSidebar} className="toggle-btn">
-          {isSidebarOpen ? (
-            <ChevronLeft size={24} />
-          ) : (
-            <ChevronRight size={24} />
-          )}
-        </Button>
-      </div>
-
-      {isSidebarOpen && (
+    <div className="sidebar-container">
+      <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
         <Accordion
           activeKey={activeKey}
           onSelect={(key) => setActiveKey(key)}
@@ -839,7 +827,10 @@ const Sidebar = ({
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
-      )}
+      </div>
+      <span onClick={toggleSidebar} className="sidebar-toggle-icon">
+        {isSidebarOpen ? <ChevronLeft size={24} /> : <ChevronRight size={24} />}
+      </span>
     </div>
   );
 };
@@ -869,10 +860,7 @@ Sidebar.propTypes = {
     lat: PropTypes.number,
     lng: PropTypes.number,
   }),
-  navigate: PropTypes.func.isRequired,
-  location: PropTypes.object.isRequired,
   resetClickedCoords: PropTypes.func.isRequired,
-  shapes: PropTypes.array.isRequired,
   setShapes: PropTypes.func.isRequired,
 };
 

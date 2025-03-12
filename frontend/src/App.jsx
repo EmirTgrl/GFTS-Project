@@ -78,7 +78,14 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>}>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<Navigate replace to="users" />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="projects" element={<AdminProjectsPage />} />

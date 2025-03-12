@@ -54,7 +54,7 @@ const ShapeLayer = ({ shapes }) => {
   }, [shapePositions, map]);
 
   return shapePositions.length > 0 ? (
-    <Polyline positions={shapePositions} color="#007bff" weight={5} />
+    <Polyline positions={shapePositions} color="#FF0000" weight={5} />
   ) : null;
 };
 

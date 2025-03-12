@@ -1,8 +1,14 @@
+.sidebar-container {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
 .new-sidebar {
   position: fixed;
-  top: 0;
+  top: 50px; /* Header yüksekliğine göre */
   left: 0;
-  height: 100vh;
+  height: calc(100vh - 50px); /* Header'ı hesaba kat */
   width: 350px;
   background: #ffffff;
   box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
@@ -11,35 +17,37 @@
 }
 
 .new-sidebar.closed {
-  width: 70px;
+  width: 0;
+  overflow: hidden; /* İçeriği gizle */
+  box-shadow: none; /* Gölgeyi kaldır */
 }
 
-.sidebar-header {
+/* Buton yerine ikon için yeni stil */
+.sidebar-toggle-icon {
+  position: fixed;
+  top: 70px; /* Header'dan sonra */
+  left: 350px; /* Sidebar açıkken sağında */
+  width: 40px;
+  height: 40px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  background: linear-gradient(135deg, #007bff, #0056b3);
-  color: white;
+  justify-content: center;
+  color: #007bff;
+  cursor: pointer;
+  z-index: 1001;
+  transition: left 0.3s ease;
 }
 
-.sidebar-title {
-  font-size: 1.5rem;
-  margin: 0;
-  font-weight: 600;
+.new-sidebar.closed ~ .sidebar-toggle-icon {
+  left: 0; /* Sidebar kapalıyken solda */
 }
 
-.toggle-btn {
-  padding: 0;
-  color: white;
-}
-
-.toggle-btn:hover {
-  color: #e9ecef;
+.sidebar-toggle-icon:hover {
+  color: #0056b3;
 }
 
 .sidebar-accordion {
-  height: calc(100% - 70px);
+  height: 100%;
   overflow-y: auto;
 }
 
@@ -169,7 +177,6 @@
   margin: 0 10px;
 }
 
-/* Tooltip stilleri */
 .tooltip-inner {
   background-color: #333;
   color: #fff;

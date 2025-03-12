@@ -237,9 +237,8 @@
 
 #map {
   flex: 1;
+  width: 100vw;
   height: 100vh;
-  width: calc(100vw - 350px);
-  margin-left: 350px;
   overflow: hidden;
 }
 
