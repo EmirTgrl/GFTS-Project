@@ -16,7 +16,7 @@ const MapPage = () => {
   const [stopsAndTimes, setStopsAndTimes] = useState([]);
   const [calendars, setCalendars] = useState([]);
   const [agencies, setAgencies] = useState([]);
-  const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
+  const [mapCenter, setMapCenter] = useState([25.009, 54.9867]); 
   const [zoom, setZoom] = useState(13);
   const [clickedCoords, setClickedCoords] = useState(null);
   const [shapes, setShapes] = useState([]);
