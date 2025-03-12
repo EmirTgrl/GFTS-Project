@@ -9,7 +9,6 @@ const CalendarEditPage = ({
   service_id,
   onClose,
   setCalendars,
-  setCalendar,
 }) => {
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState(null);
@@ -19,8 +18,7 @@ const CalendarEditPage = ({
     const loadCalendar = async () => {
       try {
         const calendar = await fetchCalendarByServiceId(service_id, token);
-        console.log("Edit page fetched calendar:", calendar);
-        if (calendar && calendar.service_id) {
+        if (calendar) {
           setFormData({
             service_id: calendar.service_id || "",
             monday: Number(calendar.monday) || 0,
@@ -84,14 +82,13 @@ const CalendarEditPage = ({
     if (result.isConfirmed) {
       try {
         setLoading(true);
-        const calendarData = { ...formData };
-        const updatedCalendar = await updateCalendar(calendarData, token);
+        const calendarData = { ...formData, service_id, project_id };
+        const response = await updateCalendar(calendarData, token);
         setCalendars((prev) =>
           prev.map((cal) =>
-            cal.service_id === service_id ? updatedCalendar : cal
+            cal.service_id === service_id ? calendarData : cal
           )
         );
-        setCalendar(updatedCalendar); // Ana takvim state'ini güncelle
         Swal.fire("Güncellendi!", "Takvim başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {
@@ -183,7 +180,6 @@ CalendarEditPage.propTypes = {
   service_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setCalendars: PropTypes.func.isRequired,
-  setCalendar: PropTypes.func.isRequired,
 };
 
 export default CalendarEditPage;

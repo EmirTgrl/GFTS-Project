@@ -7,5 +7,8 @@ const authService = require("../services/AuthService.js");
 router.use(authService.auth);
 
 router.get("", shapeService.getShapeByQuery);
+router.delete("/delete/:shape_id", shapeService.deleteShapeById);
+router.put("/update/:shape_id", shapeService.updateShape);
+router.post("/create", shapeService.saveShape);
 
 module.exports = router;

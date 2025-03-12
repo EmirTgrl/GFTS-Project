@@ -36,7 +36,7 @@ const calendarService = {
     try {
       const [rows] = await pool.execute(query, values);
       if (rows.length > 0) {
-        res.json(rows[0]); // Tek bir takvim objesi dön
+        res.json(rows)
       } else {
         res.status(404).json({ error: "Calendar not found" });
       }
@@ -115,12 +115,7 @@ const calendarService = {
         return res.status(404).json({ error: "Calendar not found" });
       }
 
-      // Güncellenmiş takvimi dön
-      const [updatedRows] = await pool.execute(
-        "SELECT * FROM calendar WHERE service_id = ? AND user_id = ?",
-        [service_id, user_id]
-      );
-      res.status(200).json(updatedRows[0]);
+      res.status(200).json({message:"updated successfully"});
     } catch (error) {
       console.error(`Error in updateCalendar:`, error);
       res.status(500).json({ error: "Server Error" });
@@ -169,13 +164,7 @@ const calendarService = {
       `;
       const [result] = await pool.execute(query, values);
 
-      const newCalendar = {
-        ...params,
-        user_id,
-        service_id: params.service_id || result.insertId,
-      };
-
-      res.status(201).json(newCalendar);
+      res.status(201).json({service_id:result.insertId});
     } catch (error) {
       console.error(`Error in saveCalendar:`, error);
       res.status(500).json({ error: "Server Error" });

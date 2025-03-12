@@ -14,7 +14,6 @@ const MapPage = () => {
   const [trips, setTrips] = useState([]);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [stopsAndTimes, setStopsAndTimes] = useState([]);
-  const [calendar, setCalendar] = useState(null);
   const [calendars, setCalendars] = useState([]);
   const [agencies, setAgencies] = useState([]);
   const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
@@ -73,8 +72,6 @@ const MapPage = () => {
         setSelectedTrip={setSelectedTrip}
         stopsAndTimes={stopsAndTimes}
         setStopsAndTimes={setStopsAndTimes}
-        calendar={calendar}
-        setCalendar={setCalendar}
         calendars={calendars}
         setCalendars={setCalendars}
         agencies={agencies}

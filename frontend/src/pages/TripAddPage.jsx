@@ -6,7 +6,7 @@ import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 
-const TripAddPage = ({ project_id, onClose, setTrips }) => {
+const TripAddPage = ({ project_id, onClose, setTrips, calendars, selectedRoute }) => {
   const { token } = useContext(AuthContext);
   const [tripData, setTripData] = useState({
     service_id: "",
@@ -19,22 +19,6 @@ const TripAddPage = ({ project_id, onClose, setTrips }) => {
     wheelchair_accessible: null,
     bikes_allowed: null,
   });
-  const [routes, setRoutes] = useState([]);
-  const [calendars, setCalendars] = useState([]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const routeData = await fetchRoutesByProjectId(project_id, token);
-        setRoutes(routeData);
-        const calendarData = await fetchCalendarsByProjectId(project_id, token);
-        setCalendars(calendarData);
-      } catch (error) {
-        console.error("Error loading data:", error);
-      }
-    };
-    loadData();
-  }, [project_id, token]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -85,8 +69,9 @@ const TripAddPage = ({ project_id, onClose, setTrips }) => {
 
     if (result.isConfirmed) {
       try {
-        const formData = { project_id, ...tripData };
-        const trip_id = await saveTrip(formData, token);
+        const formData = { ...tripData, project_id, route_id:selectedRoute };
+        const response = await saveTrip(formData, token);
+        const trip_id = response.trip_id;
         setTrips((prev) => [...prev, { ...formData, trip_id }]);
         Swal.fire("Eklendi!", "Trip başarıyla eklendi.", "success");
         onClose();
@@ -104,28 +89,6 @@ const TripAddPage = ({ project_id, onClose, setTrips }) => {
     <div className="form-container">
       <h5>Yeni Trip Ekle</h5>
       <form onSubmit={handleSubmit}>
-        <div className="mb-2">
-          <label htmlFor="route_id" className="form-label">
-            Rota
-          </label>
-          <select
-            id="route_id"
-            name="route_id"
-            className="form-control"
-            value={tripData.route_id}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Bir rota seçin</option>
-            {routes.map((route) => (
-              <option key={route.route_id} value={route.route_id}>
-                {route.route_long_name ||
-                  route.route_short_name ||
-                  route.route_id}
-              </option>
-            ))}
-          </select>
-        </div>
         <div className="mb-2">
           <label htmlFor="service_id" className="form-label">
             Servis
