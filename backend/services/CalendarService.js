@@ -164,13 +164,7 @@ const calendarService = {
       `;
       const [result] = await pool.execute(query, values);
 
-      const newCalendar = {
-        ...params,
-        user_id,
-        service_id: params.service_id || result.insertId,
-      };
-
-      res.status(201).json(newCalendar);
+      res.status(201).json({service_id:result.insertId});
     } catch (error) {
       console.error(`Error in saveCalendar:`, error);
       res.status(500).json({ error: "Server Error" });
