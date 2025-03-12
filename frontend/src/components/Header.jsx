@@ -2,14 +2,11 @@ import { useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "./Auth/AuthContext.js";
 import { Navbar, Nav, NavDropdown, Container } from "react-bootstrap";
-import {
-  PersonCircle,
-  Upload,
-} from "react-bootstrap-icons";
+import { PersonCircle, Upload } from "react-bootstrap-icons";
 import "../styles/Header.css";
 
 const Header = () => {
-  const { isAuthenticated, logout } = useContext(AuthContext);
+  const { isAuthenticated, logout, username } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -42,6 +39,10 @@ const Header = () => {
                   align="end"
                   className="nav-link-custom"
                 >
+                  <NavDropdown.Header className="user-name">
+                    {username || "Kullanıcı"}
+                  </NavDropdown.Header>
+                  <NavDropdown.Divider />
                   <NavDropdown.Item onClick={handleLogout}>
                     Logout
                   </NavDropdown.Item>

@@ -9,12 +9,14 @@ export const AuthProvider = ({ children }) => {
     !!localStorage.getItem("token")
   );
   const [userId, setUserId] = useState(null);
+  const [username, setUsername] = useState(null); 
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     setToken(null);
     setUserId(null);
+    setUsername(null);
     setIsAuthenticated(false);
     setIsLoggedOut(true);
   }, []);
@@ -29,6 +31,7 @@ export const AuthProvider = ({ children }) => {
             setToken(newToken);
             setIsAuthenticated(true);
             setUserId(decodedToken.id);
+            setUsername(decodedToken.email); 
             setIsLoggedOut(false);
           } else {
             handleLogout();
@@ -59,6 +62,7 @@ export const AuthProvider = ({ children }) => {
           } else {
             setIsAuthenticated(true);
             setUserId(decodedToken.id);
+            setUsername(decodedToken.email);
             setToken(storedToken);
             setIsLoggedOut(false);
           }
@@ -69,6 +73,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setIsAuthenticated(false);
         setUserId(null);
+        setUsername(null);
         setToken(null);
       }
     };
@@ -96,6 +101,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         token,
         userId,
+        username,
         login,
         logout: handleLogout,
         isLoggedOut,
