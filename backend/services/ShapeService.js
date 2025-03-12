@@ -61,7 +61,7 @@ const shapeService = {
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Shape not found" });
       }
-      res.status(200).json({ message: "Shape deleted successfully" });
+      res.status(200).json({ message: "Shape deleted successfully" , affectedRows:result.affectedRows});
     } catch (error) {
       console.error(
         `Error in deleteShapeById for shape_id: ${req.params.service_id}:`,

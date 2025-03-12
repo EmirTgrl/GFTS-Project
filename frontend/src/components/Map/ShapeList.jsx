@@ -33,6 +33,7 @@ const ShapeList = ({
   
     if (result.isConfirmed) {
       try {
+        console.log("SHAPE SEQUENCE: ", shapePtSequence)
         await deleteShape(shapeId, shapePtSequence, token)
         setShapes((prevShapes) =>
           prevShapes.filter((shape) => shape.shape_pt_sequence !== shapePtSequence)

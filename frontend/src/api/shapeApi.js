@@ -17,7 +17,7 @@ export const fetchShapesByTripId = async (projectId, tripId, token) => {
 
 export const deleteShape = async (shape_id, shape_pt_sequence, token) => {
   const response = await fetch(
-    `${API_BASE_URL}/delete/${shape_id}/${shape_pt_sequence}}`,
+    `${API_BASE_URL}/delete/${shape_id}/${shape_pt_sequence}`,
     {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
