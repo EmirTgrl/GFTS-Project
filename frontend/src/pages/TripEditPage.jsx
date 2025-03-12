@@ -6,32 +6,16 @@ import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 
-const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
+const TripEditPage = ({ project_id, trip_id, onClose, setTrips, routes, selectedRoute, calendars, trips}) => {
   const { token } = useContext(AuthContext);
   const [tripData, setTripData] = useState(null);
-  const [routes, setRoutes] = useState([]);
-  const [calendars, setCalendars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log("Fetching trip with ID:", trip_id);
-        const tripResponse = await fetchTripById(trip_id, token);
-        console.log("Raw trip response:", tripResponse);
-
-        let trip = tripResponse;
-        if (Array.isArray(tripResponse)) {
-          trip = tripResponse.length > 0 ? tripResponse[0] : null;
-        }
-
-        if (!trip || !trip.trip_id) {
-          throw new Error(
-            "Trip data is empty or invalid. Received: " +
-              JSON.stringify(tripResponse)
-          );
-        }
+        const trip = trips.filter((t)=>t.trip_id === trip_id)[0]
 
         setTripData({
           trip_id: trip.trip_id || trip_id,
@@ -50,14 +34,6 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
           bikes_allowed:
             trip.bikes_allowed !== undefined ? trip.bikes_allowed : "",
         });
-
-        const routeData = await fetchRoutesByProjectId(project_id, token);
-        console.log("Fetched routes:", routeData);
-        setRoutes(Array.isArray(routeData) ? routeData : []);
-
-        const calendarData = await fetchCalendarsByProjectId(project_id, token);
-        console.log("Fetched calendars:", calendarData);
-        setCalendars(Array.isArray(calendarData) ? calendarData : []);
       } catch (error) {
         console.error("Error fetching data:", error);
         setError(error.message);
@@ -66,7 +42,7 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips }) => {
       }
     };
     loadData();
-  }, [trip_id, project_id, token]);
+  }, [trip_id, project_id, trips]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

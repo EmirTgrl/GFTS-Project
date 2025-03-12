@@ -608,6 +608,10 @@ const Sidebar = ({
                   trip_id={tripEditId}
                   onClose={closeTripForm}
                   setTrips={setTrips}
+                  routes={routes}
+                  calendars={calendars}
+                  selectedRoute={selectedRoute}
+                  trips={trips}
                 />
               ) : (
                 <>
