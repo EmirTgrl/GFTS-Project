@@ -17,7 +17,7 @@ const ImportPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [importMode, setImportMode] = useState("parallel"); // Varsayılan: paralel
+  const [importMode, setImportMode] = useState("parallel");
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
 
@@ -48,7 +48,7 @@ const ImportPage = () => {
     setError("");
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("importMode", importMode); // İçe aktarma modunu ekle
+    formData.append("importMode", importMode);
 
     try {
       const xhr = new XMLHttpRequest();

@@ -48,7 +48,7 @@ const Login = ({ switchToRegister }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        login(data.token);
+        login(data.token); 
       } else {
         setError("Invalid email or password!");
       }

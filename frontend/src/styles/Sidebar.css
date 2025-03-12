@@ -6,9 +6,9 @@
 
 .new-sidebar {
   position: fixed;
-  top: 50px; /* Header yüksekliğine göre */
+  top: 50px; 
   left: 0;
-  height: calc(100vh - 50px); /* Header'ı hesaba kat */
+  height: calc(100vh - 50px); 
   width: 350px;
   background: #ffffff;
   box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
@@ -18,15 +18,14 @@
 
 .new-sidebar.closed {
   width: 0;
-  overflow: hidden; /* İçeriği gizle */
-  box-shadow: none; /* Gölgeyi kaldır */
+  overflow: hidden; 
+  box-shadow: none;
 }
 
-/* Buton yerine ikon için yeni stil */
 .sidebar-toggle-icon {
   position: fixed;
-  top: 70px; /* Header'dan sonra */
-  left: 350px; /* Sidebar açıkken sağında */
+  top: 70px;
+  left: 350px;
   width: 40px;
   height: 40px;
   display: flex;
@@ -39,7 +38,7 @@
 }
 
 .new-sidebar.closed ~ .sidebar-toggle-icon {
-  left: 0; /* Sidebar kapalıyken solda */
+  left: 0; 
 }
 
 .sidebar-toggle-icon:hover {
@@ -185,4 +184,16 @@
   font-size: 0.9rem;
   max-width: 300px;
   text-align: center;
+}
+
+.item-card.active {
+  background-color: #e6f0ff; 
+  border-color: #007bff; 
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3); 
+}
+
+.card.active {
+  background-color: #e6f0ff;
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
 }
