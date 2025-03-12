@@ -6,6 +6,7 @@ import { fetchStopsAndStopTimesByTripId } from "../../api/stopTimeApi";
 import { fetchShapesByTripId } from "../../api/shapeApi";
 import {
   deleteCalendarById,
+  fetchCalendarsByProjectId,
 } from "../../api/calendarApi";
 import {
   fetchAgenciesByProjectId,
@@ -99,6 +100,8 @@ const Sidebar = ({
         const data = await fetchAgenciesByProjectId(project_id, token);
         setAgencies(data);
         setPageAgencies(1);
+        const calendarData = await fetchCalendarsByProjectId(project_id,token);
+        setCalendars(calendarData);
       } catch (error) {
         console.error("Error fetching agencies:", error);
         setAgencies([]);
@@ -107,7 +110,7 @@ const Sidebar = ({
     if (token && project_id) {
       loadAgencies();
     }
-  }, [token, project_id, setAgencies]);
+  }, [token, project_id, setAgencies, setCalendars]);
 
   const handleAgencySelect = async (agencyId) => {
     setSelectedAgency(agencyId);
