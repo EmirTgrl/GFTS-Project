@@ -93,7 +93,8 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips, routes, selected
 
     if (result.isConfirmed) {
       try {
-        const updatedTrip = await updateTrip(tripData, token);
+        const tripDataForApi = {...tripData, project_id, trip_id}
+        await updateTrip(tripDataForApi, token);
         setTrips((prev) =>
           prev.map((t) => (t.trip_id === trip_id ? tripData : t))
         );
