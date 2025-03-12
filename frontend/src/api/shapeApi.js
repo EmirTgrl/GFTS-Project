@@ -14,3 +14,18 @@ export const fetchShapesByTripId = async (projectId, tripId, token) => {
   }
   return response.json();
 };
+
+export const deleteShape = async (shape_id, shape_pt_sequence, token) => {
+  const response = await fetch(
+    `${API_BASE_URL}/delete/${shape_id}/${shape_pt_sequence}}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to delete shape: ${errorText}`);
+  }
+  return response.json();
+};

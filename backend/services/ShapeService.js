@@ -50,13 +50,13 @@ const shapeService = {
   deleteShapeById: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { shape_id } = req.params;
+      const { shape_id, shape_pt_sequence } = req.params;
       const [result] = await pool.execute(
         `
         DELETE FROM shapes
-        WHERE shape_id = ? AND user_id = ?
+        WHERE shape_id = ? AND shape_pt_sequence = ? AND user_id = ?
         `,
-        [shape_id, user_id]
+        [shape_id, shape_pt_sequence, user_id]
       );
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Shape not found" });

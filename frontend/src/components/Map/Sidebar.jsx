@@ -26,6 +26,7 @@ import {
   ArrowRight,
   Calendar,
   Building,
+  Bezier
 } from "react-bootstrap-icons";
 import {
   Accordion,
@@ -37,6 +38,9 @@ import {
 } from "react-bootstrap";
 import StopList from "./StopList";
 import TripList from "./TripList";
+import ShapeList from "./ShapeList"
+import ShapeEditPage from "../../pages/ShapeEditPage";
+import ShapeAddPage from "../../pages/ShapeAddPage";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -73,6 +77,7 @@ const Sidebar = ({
   setShapes,
   openStopTimeAdd,
   closeStopTimeAdd,
+  shapes
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -83,6 +88,7 @@ const Sidebar = ({
   const [pageCalendars, setPageCalendars] = useState(1);
   const [selectedAgency, setSelectedAgency] = useState(null);
   const [selectedCalendar, setSelectedCalendar] = useState(null);
+  const [pageShapes, setPageShapes] = useState(1);
   const itemsPerPage = 8;
 
   const [agencyFormMode, setAgencyFormMode] = useState(null);
@@ -95,6 +101,8 @@ const Sidebar = ({
   const [stopTimeEditId, setStopTimeEditId] = useState(null);
   const [calendarFormMode, setCalendarFormMode] = useState(null);
   const [calendarEditId, setCalendarEditId] = useState(null);
+  const [shapeEditId, setShapeEditId] = useState(null);
+  const [shapeFormMode, setShapeFormMode] = useState(null);
 
   useEffect(() => {
     const loadAgencies = async () => {
@@ -201,6 +209,16 @@ const Sidebar = ({
     setSelectedCalendar(serviceId);
   };
 
+
+  const handleAddShape = () =>{
+    if (!selectedTrip) {
+      Swal.fire("Hata!", "Lütfen önce bir trip seçin.", "error");
+      return;
+    }
+    setShapeFormMode("add")
+    setActiveKey("5")
+  }
+
   const handleAddStop = () => {
     if (!selectedTrip) {
       Swal.fire("Hata!", "Lütfen önce bir trip seçin.", "error");
@@ -267,6 +285,16 @@ const Sidebar = ({
     setCalendarFormMode(null);
     setCalendarEditId(null);
   };
+
+  const closeShapeForm = () => {
+    setShapeFormMode(null);
+    setShapeEditId(null);
+  };
+  const openShapeForm = (mode, shapeId = null) => {
+    setShapeFormMode(mode);
+    setShapeEditId(shapeId);
+    setActiveKey("5");
+  }
 
   const handleDeleteAgency = async (agencyId) => {
     const result = await Swal.fire({
@@ -623,6 +651,10 @@ const Sidebar = ({
                   trip_id={tripEditId}
                   onClose={closeTripForm}
                   setTrips={setTrips}
+                  routes={routes}
+                  calendars={calendars}
+                  selectedRoute={selectedRoute}
+                  trips={trips}
                 />
               ) : (
                 <>
@@ -719,6 +751,7 @@ const Sidebar = ({
                   service_id={calendarEditId}
                   onClose={closeCalendarForm}
                   setCalendars={setCalendars}
+                  calendars={calendars}
                 />
               ) : (
                 <>
@@ -780,6 +813,48 @@ const Sidebar = ({
                       )}
                     </>
                   )}
+                </>
+              )}
+            </Accordion.Body>
+          </Accordion.Item>
+          
+          {/* SHAPES */}
+          <Accordion.Item eventKey="5">
+            <Accordion.Header>
+                <Bezier size={20} className="me-2"/> Shapes
+            </Accordion.Header>
+            <Accordion.Body>
+            {shapeFormMode === "add" && selectedTrip ? (
+                <ShapeAddPage
+                  project_id={project_id}
+                  onClose={closeShapeForm}
+                />
+              ) : shapeFormMode === "edit" &&
+                shapeEditId &&
+                selectedTrip ? (
+                <ShapeEditPage
+                  project_id={project_id}
+                  onClose={closeShapeForm}
+                />
+              ) : (
+                <>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    className="mb-3 w-100"
+                    onClick={handleAddShape}
+                    disabled={!selectedTrip}
+                  >
+                    <PlusCircle size={16} className="me-2" /> Add Shape
+                  </Button>
+                  <ShapeList
+                    token={token}
+                    project_id={project_id}
+                    shapes={paginateItems(shapes, pageShapes)}
+                    setShapes={setShapes}
+                    openForm={openShapeForm}
+                  />
+                  {renderPagination(shapes, pageShapes, setPageShapes)}
                 </>
               )}
             </Accordion.Body>
