@@ -100,7 +100,7 @@ const Sidebar = ({
         const data = await fetchAgenciesByProjectId(project_id, token);
         setAgencies(data);
         setPageAgencies(1);
-        const calendarData = await fetchCalendarsByProjectId(project_id,token);
+        const calendarData = await fetchCalendarsByProjectId(project_id, token);
         setCalendars(calendarData);
       } catch (error) {
         console.error("Error fetching agencies:", error);
@@ -457,7 +457,12 @@ const Sidebar = ({
                   </Button>
                   {agencies.length > 0 ? (
                     paginateItems(agencies, pageAgencies).map((agency) => (
-                      <Card key={agency.agency_id} className="mb-2 item-card">
+                      <Card
+                        key={agency.agency_id}
+                        className={`mb-2 item-card ${
+                          selectedAgency === agency.agency_id ? "active" : ""
+                        }`}
+                      >
                         <Card.Body className="d-flex justify-content-between align-items-center p-2">
                           <OverlayTrigger
                             placement="top"
@@ -539,7 +544,12 @@ const Sidebar = ({
                   </Button>
                   {routes.length > 0 ? (
                     paginateItems(routes, pageRoutes).map((route) => (
-                      <Card key={route.route_id} className="mb-2 item-card">
+                      <Card
+                        key={route.route_id}
+                        className={`mb-2 item-card ${
+                          selectedRoute === route.route_id ? "active" : ""
+                        }`}
+                      >
                         <Card.Body className="d-flex justify-content-between align-items-center p-2">
                           <OverlayTrigger
                             placement="top"

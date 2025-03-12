@@ -9,9 +9,8 @@ const TripList = ({
   setTrips,
   selectedTrip,
   setSelectedTrip,
-  // setStopsAndTimes,
   handleTripSelect,
-  openForm, // openForm prop’u eklendi
+  openForm,
 }) => {
   const handleDeleteTrip = async (tripId) => {
     const result = await Swal.fire({
@@ -43,7 +42,7 @@ const TripList = ({
   };
 
   const handleEditTrip = (tripId) => {
-    openForm("edit", tripId); // navigate yerine openForm kullanılıyor
+    openForm("edit", tripId);
   };
 
   const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
@@ -59,7 +58,7 @@ const TripList = ({
             <div
               key={trip.trip_id}
               className={`card mb-2 ${
-                selectedTrip === trip.trip_id ? "border-primary" : ""
+                selectedTrip === trip.trip_id ? "active" : ""
               }`}
               onClick={() => handleTripSelect(trip.trip_id)}
               style={{ cursor: "pointer" }}
@@ -77,7 +76,7 @@ const TripList = ({
                   <button
                     className="btn btn-outline-primary btn-sm me-1"
                     onClick={(e) => {
-                      e.stopPropagation(); // Kartın tıklanmasını engelle
+                      e.stopPropagation();
                       handleEditTrip(trip.trip_id);
                     }}
                   >
