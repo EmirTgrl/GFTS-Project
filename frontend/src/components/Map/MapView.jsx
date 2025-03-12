@@ -7,7 +7,7 @@ import {
   useMapEvents,
   useMap,
 } from "react-leaflet";
-import { useEffect } from "react";
+import { useEffect, useState } from "react"; // useState ekledim
 import PropTypes from "prop-types";
 import L from "leaflet";
 
@@ -18,6 +18,15 @@ const stopIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   shadowSize: [41, 41],
+});
+
+const clickIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconSize: [20, 32],
+  iconAnchor: [10, 32],
+  popupAnchor: [0, -32],
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  shadowSize: [32, 32],
 });
 
 const MapClickHandler = ({ onMapClick }) => {
@@ -36,6 +45,7 @@ MapClickHandler.propTypes = {
 
 const ShapeLayer = ({ shapes }) => {
   const map = useMap();
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // İlk yükleme kontrolü
 
   const shapePositions = shapes
     .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
@@ -47,11 +57,13 @@ const ShapeLayer = ({ shapes }) => {
     .filter((pos) => pos[0] && pos[1] && !isNaN(pos[0]) && !isNaN(pos[1]));
 
   useEffect(() => {
-    if (shapePositions.length > 0) {
+    if (shapePositions.length > 0 && isInitialLoad) {
+      // Sadece ilk yüklemede çalışır
       const bounds = L.latLngBounds(shapePositions);
       map.fitBounds(bounds, { padding: [50, 50] });
+      setIsInitialLoad(false); // İlk yükleme bitti
     }
-  }, [shapePositions, map]);
+  }, [shapePositions, map, isInitialLoad]);
 
   return shapePositions.length > 0 ? (
     <Polyline positions={shapePositions} color="#FF0000" weight={5} />
@@ -69,11 +81,25 @@ const MapView = ({
   selectedTrip,
   onMapClick,
   shapes,
+  clickedCoords,
+  isStopTimeAddOpen,
 }) => {
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <MapClickHandler onMapClick={onMapClick} />
+
+      {isStopTimeAddOpen &&
+        clickedCoords &&
+        clickedCoords.lat &&
+        clickedCoords.lng && (
+          <Marker
+            position={[clickedCoords.lat, clickedCoords.lng]}
+            icon={clickIcon}
+          >
+            <Popup>Tıkladığınız yer burası!</Popup>
+          </Marker>
+        )}
 
       {stopsAndTimes.length > 0 &&
         stopsAndTimes
@@ -113,6 +139,11 @@ MapView.propTypes = {
   selectedTrip: PropTypes.string,
   onMapClick: PropTypes.func.isRequired,
   shapes: PropTypes.array.isRequired,
+  clickedCoords: PropTypes.shape({
+    lat: PropTypes.number,
+    lng: PropTypes.number,
+  }),
+  isStopTimeAddOpen: PropTypes.bool.isRequired,
 };
 
 export default MapView;

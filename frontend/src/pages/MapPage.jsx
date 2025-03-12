@@ -20,6 +20,7 @@ const MapPage = () => {
   const [zoom, setZoom] = useState(13);
   const [clickedCoords, setClickedCoords] = useState(null);
   const [shapes, setShapes] = useState([]);
+  const [isStopTimeAddOpen, setIsStopTimeAddOpen] = useState(false);
   const { project_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,6 +56,15 @@ const MapPage = () => {
     setClickedCoords(null);
   };
 
+  const openStopTimeAdd = () => {
+    setIsStopTimeAddOpen(true);
+  };
+
+  const closeStopTimeAdd = () => {
+    setIsStopTimeAddOpen(false);
+    resetClickedCoords();
+  };
+
   return (
     <div className="map-container">
       <Sidebar
@@ -86,6 +96,9 @@ const MapPage = () => {
         resetClickedCoords={resetClickedCoords}
         shapes={shapes}
         setShapes={setShapes}
+        openStopTimeAdd={openStopTimeAdd}
+        closeStopTimeAdd={closeStopTimeAdd}
+        isStopTimeAddOpen={isStopTimeAddOpen}
       />
       <div className="map-view-container">
         <MapView
@@ -95,6 +108,8 @@ const MapPage = () => {
           selectedTrip={selectedTrip}
           onMapClick={handleMapClick}
           shapes={shapes}
+          clickedCoords={clickedCoords}
+          isStopTimeAddOpen={isStopTimeAddOpen}
         />
       </div>
     </div>

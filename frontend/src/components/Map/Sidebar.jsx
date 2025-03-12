@@ -71,6 +71,8 @@ const Sidebar = ({
   clickedCoords,
   resetClickedCoords,
   setShapes,
+  openStopTimeAdd,
+  closeStopTimeAdd,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -206,6 +208,13 @@ const Sidebar = ({
     }
     setStopTimeFormMode("add");
     setActiveKey("3");
+    openStopTimeAdd();
+  };
+
+  const closeStopTimeForm = () => {
+    setStopTimeFormMode(null);
+    setStopTimeEditId(null);
+    closeStopTimeAdd();
   };
 
   const openAgencyForm = (mode, agencyId = null) => {
@@ -245,11 +254,7 @@ const Sidebar = ({
     setStopTimeFormMode(mode);
     setStopTimeEditId(stopId);
     setActiveKey("3");
-  };
-
-  const closeStopTimeForm = () => {
-    setStopTimeFormMode(null);
-    setStopTimeEditId(null);
+    if (mode === "add") openStopTimeAdd(); // Yeni ekleme için marker’ı aktif et
   };
 
   const openCalendarForm = (mode, serviceId = null) => {
@@ -801,8 +806,6 @@ Sidebar.propTypes = {
   setSelectedTrip: PropTypes.func.isRequired,
   stopsAndTimes: PropTypes.array.isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
-  calendar: PropTypes.object,
-  setCalendar: PropTypes.func.isRequired,
   calendars: PropTypes.array.isRequired,
   setCalendars: PropTypes.func.isRequired,
   agencies: PropTypes.array.isRequired,
@@ -815,6 +818,9 @@ Sidebar.propTypes = {
   }),
   resetClickedCoords: PropTypes.func.isRequired,
   setShapes: PropTypes.func.isRequired,
+  openStopTimeAdd: PropTypes.func.isRequired,
+  closeStopTimeAdd: PropTypes.func.isRequired,
+  isStopTimeAddOpen: PropTypes.bool.isRequired,
 };
 
 export default Sidebar;

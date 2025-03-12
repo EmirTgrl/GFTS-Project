@@ -155,7 +155,6 @@ const stopTimeService = {
         "timepoint",
         "stop_sequence"
        ];
-      console.log(validFields)
 
       const params = req.body;
 
@@ -164,13 +163,10 @@ const stopTimeService = {
       const placeholders = [];
 
       for (const param in params) {
-        console.log("LOG params: ",param)
         if (validFields.includes(param)) {
           fields.push(param);
           values.push(params[param]);
           placeholders.push("?")
-          console.log("LOG: key ",param)
-          console.log("LOG: value",params[param]);
         } else {
           console.warn(`unexpected field in ${param}`);
         }
@@ -184,7 +180,6 @@ const stopTimeService = {
         INSERT INTO stop_times (${fields.join(", ")}) 
         VALUES (${placeholders.join(", ")})
       `;
-      console.log(query)
       const [result] = await pool.execute(query, values);
 
       res

@@ -1,11 +1,18 @@
 .import-page {
-  background-color: #f8f9fa;
+  background-image: url("/src/assets/map.png"); /* Resmin tam adını buraya yaz */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   min-height: 100vh;
+  /* filter yok, soluklaştırma yok */
 }
 
+/* Geri kalan her şey aynı */
 .import-card {
   border: none;
   border-radius: 10px;
+  background: #ffffff;
 }
 
 .custom-file-input {
