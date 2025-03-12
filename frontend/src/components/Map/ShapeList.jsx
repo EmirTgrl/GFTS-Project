@@ -1,47 +1,36 @@
-import { OverlayTrigger, Tooltip} from "react-bootstrap";
-import { PencilSquare, Trash} from "react-bootstrap-icons";
-import Swal from 'sweetalert2';
-import {deleteShape} from "../../api/shapeApi"
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import { PencilSquare, Trash } from "react-bootstrap-icons";
+import PropTypes from "prop-types";
+import Swal from "sweetalert2";
+import { deleteShape } from "../../api/shapeApi";
 
-
-const ShapeList = ({
-  token,
-  project_id,
-  shapes,
-  setShapes,
-  openForm
-}) => {
-
- 
-  
-
-
+const ShapeList = ({ token, shapes, setShapes, openForm }) => {
   const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
-
 
   const handleDeleteShape = async (shapeId, shapePtSequence) => {
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to delete this shape? This action cannot be undone!",
+      title: "Emin misiniz?",
+      text: "Bu şekli silmek istediğinize emin misiniz? Bu işlem geri alınamaz!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "No, cancel",
+      confirmButtonText: "Evet, sil!",
+      cancelButtonText: "Hayır",
     });
-  
+
     if (result.isConfirmed) {
       try {
-        await deleteShape(shapeId, shapePtSequence, token)
+        await deleteShape(shapeId, shapePtSequence, token);
         setShapes((prevShapes) =>
-          prevShapes.filter((shape) => shape.shape_pt_sequence !== shapePtSequence)
+          prevShapes.filter(
+            (shape) => shape.shape_pt_sequence !== shapePtSequence
+          )
         );
-  
-        Swal.fire("Deleted!", "Shape deleted successfully.", "success");
+        Swal.fire("Silindi!", "Şekil başarıyla silindi.", "success");
       } catch (error) {
         console.error("Error deleting shape:", error);
-        Swal.fire("Error!", "An error occurred while deleting the shape.", "error");
+        Swal.fire("Hata!", "Şekil silinirken bir hata oluştu.", "error");
       }
     }
   };
@@ -54,55 +43,62 @@ const ShapeList = ({
       <div>
         {shapes.length > 0 ? (
           shapes.map((shape) => (
-            <div
-              key={shape.shape_pt_sequence}
-              className="card mb-2"
-            >
+            <div key={shape.shape_pt_sequence} className="card mb-2">
               <div className="card-body p-2">
                 <div className="d-flex justify-content-between align-items-center">
                   <OverlayTrigger
                     placement="top"
                     overlay={renderTooltip(
-                      shape ? shape.shape_pt_sequence : "Unknown Stop"
+                      shape ? shape.shape_pt_sequence : "Bilinmeyen Şekil"
                     )}
                   >
                     <h6
                       className="card-title mb-0 text-truncate"
                       style={{ maxWidth: "60%" }}
                     >
-                      {shape ? shape.shape_pt_sequence : "Unknown Stop"}
+                      {shape ? shape.shape_pt_sequence : "Bilinmeyen Şekil"}
                     </h6>
                   </OverlayTrigger>
                   <div>
                     <button
                       className="btn btn-outline-primary btn-sm me-1"
-                      onClick={() =>console.log("Edit Shape Trigerred")}
+                      onClick={() => openForm("edit", shape.shape_pt_sequence)}
                     >
-                      <PencilSquare size="16"/>
+                      <PencilSquare size="16" />
                     </button>
                     <button
                       className="btn btn-outline-danger btn-sm"
                       onClick={() =>
-                        handleDeleteShape(shape.shape_id, shape.shape_pt_sequence)
+                        handleDeleteShape(
+                          shape.shape_id,
+                          shape.shape_pt_sequence
+                        )
                       }
                     >
-                      <Trash  size="16"/>
+                      <Trash size="16" />
                     </button>
                   </div>
                 </div>
                 <p className="card-text small mt-1">
-                  Lat: {shape.shape_pt_lat || "Unknown"} <br />
-                  Lon: {shape.shape_pt_lon || "Unknown"}
+                  Lat: {shape.shape_pt_lat || "Bilinmiyor"} <br />
+                  Lon: {shape.shape_pt_lon || "Bilinmiyor"}
                 </p>
               </div>
             </div>
           ))
         ) : (
-          <p className="text-muted text-center">No shapes found.</p>
+          <p className="text-muted text-center">Şekil bulunamadı.</p>
         )}
       </div>
     </div>
   );
+};
+
+ShapeList.propTypes = {
+  token: PropTypes.string.isRequired,
+  shapes: PropTypes.arrayOf(PropTypes.object).isRequired,
+  setShapes: PropTypes.func.isRequired,
+  openForm: PropTypes.func.isRequired,
 };
 
 export default ShapeList;

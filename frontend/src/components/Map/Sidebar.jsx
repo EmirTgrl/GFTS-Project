@@ -26,7 +26,7 @@ import {
   ArrowRight,
   Calendar,
   Building,
-  Bezier
+  Bezier,
 } from "react-bootstrap-icons";
 import {
   Accordion,
@@ -38,7 +38,7 @@ import {
 } from "react-bootstrap";
 import StopList from "./StopList";
 import TripList from "./TripList";
-import ShapeList from "./ShapeList"
+import ShapeList from "./ShapeList";
 import ShapeEditPage from "../../pages/ShapeEditPage";
 import ShapeAddPage from "../../pages/ShapeAddPage";
 import AgencyAddPage from "../../pages/AgencyAddPage";
@@ -77,7 +77,7 @@ const Sidebar = ({
   setShapes,
   openStopTimeAdd,
   closeStopTimeAdd,
-  shapes
+  shapes,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -209,15 +209,14 @@ const Sidebar = ({
     setSelectedCalendar(serviceId);
   };
 
-
-  const handleAddShape = () =>{
+  const handleAddShape = () => {
     if (!selectedTrip) {
       Swal.fire("Hata!", "Lütfen önce bir trip seçin.", "error");
       return;
     }
-    setShapeFormMode("add")
-    setActiveKey("5")
-  }
+    setShapeFormMode("add");
+    setActiveKey("5");
+  };
 
   const handleAddStop = () => {
     if (!selectedTrip) {
@@ -294,7 +293,7 @@ const Sidebar = ({
     setShapeFormMode(mode);
     setShapeEditId(shapeId);
     setActiveKey("5");
-  }
+  };
 
   const handleDeleteAgency = async (agencyId) => {
     const result = await Swal.fire({
@@ -817,24 +816,29 @@ const Sidebar = ({
               )}
             </Accordion.Body>
           </Accordion.Item>
-          
+
           {/* SHAPES */}
           <Accordion.Item eventKey="5">
             <Accordion.Header>
-                <Bezier size={20} className="me-2"/> Shapes
+              <Bezier size={20} className="me-2" /> Shapes
             </Accordion.Header>
             <Accordion.Body>
-            {shapeFormMode === "add" && selectedTrip ? (
+              {shapeFormMode === "add" && selectedTrip ? (
                 <ShapeAddPage
                   project_id={project_id}
                   onClose={closeShapeForm}
                 />
-              ) : shapeFormMode === "edit" &&
-                shapeEditId &&
-                selectedTrip ? (
+              ) : shapeFormMode === "edit" && shapeEditId && selectedTrip ? (
                 <ShapeEditPage
                   project_id={project_id}
+                  shape_id={
+                    shapes.find((s) => s.shape_pt_sequence === shapeEditId)
+                      ?.shape_id || ""
+                  }
+                  shape_pt_sequence={shapeEditId}
                   onClose={closeShapeForm}
+                  setShapes={setShapes}
+                  shapes={shapes}
                 />
               ) : (
                 <>
@@ -896,6 +900,7 @@ Sidebar.propTypes = {
   openStopTimeAdd: PropTypes.func.isRequired,
   closeStopTimeAdd: PropTypes.func.isRequired,
   isStopTimeAddOpen: PropTypes.bool.isRequired,
+  shapes: PropTypes.array.isRequired,
 };
 
 export default Sidebar;

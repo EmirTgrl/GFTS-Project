@@ -1,12 +1,18 @@
 import { useState, useEffect, useContext } from "react";
-import { fetchTripById, updateTrip } from "../api/tripApi";
-import { fetchRoutesByProjectId } from "../api/routeApi";
-import { fetchCalendarsByProjectId } from "../api/calendarApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
+import { updateTrip } from "../api/tripApi";
 
-const TripEditPage = ({ project_id, trip_id, onClose, setTrips, routes, selectedRoute, calendars, trips}) => {
+const TripEditPage = ({
+  project_id,
+  trip_id,
+  onClose,
+  setTrips,
+  routes,
+  calendars,
+  trips,
+}) => {
   const { token } = useContext(AuthContext);
   const [tripData, setTripData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +21,7 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips, routes, selected
   useEffect(() => {
     const loadData = async () => {
       try {
-        const trip = trips.filter((t)=>t.trip_id === trip_id)[0]
+        const trip = trips.filter((t) => t.trip_id === trip_id)[0];
 
         setTripData({
           trip_id: trip.trip_id || trip_id,
@@ -93,7 +99,7 @@ const TripEditPage = ({ project_id, trip_id, onClose, setTrips, routes, selected
 
     if (result.isConfirmed) {
       try {
-        const tripDataForApi = {...tripData, project_id, trip_id}
+        const tripDataForApi = { ...tripData, project_id, trip_id };
         await updateTrip(tripDataForApi, token);
         setTrips((prev) =>
           prev.map((t) => (t.trip_id === trip_id ? tripData : t))
@@ -268,6 +274,9 @@ TripEditPage.propTypes = {
   trip_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setTrips: PropTypes.func.isRequired,
+  calendars: PropTypes.array.isRequired,
+  routes: PropTypes.array.isRequired,
+  trips: PropTypes.array.isRequired,
 };
 
 export default TripEditPage;
