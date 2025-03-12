@@ -9,6 +9,7 @@ const CalendarEditPage = ({
   service_id,
   onClose,
   setCalendars,
+  calendars
 }) => {
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState(null);
@@ -17,7 +18,7 @@ const CalendarEditPage = ({
   useEffect(() => {
     const loadCalendar = async () => {
       try {
-        const calendar = await fetchCalendarByServiceId(service_id, token);
+        const calendar = calendars.filter((cal)=> cal.service_id === service_id)[0]
         if (calendar) {
           setFormData({
             service_id: calendar.service_id || "",
@@ -51,7 +52,7 @@ const CalendarEditPage = ({
     if (token && service_id) {
       loadCalendar();
     }
-  }, [token, service_id, onClose, project_id]);
+  }, [token, service_id, onClose, project_id, calendars]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

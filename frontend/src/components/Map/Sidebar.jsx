@@ -704,6 +704,7 @@ const Sidebar = ({
                   service_id={calendarEditId}
                   onClose={closeCalendarForm}
                   setCalendars={setCalendars}
+                  calendars={calendars}
                 />
               ) : (
                 <>
