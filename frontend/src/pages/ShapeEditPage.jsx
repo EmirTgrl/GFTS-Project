@@ -6,7 +6,6 @@ import Swal from "sweetalert2";
 
 const ShapeEditPage = ({
   project_id,
-  shape_id,
   shape_pt_sequence,
   onClose,
   setShapes,
@@ -14,7 +13,6 @@ const ShapeEditPage = ({
 }) => {
   const { token } = useContext(AuthContext);
   const [shapeData, setShapeData] = useState({
-    shape_id: "",
     shape_pt_lat: "",
     shape_pt_lon: "",
     shape_pt_sequence: "",
@@ -28,7 +26,6 @@ const ShapeEditPage = ({
     );
     if (currentShape) {
       setShapeData({
-        shape_id: currentShape.shape_id || "",
         shape_pt_lat: currentShape.shape_pt_lat || "",
         shape_pt_lon: currentShape.shape_pt_lon || "",
         shape_pt_sequence: currentShape.shape_pt_sequence || "",
@@ -65,7 +62,6 @@ const ShapeEditPage = ({
     if (result.isConfirmed) {
       try {
         const updatedShapeData = {
-          shape_id: shapeData.shape_id,
           shape_pt_lat: parseFloat(shapeData.shape_pt_lat),
           shape_pt_lon: parseFloat(shapeData.shape_pt_lon),
           shape_pt_sequence: parseInt(shapeData.shape_pt_sequence),
@@ -75,7 +71,7 @@ const ShapeEditPage = ({
           project_id: project_id,
         };
 
-        await updateShape(shape_id, shape_pt_sequence, updatedShapeData, token);
+        await updateShape(shape_pt_sequence, updatedShapeData, token);
 
         setShapes((prev) =>
           prev.map((shape) =>
@@ -101,21 +97,6 @@ const ShapeEditPage = ({
     <div className="form-container">
       <h5>Şekli Düzenle</h5>
       <form onSubmit={handleSubmit}>
-        <div className="mb-2">
-          <label htmlFor="shape_id" className="form-label">
-            Şekil Kimliği
-          </label>
-          <input
-            type="text"
-            id="shape_id"
-            name="shape_id"
-            className="form-control"
-            value={shapeData.shape_id}
-            onChange={handleChange}
-            required
-            readOnly
-          />
-        </div>
         <div className="row">
           <div className="col-6 mb-2">
             <label htmlFor="shape_pt_lat" className="form-label">
@@ -160,7 +141,6 @@ const ShapeEditPage = ({
             value={shapeData.shape_pt_sequence}
             onChange={handleChange}
             required
-            readOnly
           />
         </div>
         <div className="mb-2">
@@ -192,7 +172,6 @@ const ShapeEditPage = ({
 
 ShapeEditPage.propTypes = {
   project_id: PropTypes.string.isRequired,
-  shape_id: PropTypes.string.isRequired,
   shape_pt_sequence: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
     .isRequired,
   onClose: PropTypes.func.isRequired,
