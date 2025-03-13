@@ -19,6 +19,7 @@ const ShapeEditPage = ({
     shape_pt_sequence: "",
     shape_dist_traveled: "",
     project_id: project_id,
+    shape_id: ""
   });
 
   useEffect(() => {
@@ -32,6 +33,7 @@ const ShapeEditPage = ({
         shape_pt_sequence: currentShape.shape_pt_sequence || "",
         shape_dist_traveled: currentShape.shape_dist_traveled || "",
         project_id: currentShape.project_id || project_id,
+        shape_id: currentShape.shape_id
       });
     } else {
       console.error("Shape not found in shapes array:", shape_pt_sequence);
@@ -80,6 +82,7 @@ const ShapeEditPage = ({
             ? parseFloat(shapeData.shape_dist_traveled)
             : null,
           project_id: project_id,
+          shape_id: shapeData.shape_id
         };
 
         await updateShape(shape_pt_sequence, updatedShapeData, token);

@@ -31,13 +31,12 @@ export const deleteShape = async (shape_id, shape_pt_sequence, token) => {
 };
 
 export const updateShape = async (
-  shape_id,
   shape_pt_sequence,
   shapeData,
   token
 ) => {
   const response = await fetch(
-    `${API_BASE_URL}/update/${shape_id}/${shape_pt_sequence}`,
+    `${API_BASE_URL}/update/${shapeData.shape_id}/${shape_pt_sequence}`,
     {
       method: "PUT",
       headers: {
