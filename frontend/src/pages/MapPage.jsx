@@ -5,6 +5,7 @@ import Sidebar from "../components/Map/Sidebar.jsx";
 import MapView from "../components/Map/MapView";
 import { fetchAgenciesByProjectId } from "../api/agencyApi";
 import "../styles/Map.css";
+import FloatingActions from "../components/FloatingActions/FloatingActions.jsx"
 
 const MapPage = () => {
   const { token } = useContext(AuthContext);
@@ -112,6 +113,7 @@ const MapPage = () => {
           isStopTimeAddOpen={isStopTimeAddOpen}
         />
       </div>
+      <FloatingActions />
     </div>
   );
 };
