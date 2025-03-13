@@ -43,7 +43,6 @@ CREATE TABLE `trips` (
   KEY `project_id` (`project_id`),
   CONSTRAINT `trips_ibfk_1` FOREIGN KEY (`route_id`) REFERENCES `routes` (`route_id`) ON DELETE SET NULL,
   CONSTRAINT `trips_ibfk_2` FOREIGN KEY (`service_id`) REFERENCES `calendar` (`service_id`) ON DELETE SET NULL,
-  CONSTRAINT `trips_ibfk_3` FOREIGN KEY (`shape_id`) REFERENCES `shapes` (`shape_id`) ON DELETE SET NULL,
   CONSTRAINT `trips_ibfk_4` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `trips_ibfk_5` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
