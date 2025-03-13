@@ -859,6 +859,7 @@ const Sidebar = ({
                 <ShapeAddPage
                   project_id={project_id}
                   onClose={closeShapeForm}
+                  shape_id={shapes[0].shape_id}
                 />
               ) : shapeFormMode === "edit" && shapeEditId && selectedTrip ? (
                 <ShapeEditPage

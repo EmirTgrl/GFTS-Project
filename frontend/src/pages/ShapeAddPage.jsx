@@ -4,7 +4,7 @@ import { AuthContext } from "../components/Auth/AuthContext";
 import { saveShape } from "../api/shapeApi";
 import Swal from "sweetalert2";
 
-const ShapeAddPage = ({ project_id, onClose }) => {
+const ShapeAddPage = ({ project_id, onClose, shape_id }) => {
   const { token } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [shapeData, setShapeData] = useState({
@@ -48,6 +48,7 @@ const ShapeAddPage = ({ project_id, onClose }) => {
             ? parseFloat(shapeData.shape_dist_traveled)
             : null,
           project_id: project_id,
+          shape_id:shape_id
         };
 
         const response = await saveShape(newShapeData, token);
