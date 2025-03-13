@@ -74,7 +74,7 @@ const shapeService = {
   updateShape: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const { shape_id } = req.params;
+      const { shape_id, shape_pt_sequence } = req.params;
       const { ...params } = req.body;
       const validFields = [
         "shape_pt_lat",
@@ -98,12 +98,13 @@ const shapeService = {
       const query = `
         UPDATE shapes
         SET ${fields.join(", ")}
-        WHERE shape_id = ? AND user_id = ?
+        WHERE shape_id = ? AND shape_pt_sequence = ? AND user_id = ?
       `;
 
       const [result] = await pool.execute(query, [
         ...values,
         shape_id,
+        shape_pt_sequence,
         user_id,
       ]);
 
