@@ -194,7 +194,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_sequence" className="form-label">
-            Sıra Numarası
+            Sıra Numarası (*)
           </label>
           <input
             type="number"
@@ -303,7 +303,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_name" className="form-label">
-            Durak Adı
+            Durak Adı (*)
           </label>
           <input
             type="text"
@@ -331,7 +331,7 @@ const StopTimeAddPage = ({
         <div className="row">
           <div className="col-6 mb-2">
             <label htmlFor="stop_lat" className="form-label">
-              Durak Enlemi
+              Durak Enlemi (*)
             </label>
             <input
               type="number"
@@ -347,7 +347,7 @@ const StopTimeAddPage = ({
           </div>
           <div className="col-6 mb-2">
             <label htmlFor="stop_lon" className="form-label">
-              Durak Boylamı
+              Durak Boylamı (*)
             </label>
             <input
               type="number"

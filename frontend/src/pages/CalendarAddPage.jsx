@@ -96,7 +96,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="start_date" className="form-label">
-            Başlangıç Tarihi
+            Başlangıç Tarihi (*)
           </label>
           <input
             type="date"
@@ -110,7 +110,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="end_date" className="form-label">
-            Bitiş Tarihi
+            Bitiş Tarihi (*)
           </label>
           <input
             type="date"

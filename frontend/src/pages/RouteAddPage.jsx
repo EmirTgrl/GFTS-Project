@@ -74,7 +74,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="route_short_name" className="form-label">
-            Kısa Ad
+            Kısa Ad (*)
           </label>
           <input
             type="text"
@@ -88,7 +88,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_long_name" className="form-label">
-            Uzun Ad
+            Uzun Ad (*)
           </label>
           <input
             type="text"
@@ -101,7 +101,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_type" className="form-label">
-            Rota Türü
+            Rota Türü (*)
           </label>
           <select
             id="route_type"

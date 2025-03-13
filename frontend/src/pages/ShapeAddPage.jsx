@@ -105,7 +105,7 @@ const ShapeAddPage = ({
         <div className="row">
           <div className="col-6 mb-2">
             <label htmlFor="shape_pt_lat" className="form-label">
-              Enlem
+              Enlem (*)
             </label>
             <input
               type="number"
@@ -120,7 +120,7 @@ const ShapeAddPage = ({
           </div>
           <div className="col-6 mb-2">
             <label htmlFor="shape_pt_lon" className="form-label">
-              Boylam
+              Boylam (*)
             </label>
             <input
               type="number"
@@ -136,7 +136,7 @@ const ShapeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="shape_pt_sequence" className="form-label">
-            Sıra Numarası
+            Sıra Numarası (*)
           </label>
           <input
             type="number"
