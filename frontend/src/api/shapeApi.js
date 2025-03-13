@@ -37,7 +37,7 @@ export const updateShape = async (
   token
 ) => {
   const response = await fetch(
-    `${API_BASE_URL}/${shape_id}/${shape_pt_sequence}`,
+    `${API_BASE_URL}/update/${shape_id}/${shape_pt_sequence}`,
     {
       method: "PUT",
       headers: {
@@ -55,7 +55,7 @@ export const updateShape = async (
 };
 
 export const saveShape = async (shapeData, token) => {
-  const response = await fetch(`${API_BASE_URL}`, {
+  const response = await fetch(`${API_BASE_URL}/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
