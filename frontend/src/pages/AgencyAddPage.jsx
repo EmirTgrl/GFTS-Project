@@ -69,7 +69,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="agency_name" className="form-label">
-            Ajans Adı
+            Ajans Adı (*)
           </label>
           <input
             type="text"
@@ -83,7 +83,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="agency_url" className="form-label">
-            Ajans URL
+            Ajans URL (*)
           </label>
           <input
             type="url"
@@ -97,7 +97,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="agency_timezone" className="form-label">
-            Zaman Dilimi
+            Zaman Dilimi (*)
           </label>
           <input
             type="text"
