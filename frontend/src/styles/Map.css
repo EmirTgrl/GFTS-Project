@@ -1,6 +1,6 @@
 .map-container {
   display: flex;
-  height: 100vh;
+  height: calc(100vh - 51.109px);
   width: 100vw;
   position: relative;
   overflow: hidden;

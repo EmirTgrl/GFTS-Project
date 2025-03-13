@@ -101,7 +101,7 @@ const MapPage = () => {
         closeStopTimeAdd={closeStopTimeAdd}
         isStopTimeAddOpen={isStopTimeAddOpen}
       />
-      <div className="map-view-container">
+     
         <MapView
           mapCenter={mapCenter}
           zoom={zoom}
@@ -112,7 +112,7 @@ const MapPage = () => {
           clickedCoords={clickedCoords}
           isStopTimeAddOpen={isStopTimeAddOpen}
         />
-      </div>
+     
       <FloatingActions />
     </div>
   );
