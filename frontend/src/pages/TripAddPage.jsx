@@ -1,12 +1,16 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useContext } from "react";
 import { saveTrip } from "../api/tripApi";
-import { fetchRoutesByProjectId } from "../api/routeApi";
-import { fetchCalendarsByProjectId } from "../api/calendarApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 
-const TripAddPage = ({ project_id, onClose, setTrips, calendars, selectedRoute }) => {
+const TripAddPage = ({
+  project_id,
+  onClose,
+  setTrips,
+  calendars,
+  selectedRoute,
+}) => {
   const { token } = useContext(AuthContext);
   const [tripData, setTripData] = useState({
     service_id: "",
@@ -69,7 +73,7 @@ const TripAddPage = ({ project_id, onClose, setTrips, calendars, selectedRoute }
 
     if (result.isConfirmed) {
       try {
-        const formData = { ...tripData, project_id, route_id:selectedRoute };
+        const formData = { ...tripData, project_id, route_id: selectedRoute };
         const response = await saveTrip(formData, token);
         const trip_id = response.trip_id;
         setTrips((prev) => [...prev, { ...formData, trip_id }]);
@@ -169,6 +173,8 @@ TripAddPage.propTypes = {
   project_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setTrips: PropTypes.func.isRequired,
+  calendars: PropTypes.array.isRequired,
+  selectedRoute: PropTypes.string.isRequired,
 };
 
 export default TripAddPage;

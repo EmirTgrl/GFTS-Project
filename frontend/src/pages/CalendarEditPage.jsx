@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { updateCalendar, fetchCalendarByServiceId } from "../api/calendarApi";
+import { updateCalendar } from "../api/calendarApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
@@ -9,7 +9,7 @@ const CalendarEditPage = ({
   service_id,
   onClose,
   setCalendars,
-  calendars
+  calendars,
 }) => {
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState(null);
@@ -18,7 +18,9 @@ const CalendarEditPage = ({
   useEffect(() => {
     const loadCalendar = async () => {
       try {
-        const calendar = calendars.filter((cal)=> cal.service_id === service_id)[0]
+        const calendar = calendars.filter(
+          (cal) => cal.service_id === service_id
+        )[0];
         if (calendar) {
           setFormData({
             service_id: calendar.service_id || "",
@@ -181,6 +183,7 @@ CalendarEditPage.propTypes = {
   service_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setCalendars: PropTypes.func.isRequired,
+  calendars: PropTypes.array.isRequired,
 };
 
 export default CalendarEditPage;

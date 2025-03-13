@@ -26,7 +26,7 @@ import {
   ArrowRight,
   Calendar,
   Building,
-  Bezier
+  Bezier,
 } from "react-bootstrap-icons";
 import {
   Accordion,
@@ -38,7 +38,7 @@ import {
 } from "react-bootstrap";
 import StopList from "./StopList";
 import TripList from "./TripList";
-import ShapeList from "./ShapeList"
+import ShapeList from "./ShapeList";
 import ShapeEditPage from "../../pages/ShapeEditPage";
 import ShapeAddPage from "../../pages/ShapeAddPage";
 import AgencyAddPage from "../../pages/AgencyAddPage";
@@ -77,7 +77,7 @@ const Sidebar = ({
   setShapes,
   openStopTimeAdd,
   closeStopTimeAdd,
-  shapes
+  shapes,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -101,11 +101,11 @@ const Sidebar = ({
   const [stopTimeEditId, setStopTimeEditId] = useState(null);
   const [calendarFormMode, setCalendarFormMode] = useState(null);
   const [calendarEditId, setCalendarEditId] = useState(null);
-  const [shapeEditId, setShapeEditId] = useState(null);
   const [shapeFormMode, setShapeFormMode] = useState(null);
+  const [shapeEditId, setShapeEditId] = useState(null);
 
   useEffect(() => {
-    const loadAgencies = async () => {
+    const loadInitialData = async () => {
       try {
         const data = await fetchAgenciesByProjectId(project_id, token);
         setAgencies(data);
@@ -113,111 +113,132 @@ const Sidebar = ({
         const calendarData = await fetchCalendarsByProjectId(project_id, token);
         setCalendars(calendarData);
       } catch (error) {
-        console.error("Error fetching agencies:", error);
+        console.error("Error fetching initial data:", error);
         setAgencies([]);
+        setCalendars([]);
       }
     };
     if (token && project_id) {
-      loadAgencies();
+      loadInitialData();
     }
   }, [token, project_id, setAgencies, setCalendars]);
 
-  const handleAgencySelect = async (agencyId) => {
-    setSelectedAgency(agencyId);
-    setSelectedRoute(null);
-    setSelectedTrip(null);
-    setTrips([]);
-    setStopsAndTimes([]);
-    setShapes([]); // Şekilleri sıfırla
-    setActiveKey("1");
-    setPageRoutes(1);
-    try {
-      const routesData = await fetchRoutesByAgencyId(
-        agencyId,
-        project_id,
-        token
-      );
-      setRoutes(routesData);
-    } catch (error) {
-      console.error("Error fetching routes by agency:", error);
-      setRoutes([]);
-    }
+  const closeAllForms = () => {
+    setAgencyFormMode(null);
+    setAgencyEditId(null);
+    setRouteFormMode(null);
+    setRouteEditId(null);
+    setTripFormMode(null);
+    setTripEditId(null);
+    setStopTimeFormMode(null);
+    setStopTimeEditId(null);
+    setCalendarFormMode(null);
+    setCalendarEditId(null);
+    setShapeFormMode(null);
+    setShapeEditId(null);
+    closeStopTimeAdd();
   };
 
-  const handleRouteSelect = async (routeId) => {
-    setSelectedRoute(routeId);
-    setSelectedTrip(null);
-    setStopsAndTimes([]);
-    setShapes([]); // Şekilleri sıfırla
-    setActiveKey("2");
-    setPageTrips(1);
-    try {
-      const tripsData = await fetchTripsByRouteId(routeId, token);
-      setTrips(Array.isArray(tripsData) ? tripsData : []);
-    } catch (error) {
-      console.error("Error fetching trips:", error);
-      setTrips([]);
-    }
-  };
+  const handleSelectionChange = async (type, id) => {
+    closeAllForms();
 
-  const handleTripSelect = async (tripId) => {
-    setSelectedTrip(tripId);
-    setActiveKey("3");
-    setPageStops(1);
-    try {
-      const stopsAndTimesData = await fetchStopsAndStopTimesByTripId(
-        tripId,
-        project_id,
-        token
-      );
-      setStopsAndTimes(stopsAndTimesData);
-
-      const shapesData = await fetchShapesByTripId(project_id, tripId, token);
-      setShapes(shapesData);
-
-      if (stopsAndTimesData.length > 0) {
-        const validStops = stopsAndTimesData.filter(
-          (stop) =>
-            stop.stop_lat &&
-            stop.stop_lon &&
-            !isNaN(parseFloat(stop.stop_lat)) &&
-            !isNaN(parseFloat(stop.stop_lon))
-        );
-        if (validStops.length > 0) {
-          const centerLat =
-            validStops.reduce(
-              (sum, stop) => sum + parseFloat(stop.stop_lat),
-              0
-            ) / validStops.length;
-          const centerLon =
-            validStops.reduce(
-              (sum, stop) => sum + parseFloat(stop.stop_lon),
-              0
-            ) / validStops.length;
-          setMapCenter([centerLat, centerLon]);
-          setZoom(14);
+    switch (type) {
+      case "agency":
+        setSelectedAgency(id);
+        setSelectedRoute(null);
+        setSelectedTrip(null);
+        setTrips([]);
+        setStopsAndTimes([]);
+        setShapes([]);
+        setActiveKey("1");
+        setPageRoutes(1);
+        try {
+          const routesData = await fetchRoutesByAgencyId(id, project_id, token);
+          setRoutes(routesData);
+        } catch (error) {
+          console.error("Error fetching routes by agency:", error);
+          setRoutes([]);
         }
-      }
-    } catch (error) {
-      console.error("Error in handleTripSelect:", error);
-      setStopsAndTimes([]);
-      setShapes([]);
+        break;
+
+      case "route":
+        setSelectedRoute(id);
+        setSelectedTrip(null);
+        setStopsAndTimes([]);
+        setShapes([]);
+        setActiveKey("2");
+        setPageTrips(1);
+        try {
+          const tripsData = await fetchTripsByRouteId(id, token);
+          setTrips(Array.isArray(tripsData) ? tripsData : []);
+        } catch (error) {
+          console.error("Error fetching trips:", error);
+          setTrips([]);
+        }
+        break;
+
+      case "trip":
+        setSelectedTrip(id);
+        setActiveKey("3");
+        setPageStops(1);
+        try {
+          const stopsAndTimesData = await fetchStopsAndStopTimesByTripId(
+            id,
+            project_id,
+            token
+          );
+          setStopsAndTimes(stopsAndTimesData);
+
+          const shapesData = await fetchShapesByTripId(project_id, id, token);
+          setShapes(shapesData);
+
+          if (stopsAndTimesData.length > 0) {
+            const validStops = stopsAndTimesData.filter(
+              (stop) =>
+                stop.stop_lat &&
+                stop.stop_lon &&
+                !isNaN(parseFloat(stop.stop_lat)) &&
+                !isNaN(parseFloat(stop.stop_lon))
+            );
+            if (validStops.length > 0) {
+              const centerLat =
+                validStops.reduce(
+                  (sum, stop) => sum + parseFloat(stop.stop_lat),
+                  0
+                ) / validStops.length;
+              const centerLon =
+                validStops.reduce(
+                  (sum, stop) => sum + parseFloat(stop.stop_lon),
+                  0
+                ) / validStops.length;
+              setMapCenter([centerLat, centerLon]);
+              setZoom(14);
+            }
+          }
+        } catch (error) {
+          console.error("Error in handleTripSelect:", error);
+          setStopsAndTimes([]);
+          setShapes([]);
+        }
+        break;
+
+      case "calendar":
+        setSelectedCalendar(id);
+        break;
+
+      default:
+        console.warn("Unknown selection type:", type);
     }
   };
 
-  const handleCalendarSelect = (serviceId) => {
-    setSelectedCalendar(serviceId);
-  };
-
-
-  const handleAddShape = () =>{
+  const handleAddShape = () => {
     if (!selectedTrip) {
       Swal.fire("Hata!", "Lütfen önce bir trip seçin.", "error");
       return;
     }
-    setShapeFormMode("add")
-    setActiveKey("5")
-  }
+    setShapeFormMode("add");
+    setActiveKey("5");
+  };
 
   const handleAddStop = () => {
     if (!selectedTrip) {
@@ -229,10 +250,9 @@ const Sidebar = ({
     openStopTimeAdd();
   };
 
-  const closeStopTimeForm = () => {
-    setStopTimeFormMode(null);
-    setStopTimeEditId(null);
-    closeStopTimeAdd();
+  const closeAgencyForm = () => {
+    setAgencyFormMode(null);
+    setAgencyEditId(null);
   };
 
   const openAgencyForm = (mode, agencyId = null) => {
@@ -241,9 +261,9 @@ const Sidebar = ({
     setActiveKey("0");
   };
 
-  const closeAgencyForm = () => {
-    setAgencyFormMode(null);
-    setAgencyEditId(null);
+  const closeRouteForm = () => {
+    setRouteFormMode(null);
+    setRouteEditId(null);
   };
 
   const openRouteForm = (mode, routeId = null) => {
@@ -252,9 +272,9 @@ const Sidebar = ({
     setActiveKey("1");
   };
 
-  const closeRouteForm = () => {
-    setRouteFormMode(null);
-    setRouteEditId(null);
+  const closeTripForm = () => {
+    setTripFormMode(null);
+    setTripEditId(null);
   };
 
   const openTripForm = (mode, tripId = null) => {
@@ -263,16 +283,22 @@ const Sidebar = ({
     setActiveKey("2");
   };
 
-  const closeTripForm = () => {
-    setTripFormMode(null);
-    setTripEditId(null);
+  const closeStopTimeForm = () => {
+    setStopTimeFormMode(null);
+    setStopTimeEditId(null);
+    closeStopTimeAdd();
   };
 
   const openStopTimeForm = (mode, stopId = null) => {
     setStopTimeFormMode(mode);
     setStopTimeEditId(stopId);
     setActiveKey("3");
-    if (mode === "add") openStopTimeAdd(); // Yeni ekleme için marker’ı aktif et
+    if (mode === "add") openStopTimeAdd();
+  };
+
+  const closeCalendarForm = () => {
+    setCalendarFormMode(null);
+    setCalendarEditId(null);
   };
 
   const openCalendarForm = (mode, serviceId = null) => {
@@ -281,20 +307,16 @@ const Sidebar = ({
     setActiveKey("4");
   };
 
-  const closeCalendarForm = () => {
-    setCalendarFormMode(null);
-    setCalendarEditId(null);
-  };
-
   const closeShapeForm = () => {
     setShapeFormMode(null);
     setShapeEditId(null);
   };
+
   const openShapeForm = (mode, shapeId = null) => {
     setShapeFormMode(mode);
     setShapeEditId(shapeId);
     setActiveKey("5");
-  }
+  };
 
   const handleDeleteAgency = async (agencyId) => {
     const result = await Swal.fire({
@@ -504,7 +526,10 @@ const Sidebar = ({
                             <span
                               className="item-title"
                               onClick={() =>
-                                handleAgencySelect(agency.agency_id)
+                                handleSelectionChange(
+                                  "agency",
+                                  agency.agency_id
+                                )
                               }
                             >
                               {agency.agency_name}
@@ -592,7 +617,9 @@ const Sidebar = ({
                           >
                             <span
                               className="item-title"
-                              onClick={() => handleRouteSelect(route.route_id)}
+                              onClick={() =>
+                                handleSelectionChange("route", route.route_id)
+                              }
                             >
                               {route.route_long_name || route.route_id}
                             </span>
@@ -674,7 +701,9 @@ const Sidebar = ({
                     setTrips={setTrips}
                     selectedTrip={selectedTrip}
                     setSelectedTrip={setSelectedTrip}
-                    handleTripSelect={handleTripSelect}
+                    handleTripSelect={(tripId) =>
+                      handleSelectionChange("trip", tripId)
+                    }
                     openForm={openTripForm}
                   />
                   {renderPagination(trips, pageTrips, setPageTrips)}
@@ -776,7 +805,10 @@ const Sidebar = ({
                               <span
                                 className="item-title"
                                 onClick={() =>
-                                  handleCalendarSelect(cal.service_id)
+                                  handleSelectionChange(
+                                    "calendar",
+                                    cal.service_id
+                                  )
                                 }
                               >
                                 {getActiveDays(cal)}
@@ -817,24 +849,28 @@ const Sidebar = ({
               )}
             </Accordion.Body>
           </Accordion.Item>
-          
-          {/* SHAPES */}
+
           <Accordion.Item eventKey="5">
             <Accordion.Header>
-                <Bezier size={20} className="me-2"/> Shapes
+              <Bezier size={20} className="me-2" /> Shapes
             </Accordion.Header>
             <Accordion.Body>
-            {shapeFormMode === "add" && selectedTrip ? (
+              {shapeFormMode === "add" && selectedTrip ? (
                 <ShapeAddPage
                   project_id={project_id}
                   onClose={closeShapeForm}
                 />
-              ) : shapeFormMode === "edit" &&
-                shapeEditId &&
-                selectedTrip ? (
+              ) : shapeFormMode === "edit" && shapeEditId && selectedTrip ? (
                 <ShapeEditPage
                   project_id={project_id}
+                  shape_id={
+                    shapes.find((s) => s.shape_pt_sequence === shapeEditId)
+                      ?.shape_id || ""
+                  }
+                  shape_pt_sequence={shapeEditId}
                   onClose={closeShapeForm}
+                  setShapes={setShapes}
+                  shapes={shapes}
                 />
               ) : (
                 <>
@@ -895,7 +931,7 @@ Sidebar.propTypes = {
   setShapes: PropTypes.func.isRequired,
   openStopTimeAdd: PropTypes.func.isRequired,
   closeStopTimeAdd: PropTypes.func.isRequired,
-  isStopTimeAddOpen: PropTypes.bool.isRequired,
+  shapes: PropTypes.array.isRequired,
 };
 
 export default Sidebar;
