@@ -8,7 +8,7 @@ router.use(authService.auth);
 
 router.get("", shapeService.getShapeByQuery);
 router.delete("/delete/:shape_id/:shape_pt_sequence", shapeService.deleteShapeById);
-router.put("/update/:shape_id", shapeService.updateShape);
+router.put("/update/:shape_id/:shape_pt_sequence", shapeService.updateShape);
 router.post("/create", shapeService.saveShape);
 
 module.exports = router;
