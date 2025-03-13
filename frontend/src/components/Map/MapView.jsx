@@ -78,7 +78,8 @@ const MapView = ({
   mapCenter,
   zoom,
   stopsAndTimes,
-  selectedTrip,
+  setStopsAndTimes,
+  setShapes,
   onMapClick,
   shapes,
   clickedCoords,
@@ -108,7 +109,7 @@ const MapView = ({
             if (stopTime && stopTime.stop_lat && stopTime.stop_lon) {
               return (
                 <Marker
-                  key={`${stopTime.stop_id}-${selectedTrip}`}
+                  key={`${stopTime.stop_id}`}
                   position={[
                     parseFloat(stopTime.stop_lat),
                     parseFloat(stopTime.stop_lon),

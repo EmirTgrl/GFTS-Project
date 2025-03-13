@@ -106,11 +106,12 @@ const MapPage = () => {
           mapCenter={mapCenter}
           zoom={zoom}
           stopsAndTimes={stopsAndTimes}
-          selectedTrip={selectedTrip}
           onMapClick={handleMapClick}
           shapes={shapes}
           clickedCoords={clickedCoords}
           isStopTimeAddOpen={isStopTimeAddOpen}
+          setStopsAndTimes={setStopsAndTimes}
+          setShapes={setShapes}
         />
      
       <FloatingActions />
