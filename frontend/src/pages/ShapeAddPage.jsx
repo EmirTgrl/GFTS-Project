@@ -1,10 +1,16 @@
-import { useState, useContext } from "react";
+import { useState, useEffect, useContext } from "react"; 
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 import { saveShape } from "../api/shapeApi";
 import Swal from "sweetalert2";
 
-const ShapeAddPage = ({ project_id, onClose, shape_id }) => {
+const ShapeAddPage = ({
+  project_id,
+  onClose,
+  shape_id,
+  setShapes,
+  clickedCoords,
+}) => {
   const { token } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [shapeData, setShapeData] = useState({
@@ -14,6 +20,16 @@ const ShapeAddPage = ({ project_id, onClose, shape_id }) => {
     shape_dist_traveled: "",
     project_id: project_id,
   });
+
+  useEffect(() => {
+    if (clickedCoords && clickedCoords.lat && clickedCoords.lng) {
+      setShapeData((prev) => ({
+        ...prev,
+        shape_pt_lat: clickedCoords.lat.toString(),
+        shape_pt_lon: clickedCoords.lng.toString(),
+      }));
+    }
+  }, [clickedCoords]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,15 +64,18 @@ const ShapeAddPage = ({ project_id, onClose, shape_id }) => {
             ? parseFloat(shapeData.shape_dist_traveled)
             : null,
           project_id: project_id,
-          shape_id:shape_id
+          shape_id: shape_id,
         };
 
         const response = await saveShape(newShapeData, token);
-        console.log("Shape eklendi:", response); // Hata ayıklamak için
+
+        setShapes((prev) => [
+          ...prev,
+          { ...newShapeData, shape_id: response?.shape_id || shape_id },
+        ]);
 
         Swal.fire("Eklendi!", "Şekil başarıyla eklendi.", "success");
 
-        // Formu sıfırla
         setShapeData({
           shape_pt_lat: "",
           shape_pt_lon: "",
@@ -135,7 +154,7 @@ const ShapeAddPage = ({ project_id, onClose, shape_id }) => {
           </label>
           <input
             type="number"
-            id="shape_dist_traveled"
+            id="shape_pt_lon"
             name="shape_dist_traveled"
             className="form-control"
             value={shapeData.shape_dist_traveled}
@@ -164,6 +183,12 @@ const ShapeAddPage = ({ project_id, onClose, shape_id }) => {
 ShapeAddPage.propTypes = {
   project_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
+  shape_id: PropTypes.string,
+  setShapes: PropTypes.func.isRequired,
+  clickedCoords: PropTypes.shape({
+    lat: PropTypes.number,
+    lng: PropTypes.number,
+  }),
 };
 
 export default ShapeAddPage;
