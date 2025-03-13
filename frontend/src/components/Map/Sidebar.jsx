@@ -871,6 +871,7 @@ const Sidebar = ({
                   onClose={closeShapeForm}
                   setShapes={setShapes}
                   shapes={shapes}
+                  clickedCoords={clickedCoords} 
                 />
               ) : (
                 <>

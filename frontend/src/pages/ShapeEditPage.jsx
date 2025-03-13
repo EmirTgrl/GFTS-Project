@@ -10,6 +10,7 @@ const ShapeEditPage = ({
   onClose,
   setShapes,
   shapes,
+  clickedCoords, 
 }) => {
   const { token } = useContext(AuthContext);
   const [shapeData, setShapeData] = useState({
@@ -36,6 +37,16 @@ const ShapeEditPage = ({
       console.error("Shape not found in shapes array:", shape_pt_sequence);
     }
   }, [shapes, shape_pt_sequence, project_id]);
+
+  useEffect(() => {
+    if (clickedCoords && clickedCoords.lat && clickedCoords.lng) {
+      setShapeData((prev) => ({
+        ...prev,
+        shape_pt_lat: clickedCoords.lat.toString(),
+        shape_pt_lon: clickedCoords.lng.toString(),
+      }));
+    }
+  }, [clickedCoords]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -177,6 +188,10 @@ ShapeEditPage.propTypes = {
   onClose: PropTypes.func.isRequired,
   setShapes: PropTypes.func.isRequired,
   shapes: PropTypes.array.isRequired,
+  clickedCoords: PropTypes.shape({
+    lat: PropTypes.number,
+    lng: PropTypes.number,
+  }),
 };
 
 export default ShapeEditPage;
