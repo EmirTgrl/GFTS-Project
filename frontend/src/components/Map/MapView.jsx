@@ -7,9 +7,10 @@ import {
   useMapEvents,
   useMap,
 } from "react-leaflet";
-import { useEffect, useState } from "react"; // useState ekledim
+import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import L from "leaflet";
+import Swal from "sweetalert2";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -29,11 +30,44 @@ const clickIcon = new L.Icon({
   shadowSize: [32, 32],
 });
 
-const MapClickHandler = ({ onMapClick }) => {
+const tempStopIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png", 
+  iconSize: [30, 48],
+  iconAnchor: [15, 48],
+  popupAnchor: [1, -34],
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  shadowSize: [41, 41],
+});
+
+const MapClickHandler = ({
+  onMapClick,
+  isEditModeOpen,
+  onStopUpdate,
+  clearTempStop,
+}) => {
+  const map = useMap();
   useMapEvents({
     click(e) {
-      const { lat, lng } = e.latlng;
-      onMapClick({ lat, lng });
+      if (isEditModeOpen) {
+        const { lat, lng } = e.latlng;
+        Swal.fire({
+          title: "Durağı buraya güncelleyecek misiniz?",
+          text: `Yeni Konum: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "Evet",
+          cancelButtonText: "Hayır",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            onStopUpdate({ lat, lng }); 
+            clearTempStop(); 
+          } else {
+            clearTempStop(); 
+          }
+        });
+      } else {
+        onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+      }
     },
   });
   return null;
@@ -41,11 +75,14 @@ const MapClickHandler = ({ onMapClick }) => {
 
 MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
+  isEditModeOpen: PropTypes.bool.isRequired,
+  onStopUpdate: PropTypes.func.isRequired, 
+  clearTempStop: PropTypes.func.isRequired,
 };
 
 const ShapeLayer = ({ shapes }) => {
   const map = useMap();
-  const [isInitialLoad, setIsInitialLoad] = useState(true); // İlk yükleme kontrolü
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const shapePositions = shapes
     .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
@@ -58,10 +95,9 @@ const ShapeLayer = ({ shapes }) => {
 
   useEffect(() => {
     if (shapePositions.length > 0 && isInitialLoad) {
-      // Sadece ilk yüklemede çalışır
       const bounds = L.latLngBounds(shapePositions);
       map.fitBounds(bounds, { padding: [50, 50] });
-      setIsInitialLoad(false); // İlk yükleme bitti
+      setIsInitialLoad(false);
     }
   }, [shapePositions, map, isInitialLoad]);
 
@@ -83,14 +119,47 @@ const MapView = ({
   onMapClick,
   shapes,
   clickedCoords,
-  isStopTimeAddOpen,
+  isEditModeOpen,
+  onStopUpdate,
 }) => {
+  const [tempStop, setTempStop] = useState(null);
+
+  const handleStopClick = (stop) => {
+    if (isEditModeOpen) {
+      setTempStop({
+        ...stop,
+        stop_lat: parseFloat(stop.stop_lat),
+        stop_lon: parseFloat(stop.stop_lon),
+      });
+    }
+  };
+
+  const handleDragEnd = (e) => {
+    if (tempStop) {
+      const newLatLng = e.target.getLatLng();
+      setTempStop((prev) => ({
+        ...prev,
+        stop_lat: newLatLng.lat,
+        stop_lon: newLatLng.lng,
+      }));
+    }
+  };
+
+  const clearTempStop = () => {
+    setTempStop(null);
+  };
+
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <MapClickHandler onMapClick={onMapClick} />
+      <MapClickHandler
+        onMapClick={onMapClick}
+        isEditModeOpen={isEditModeOpen}
+        onStopUpdate={onStopUpdate}
+        clearTempStop={clearTempStop}
+      />
 
-      {isStopTimeAddOpen &&
+      {isEditModeOpen &&
         clickedCoords &&
         clickedCoords.lat &&
         clickedCoords.lng && (
@@ -115,6 +184,9 @@ const MapView = ({
                     parseFloat(stopTime.stop_lon),
                   ]}
                   icon={stopIcon}
+                  eventHandlers={{
+                    click: () => handleStopClick(stopTime),
+                  }}
                 >
                   <Popup>
                     {stopTime.stop_sequence}.{" "}
@@ -128,6 +200,23 @@ const MapView = ({
             return null;
           })}
 
+      {tempStop && isEditModeOpen && (
+        <Marker
+          position={[tempStop.stop_lat, tempStop.stop_lon]}
+          icon={tempStopIcon}
+          draggable={true}
+          eventHandlers={{
+            dragend: handleDragEnd,
+          }}
+        >
+          <Popup>
+            Güncellenen Durak: {tempStop.stop_name} <br />
+            Yeni Konum: {tempStop.stop_lat.toFixed(6)},{" "}
+            {tempStop.stop_lon.toFixed(6)}
+          </Popup>
+        </Marker>
+      )}
+
       <ShapeLayer shapes={shapes} />
     </MapContainer>
   );
@@ -137,14 +226,16 @@ MapView.propTypes = {
   mapCenter: PropTypes.arrayOf(PropTypes.number).isRequired,
   zoom: PropTypes.number.isRequired,
   stopsAndTimes: PropTypes.array.isRequired,
-  selectedTrip: PropTypes.string,
+  setStopsAndTimes: PropTypes.func.isRequired,
+  setShapes: PropTypes.func.isRequired,
   onMapClick: PropTypes.func.isRequired,
   shapes: PropTypes.array.isRequired,
   clickedCoords: PropTypes.shape({
     lat: PropTypes.number,
     lng: PropTypes.number,
   }),
-  isStopTimeAddOpen: PropTypes.bool.isRequired,
+  isEditModeOpen: PropTypes.bool.isRequired,
+  onStopUpdate: PropTypes.func.isRequired,
 };
 
 export default MapView;

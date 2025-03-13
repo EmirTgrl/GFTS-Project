@@ -109,7 +109,7 @@ const MapPage = () => {
           onMapClick={handleMapClick}
           shapes={shapes}
           clickedCoords={clickedCoords}
-          isStopTimeAddOpen={isStopTimeAddOpen}
+          isEditModeOpen={isStopTimeAddOpen}
           setStopsAndTimes={setStopsAndTimes}
           setShapes={setShapes}
         />
