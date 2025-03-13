@@ -25,6 +25,7 @@ const MapPage = () => {
   const { project_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [action,setAction] = useState("");
 
   useEffect(() => {
     const { selectedRoute: prevRoute, selectedTrip: prevTrip } =
@@ -100,6 +101,8 @@ const MapPage = () => {
         openStopTimeAdd={openStopTimeAdd}
         closeStopTimeAdd={closeStopTimeAdd}
         isStopTimeAddOpen={isStopTimeAddOpen}
+        action={action}
+        setAction={setAction}
       />
      
         <MapView
@@ -114,7 +117,9 @@ const MapPage = () => {
           setShapes={setShapes}
         />
      
-      <FloatingActions />
+      <FloatingActions 
+        setAction={setAction}
+      />
     </div>
   );
 };
