@@ -4,10 +4,10 @@ import { Modal } from "react-bootstrap";
 import { deleteRouteById, fetchRoutesByAgencyId} from "../../api/routeApi";
 import { fetchCalendarsByProjectId } from "../../api/calendarApi";
 import { fetchAgenciesByProjectId, deleteAgencyById } from "../../api/agencyApi";
-import { fetchTripsByRouteId } from "../../api/tripApi";
+import { fetchTripsByRouteId, deleteTripById } from "../../api/tripApi";
 import { fetchStopsAndStopTimesByTripId, deleteStopTimeById } from "../../api/stopTimeApi";
 import { deleteStopById } from "../../api/stopApi"
-import { fetchShapesByTripId } from "../../api/shapeApi";
+import { fetchShapesByTripId, deleteShape } from "../../api/shapeApi";
 import Swal from "sweetalert2";
 import { ChevronLeft, ChevronRight, Building, Map, BusFront, Clock, Calendar, Bezier } from "react-bootstrap-icons";
 import { Accordion, Pagination, Card, OverlayTrigger, Tooltip } from "react-bootstrap";
@@ -245,7 +245,7 @@ const Sidebar = ({
         setStopsAndTimes((prev) => prev.filter((s) => s.stop_id !== entity.stop_id));
         setSelectedEntities((prev) => ({ ...prev, stop: null }));
       } else if (category === "shape") {
-        await deleteShapeById(entity.shape_id, entity.shape_pt_sequence, token);
+        await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
         setShapes((prev) => prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence));
         setSelectedEntities((prev) => ({ ...prev, shape: null }));
       }

@@ -8,7 +8,7 @@ import {
   useMap,
   CircleMarker
 } from "react-leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"; // useState ekledim
 import PropTypes from "prop-types";
 import L from "leaflet";
 import MapUpdater from "./MapUpdater.jsx"
@@ -31,44 +31,11 @@ const clickIcon = new L.Icon({
   shadowSize: [32, 32],
 });
 
-const tempStopIcon = new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png", 
-  iconSize: [30, 48],
-  iconAnchor: [15, 48],
-  popupAnchor: [1, -34],
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  shadowSize: [41, 41],
-});
-
-const MapClickHandler = ({
-  onMapClick,
-  isEditModeOpen,
-  onStopUpdate,
-  clearTempStop,
-}) => {
-  const map = useMap();
+const MapClickHandler = ({ onMapClick }) => {
   useMapEvents({
     click(e) {
-      if (isEditModeOpen) {
-        const { lat, lng } = e.latlng;
-        Swal.fire({
-          title: "Durağı buraya güncelleyecek misiniz?",
-          text: `Yeni Konum: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-          icon: "question",
-          showCancelButton: true,
-          confirmButtonText: "Evet",
-          cancelButtonText: "Hayır",
-        }).then((result) => {
-          if (result.isConfirmed) {
-            onStopUpdate({ lat, lng }); 
-            clearTempStop(); 
-          } else {
-            clearTempStop(); 
-          }
-        });
-      } else {
-        onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
-      }
+      const { lat, lng } = e.latlng;
+      onMapClick({ lat, lng });
     },
   });
   return null;
@@ -76,14 +43,11 @@ const MapClickHandler = ({
 
 MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
-  isEditModeOpen: PropTypes.bool.isRequired,
-  onStopUpdate: PropTypes.func.isRequired, 
-  clearTempStop: PropTypes.func.isRequired,
 };
 
 const ShapeLayer = ({ shapes, editorMode }) => {
   const map = useMap();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // İlk yükleme kontrolü
 
   const shapePositions = shapes
     .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
@@ -148,40 +112,13 @@ const MapView = ({
   editorMode,
   setEditorMode
 }) => {
-  const [tempStop, setTempStop] = useState(null);
-
-  const handleStopClick = (stop) => {
-    if (isEditModeOpen) {
-      setTempStop({
-        ...stop,
-        stop_lat: parseFloat(stop.stop_lat),
-        stop_lon: parseFloat(stop.stop_lon),
-      });
-    }
-  };
-
-  const handleDragEnd = (e) => {
-    if (tempStop) {
-      const newLatLng = e.target.getLatLng();
-      setTempStop((prev) => ({
-        ...prev,
-        stop_lat: newLatLng.lat,
-        stop_lon: newLatLng.lng,
-      }));
-    }
-  };
-
-  const clearTempStop = () => {
-    setTempStop(null);
-  };
-
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <MapClickHandler onMapClick={onMapClick} />
       <MapUpdater mapCenter={mapCenter} zoom={zoom} />
 
-      {isEditModeOpen &&
+      {isStopTimeAddOpen &&
         clickedCoords &&
         clickedCoords.lat &&
         clickedCoords.lng && (
@@ -206,9 +143,6 @@ const MapView = ({
                     parseFloat(stopTime.stop_lon),
                   ]}
                   icon={stopIcon}
-                  eventHandlers={{
-                    click: () => handleStopClick(stopTime),
-                  }}
                 >
                   <Popup>
                     {stopTime.stop_sequence}.{" "}
@@ -231,16 +165,14 @@ MapView.propTypes = {
   mapCenter: PropTypes.arrayOf(PropTypes.number).isRequired,
   zoom: PropTypes.number.isRequired,
   stopsAndTimes: PropTypes.array.isRequired,
-  setStopsAndTimes: PropTypes.func.isRequired,
-  setShapes: PropTypes.func.isRequired,
+  selectedTrip: PropTypes.string,
   onMapClick: PropTypes.func.isRequired,
   shapes: PropTypes.array.isRequired,
   clickedCoords: PropTypes.shape({
     lat: PropTypes.number,
     lng: PropTypes.number,
   }),
-  isEditModeOpen: PropTypes.bool.isRequired,
-  onStopUpdate: PropTypes.func.isRequired,
+  isStopTimeAddOpen: PropTypes.bool.isRequired,
 };
 
 export default MapView;
