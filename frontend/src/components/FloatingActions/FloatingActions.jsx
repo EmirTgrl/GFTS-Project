@@ -1,4 +1,5 @@
 import { PlusLg, Pencil, List, Trash, Map, Floppy, XLg} from "react-bootstrap-icons";
+import PropTypes from "prop-types";
 import "../../styles/FloatingActions.css";
 
 const FloatingActions = ({ setAction, editorMode, setEditorMode }) => {
@@ -38,6 +39,9 @@ const FloatingActions = ({ setAction, editorMode, setEditorMode }) => {
       </div>
     </div>
   );
+};
+FloatingActions.propTypes = {
+  setAction: PropTypes.func.isRequired,
 };
 
 export default FloatingActions;
