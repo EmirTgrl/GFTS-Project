@@ -5,7 +5,8 @@ import { deleteRouteById, fetchRoutesByAgencyId} from "../../api/routeApi";
 import { fetchCalendarsByProjectId } from "../../api/calendarApi";
 import { fetchAgenciesByProjectId, deleteAgencyById } from "../../api/agencyApi";
 import { fetchTripsByRouteId } from "../../api/tripApi";
-import { fetchStopsAndStopTimesByTripId } from "../../api/stopTimeApi";
+import { fetchStopsAndStopTimesByTripId, deleteStopTimeById } from "../../api/stopTimeApi";
+import { deleteStopById } from "../../api/stopApi"
 import { fetchShapesByTripId } from "../../api/shapeApi";
 import Swal from "sweetalert2";
 import { ChevronLeft, ChevronRight, Building, Map, BusFront, Clock, Calendar, Bezier } from "react-bootstrap-icons";
@@ -237,7 +238,8 @@ const Sidebar = ({
         setStopsAndTimes([]);
         setShapes([]);
       } else if (category === "stop") {
-        await deleteStopById(entity.stop_id, token);
+        await deleteStopTimeById(entity.trip_id, entity.stop_id, token)
+        await deleteStopById(entity.stop_id, token)
         setStopsAndTimes((prev) => prev.filter((s) => s.stop_id !== entity.stop_id));
         setSelectedEntities((prev) => ({ ...prev, stop: null }));
       } else if (category === "shape") {
