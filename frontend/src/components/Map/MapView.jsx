@@ -8,7 +8,7 @@ import {
   useMap,
   CircleMarker,
 } from "react-leaflet";
-import { useEffect, useState } from "react"; // useState ekledim
+import { useEffect, useState } from "react"; 
 import PropTypes from "prop-types";
 import L from "leaflet";
 import MapUpdater from "./MapUpdater.jsx";
@@ -47,7 +47,7 @@ MapClickHandler.propTypes = {
 
 const ShapeLayer = ({ shapes, editorMode, selectedShape }) => {
   const map = useMap();
-  const [isInitialLoad, setIsInitialLoad] = useState(true); // İlk yükleme kontrolü
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const shapePositions = shapes
     .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
@@ -89,14 +89,15 @@ const ShapeLayer = ({ shapes, editorMode, selectedShape }) => {
           const isHighlighted = isSelected(shape, selectedShape);
           return (
             <CircleMarker
-              key={index}
+              key={`shape-point-${index}`}
               center={position}
-              radius={isHighlighted ? 8 : 4} // Seçiliyse daha büyük
-              fillColor={isHighlighted ? "yellow" : "white"} // Seçiliyse sarı
-              color={isHighlighted ? "red" : "red"}
-              weight={isHighlighted ? 2 : 1} // Seçiliyse kalın kenar
+              radius={isHighlighted ? 12 : 4}
+              fillColor={isHighlighted ? "#0066FF" : "#808080"}
+              color={isHighlighted ? "#0066FF" : "#808080"}
+              weight={isHighlighted ? 4 : 1}
               opacity={1}
-              fillOpacity={1}
+              fillOpacity={isHighlighted ? 1 : 0.3}
+              pane={isHighlighted ? "markerPane" : "overlayPane"}
             >
               <Popup>Shape Point {shape.shape_pt_sequence}</Popup>
             </CircleMarker>

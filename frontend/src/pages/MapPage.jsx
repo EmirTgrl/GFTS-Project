@@ -22,7 +22,14 @@ const MapPage = () => {
   const [clickedCoords, setClickedCoords] = useState(null);
   const [shapes, setShapes] = useState([]);
   const [isStopTimeAddOpen, setIsStopTimeAddOpen] = useState(false);
-  const [selectedShape, setSelectedShape] = useState(null);
+  const [selectedEntities, setSelectedEntities] = useState({
+    agency: null,
+    route: null,
+    trip: null,
+    calendar: null,
+    shape: null,
+    stop: null,
+  });
   const { project_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,8 +39,14 @@ const MapPage = () => {
   useEffect(() => {
     const { selectedRoute: prevRoute, selectedTrip: prevTrip } =
       location.state || {};
-    if (prevRoute) setSelectedRoute(prevRoute);
-    if (prevTrip) setSelectedTrip(prevTrip);
+    if (prevRoute) {
+      setSelectedRoute(prevRoute);
+      setSelectedEntities((prev) => ({ ...prev, route: prevRoute }));
+    }
+    if (prevTrip) {
+      setSelectedTrip(prevTrip);
+      setSelectedEntities((prev) => ({ ...prev, trip: prevTrip }));
+    }
   }, [location.state]);
 
   useEffect(() => {
@@ -43,14 +56,17 @@ const MapPage = () => {
         setAgencies(Array.isArray(agencyData) ? agencyData : []);
       } catch (error) {
         console.error("Error loading data:", error);
-        setCalendars([]);
         setAgencies([]);
+        setCalendars([]);
+        navigate("/login");
       }
     };
     if (token && project_id) {
       loadData();
+    } else {
+      navigate("/login");
     }
-  }, [token, project_id]);
+  }, [token, project_id, navigate]);
 
   const handleMapClick = (coords) => {
     setClickedCoords(coords);
@@ -105,28 +121,29 @@ const MapPage = () => {
         isStopTimeAddOpen={isStopTimeAddOpen}
         action={action}
         setAction={setAction}
-        setSelectedShape={setSelectedShape}
+        selectedEntities={selectedEntities}
+        setSelectedEntities={setSelectedEntities}
       />
 
       <MapView
         mapCenter={mapCenter}
         zoom={zoom}
         stopsAndTimes={stopsAndTimes}
+        setStopsAndTimes={setStopsAndTimes}
+        setShapes={setShapes}
         onMapClick={handleMapClick}
         shapes={shapes}
         clickedCoords={clickedCoords}
-        isEditModeOpen={isStopTimeAddOpen}
-        setStopsAndTimes={setStopsAndTimes}
-        setShapes={setShapes}
+        isStopTimeAddOpen={isStopTimeAddOpen}
         editorMode={editorMode}
         setEditorMode={setEditorMode}
-        selectedShape={selectedShape} 
+        selectedEntities={selectedEntities}
       />
 
       <FloatingActions
         setAction={setAction}
-        setEditorMode={setEditorMode}
         editorMode={editorMode}
+        setEditorMode={setEditorMode}
       />
     </div>
   );

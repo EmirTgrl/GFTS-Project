@@ -4,22 +4,10 @@ import { Modal } from "react-bootstrap";
 import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
 import { fetchCalendarsByProjectId } from "../../api/calendarApi";
 import Swal from "sweetalert2";
-import { List, ArrowUpRight, ArrowDownLeft, Building, Map, BusFront, Clock, Calendar, Bezier } from "react-bootstrap-icons";
-import { Accordion, Pagination, Card, OverlayTrigger, Tooltip } from "react-bootstrap";
 import {
-  fetchAgenciesByProjectId,
-  deleteAgencyById,
-} from "../../api/agencyApi";
-import { deleteTripById, fetchTripsByRouteId } from "../../api/tripApi";
-import {
-  fetchStopsAndStopTimesByTripId,
-  deleteStopTimeById,
-} from "../../api/stopTimeApi";
-import { deleteStopById } from "../../api/stopApi";
-import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
-import {
-  ChevronLeft,
-  ChevronRight,
+  List,
+  ArrowUpRight,
+  ArrowDownLeft,
   Building,
   Map,
   BusFront,
@@ -34,6 +22,17 @@ import {
   OverlayTrigger,
   Tooltip,
 } from "react-bootstrap";
+import {
+  fetchAgenciesByProjectId,
+  deleteAgencyById,
+} from "../../api/agencyApi";
+import { deleteTripById, fetchTripsByRouteId } from "../../api/tripApi";
+import {
+  fetchStopsAndStopTimesByTripId,
+  deleteStopTimeById,
+} from "../../api/stopTimeApi";
+import { deleteStopById } from "../../api/stopApi";
+import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -47,7 +46,13 @@ import CalendarEditPage from "../../pages/CalendarEditPage";
 import ShapeAddPage from "../../pages/ShapeAddPage";
 import ShapeEditPage from "../../pages/ShapeEditPage";
 import "../../styles/Sidebar.css";
-import { TrainFront, TrainFreightFront, LifePreserver, TrainLightrailFront, SignRailroad } from 'react-bootstrap-icons';
+import {
+  TrainFront,
+  TrainFreightFront,
+  LifePreserver,
+  TrainLightrailFront,
+  SignRailroad,
+} from "react-bootstrap-icons";
 
 const Sidebar = ({
   token,
@@ -70,7 +75,6 @@ const Sidebar = ({
   shapes,
   action,
   setAction,
-  setSelectedShape, // Yeni prop eklendi
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -202,7 +206,6 @@ const Sidebar = ({
         setMapCenter(null);
         setZoom(10);
         setActiveKey("0");
-        setSelectedShape(null); // Seçili şekli sıfırla
         const agencyRoutes = await fetchRoutesByAgencyId(
           entity.agency_id,
           project_id,
@@ -227,7 +230,6 @@ const Sidebar = ({
         setMapCenter(null);
         setZoom(10);
         setActiveKey("1");
-        setSelectedShape(null); // Seçili şekli sıfırla
         const routeTrips = await fetchTripsByRouteId(entity.route_id, token);
         setTrips(routeTrips);
         setSelectedCategory("route");
@@ -244,7 +246,6 @@ const Sidebar = ({
         setStopsAndTimes([]);
         setShapes([]);
         setActiveKey("2");
-        setSelectedShape(null); // Seçili şekli sıfırla
         const [tripStops, tripShapes] = await Promise.all([
           fetchStopsAndStopTimesByTripId(entity.trip_id, project_id, token),
           fetchShapesByTripId(project_id, entity.trip_id, token),
@@ -268,7 +269,6 @@ const Sidebar = ({
         setSelectedEntities((prev) => ({ ...prev, stop: entity }));
         setSelectedCategory("stop");
         setActiveKey("3");
-        setSelectedShape(null); // Seçili şekli sıfırla
         if (entity.stop_lat && entity.stop_lon) {
           setMapCenter([
             parseFloat(entity.stop_lat),
@@ -283,7 +283,6 @@ const Sidebar = ({
         setSelectedEntities((prev) => ({ ...prev, shape: entity }));
         setSelectedCategory("shape");
         setActiveKey("5");
-        setSelectedShape(entity); // Seçilen şekli haritaya ilet
         if (entity.shape_pt_lat && entity.shape_pt_lon) {
           setMapCenter([
             parseFloat(entity.shape_pt_lat),
@@ -318,7 +317,6 @@ const Sidebar = ({
         setTrips([]);
         setStopsAndTimes([]);
         setShapes([]);
-        setSelectedShape(null);
       } else if (category === "route") {
         await deleteRouteById(entity.route_id, token);
         setRoutes((prev) => prev.filter((r) => r.route_id !== entity.route_id));
@@ -332,7 +330,6 @@ const Sidebar = ({
         setTrips([]);
         setStopsAndTimes([]);
         setShapes([]);
-        setSelectedShape(null);
       } else if (category === "trip") {
         await deleteTripById(entity.trip_id, token);
         setTrips((prev) => prev.filter((t) => t.trip_id !== entity.trip_id));
@@ -344,7 +341,6 @@ const Sidebar = ({
         }));
         setStopsAndTimes([]);
         setShapes([]);
-        setSelectedShape(null);
       } else if (category === "stop") {
         await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
         await deleteStopById(entity.stop_id, token);
@@ -352,14 +348,12 @@ const Sidebar = ({
           prev.filter((s) => s.stop_id !== entity.stop_id)
         );
         setSelectedEntities((prev) => ({ ...prev, stop: null }));
-        setSelectedShape(null);
       } else if (category === "shape") {
         await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
         setShapes((prev) =>
           prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
         );
         setSelectedEntities((prev) => ({ ...prev, shape: null }));
-        setSelectedShape(null);
       }
       Swal.fire("Deleted!", `${category} has been deleted.`, "success");
     } catch (error) {
@@ -578,9 +572,9 @@ const Sidebar = ({
       case 12:
         return <SignRailroad />; // Assuming Monorail can also use Rail icon
       default:
-        return <BusFront />
+        return <BusFront />;
     }
-  }
+  };
 
   return (
     <div className="sidebar-container">
@@ -599,13 +593,14 @@ const Sidebar = ({
                 paginateItems(agencies, pageAgencies).map((agency) => (
                   <Card
                     key={agency.agency_id}
-                    className={`mb-2 item-card ${selectedEntities.agency?.agency_id === agency.agency_id
+                    className={`mb-2 item-card ${
+                      selectedEntities.agency?.agency_id === agency.agency_id
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("agency", agency)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    <Card.Body className="d-flex align-items-center p-2">
                       <OverlayTrigger
                         placement="top"
                         overlay={renderTooltip(agency.agency_name)}
@@ -631,16 +626,24 @@ const Sidebar = ({
                 paginateItems(routes, pageRoutes).map((route) => (
                   <Card
                     key={route.route_id}
-                    className={`mb-2 item-card ${selectedEntities.route?.route_id === route.route_id
+                    className={`mb-2 item-card ${
+                      selectedEntities.route?.route_id === route.route_id
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("route", route)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    <Card.Body className="d-flex align-items-center p-2">
                       {getRouteTypeIcon(route.route_type)}
-                      <OverlayTrigger placement="top" overlay={renderTooltip(route.route_long_name || route.route_id)}>
-                        <span className="item-title">{route.route_long_name || route.route_id}</span>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={renderTooltip(
+                          route.route_long_name || route.route_id
+                        )}
+                      >
+                        <span className="item-title ms-2">
+                          {route.route_long_name || route.route_id}
+                        </span>
                       </OverlayTrigger>
                     </Card.Body>
                   </Card>
@@ -665,16 +668,28 @@ const Sidebar = ({
                 paginateItems(trips, pageTrips).map((trip) => (
                   <Card
                     key={trip.trip_id}
-                    className={`mb-2 item-card ${selectedEntities.trip?.trip_id === trip.trip_id
+                    className={`mb-2 item-card ${
+                      selectedEntities.trip?.trip_id === trip.trip_id
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("trip", trip)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
-                      {trip.direction_id === 0 ? <ArrowDownLeft /> : <ArrowUpRight />}
-                      <OverlayTrigger placement="top" overlay={renderTooltip(trip.trip_headsign || trip.trip_id)}>
-                        <span className="item-title">{trip.trip_headsign || trip.trip_id}</span>
+                    <Card.Body className="d-flex align-items-center p-2">
+                      {trip.direction_id === 0 ? (
+                        <ArrowDownLeft />
+                      ) : (
+                        <ArrowUpRight />
+                      )}
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={renderTooltip(
+                          trip.trip_headsign || trip.trip_id
+                        )}
+                      >
+                        <span className="item-title ms-2">
+                          {trip.trip_headsign || trip.trip_id}
+                        </span>
                       </OverlayTrigger>
                     </Card.Body>
                   </Card>
@@ -699,13 +714,14 @@ const Sidebar = ({
                 paginateItems(stopsAndTimes, pageStops).map((stop) => (
                   <Card
                     key={stop.stop_id + "-" + stop.trip_id}
-                    className={`mb-2 item-card ${selectedEntities.stop?.stop_id === stop.stop_id
+                    className={`mb-2 item-card ${
+                      selectedEntities.stop?.stop_id === stop.stop_id
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("stop", stop)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    <Card.Body className="d-flex align-items-center p-2">
                       <OverlayTrigger
                         placement="top"
                         overlay={renderTooltip(stop.stop_name || stop.stop_id)}
@@ -737,13 +753,14 @@ const Sidebar = ({
                 paginateItems(calendars, pageCalendars).map((cal) => (
                   <Card
                     key={cal.service_id}
-                    className={`mb-2 item-card ${selectedEntities.calendar?.service_id === cal.service_id
+                    className={`mb-2 item-card ${
+                      selectedEntities.calendar?.service_id === cal.service_id
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("calendar", cal)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    <Card.Body className="d-flex align-items-center p-2">
                       <OverlayTrigger
                         placement="top"
                         overlay={renderTooltip(getActiveDays(cal))}
@@ -769,14 +786,15 @@ const Sidebar = ({
                 paginateItems(shapes, pageShapes).map((shape) => (
                   <Card
                     key={shape.shape_pt_sequence}
-                    className={`mb-2 item-card ${selectedEntities.shape?.shape_pt_sequence ===
-                        shape.shape_pt_sequence
+                    className={`mb-2 item-card ${
+                      selectedEntities.shape?.shape_pt_sequence ===
+                      shape.shape_pt_sequence
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("shape", shape)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    <Card.Body className="d-flex align-items-center p-2">
                       <OverlayTrigger
                         placement="top"
                         overlay={renderTooltip(
@@ -802,7 +820,10 @@ const Sidebar = ({
           </Accordion.Item>
         </Accordion>
       </div>
-      <span onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="sidebar-toggle-icon">
+      <span
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="sidebar-toggle-icon"
+      >
         <List size={30} />
       </span>
       {formConfig && (
@@ -844,7 +865,6 @@ Sidebar.propTypes = {
   shapes: PropTypes.array.isRequired,
   action: PropTypes.string.isRequired,
   setAction: PropTypes.func.isRequired,
-  setSelectedShape: PropTypes.func.isRequired,
 };
 
 export default Sidebar;
