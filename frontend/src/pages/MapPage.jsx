@@ -26,7 +26,7 @@ const MapPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [action,setAction] = useState("");
-  const [editorMode, setEditorMode] = useState("");
+  const [editorMode, setEditorMode] = useState("close");
 
   useEffect(() => {
     const { selectedRoute: prevRoute, selectedTrip: prevTrip } =

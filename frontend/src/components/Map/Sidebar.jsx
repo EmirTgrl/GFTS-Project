@@ -201,12 +201,14 @@ const Sidebar = ({
         setSelectedEntities((prev) => ({ ...prev, stop: entity }));
         setSelectedCategory("stop"); // For editing/deleting via floating actions
         setActiveKey("3"); // Keep "Stops" accordion active
+        setMapCenter([entity.stop_lat, entity.stop_lon])
         break;
   
       case "shape":
         setSelectedEntities((prev) => ({ ...prev, shape: entity }));
         setSelectedCategory("shape"); // For editing/deleting via floating actions
         setActiveKey("5"); // Keep "Shapes" accordion active
+        setMapCenter([entity.shape_pt_lat, entity.shape_pt_lon])
         break;
   
       default:

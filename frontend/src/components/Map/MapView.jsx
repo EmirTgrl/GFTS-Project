@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from "react"; // useState ekledim
 import PropTypes from "prop-types";
 import L from "leaflet";
+import MapUpdater from "./MapUpdater.jsx"
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -115,6 +116,7 @@ const MapView = ({
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <MapClickHandler onMapClick={onMapClick} />
+      <MapUpdater mapCenter={mapCenter} zoom={zoom} />
 
       {isStopTimeAddOpen &&
         clickedCoords &&
