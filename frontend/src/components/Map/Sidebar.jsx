@@ -1,16 +1,39 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { Modal } from "react-bootstrap";
-import { deleteRouteById, fetchRoutesByAgencyId} from "../../api/routeApi";
+import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
 import { fetchCalendarsByProjectId } from "../../api/calendarApi";
-import { fetchAgenciesByProjectId, deleteAgencyById } from "../../api/agencyApi";
-import { fetchTripsByRouteId, deleteTripById } from "../../api/tripApi";
-import { fetchStopsAndStopTimesByTripId, deleteStopTimeById } from "../../api/stopTimeApi";
-import { deleteStopById } from "../../api/stopApi"
-import { fetchShapesByTripId, deleteShape } from "../../api/shapeApi";
 import Swal from "sweetalert2";
 import { List, ArrowUpRight, ArrowDownLeft, Building, Map, BusFront, Clock, Calendar, Bezier } from "react-bootstrap-icons";
-import { Accordion, Pagination, Card, OverlayTrigger, Tooltip} from "react-bootstrap";
+import { Accordion, Pagination, Card, OverlayTrigger, Tooltip } from "react-bootstrap";
+import {
+  fetchAgenciesByProjectId,
+  deleteAgencyById,
+} from "../../api/agencyApi";
+import { deleteTripById, fetchTripsByRouteId } from "../../api/tripApi";
+import {
+  fetchStopsAndStopTimesByTripId,
+  deleteStopTimeById,
+} from "../../api/stopTimeApi";
+import { deleteStopById } from "../../api/stopApi";
+import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Building,
+  Map,
+  BusFront,
+  Clock,
+  Calendar,
+  Bezier,
+} from "react-bootstrap-icons";
+import {
+  Accordion,
+  Pagination,
+  Card,
+  OverlayTrigger,
+  Tooltip,
+} from "react-bootstrap";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -47,6 +70,7 @@ const Sidebar = ({
   shapes,
   action,
   setAction,
+  setSelectedShape, // Yeni prop eklendi
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -63,21 +87,20 @@ const Sidebar = ({
     trip: null,
     calendar: null,
     shape: null,
-    stop: null, 
+    stop: null,
   });
   const [formConfig, setFormConfig] = useState(null);
   const itemsPerPage = 8;
 
   const categoryMap = {
-    "0": "agency",
-    "1": "route",
-    "2": "trip",
-    "3": "stop",
-    "4": "calendar",
-    "5": "shape",
+    0: "agency",
+    1: "route",
+    2: "trip",
+    3: "stop",
+    4: "calendar",
+    5: "shape",
   };
 
-  // Load initial data (agencies and calendars)
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -94,11 +117,10 @@ const Sidebar = ({
     if (token && project_id) loadInitialData();
   }, [token, project_id, setAgencies, setCalendars]);
 
-  // Handle actions from FloatingActions
   useEffect(() => {
     if (action) {
       handleAction(action);
-      setAction(""); // Reset action after handling
+      setAction("");
     }
   }, [action, activeKey, selectedCategory, selectedEntities]);
 
@@ -137,9 +159,34 @@ const Sidebar = ({
     }
   };
 
+  const calculateCenter = (shapes, stops) => {
+    let latSum = 0;
+    let lonSum = 0;
+    let count = 0;
+
+    if (shapes && shapes.length > 0) {
+      shapes.forEach((shape) => {
+        latSum += parseFloat(shape.shape_pt_lat);
+        lonSum += parseFloat(shape.shape_pt_lon);
+        count++;
+      });
+    } else if (stops && stops.length > 0) {
+      stops.forEach((stop) => {
+        latSum += parseFloat(stop.stop_lat);
+        lonSum += parseFloat(stop.stop_lon);
+        count++;
+      });
+    }
+
+    if (count > 0) {
+      return [latSum / count, lonSum / count];
+    }
+    return null;
+  };
+
   const handleSelectionChange = async (category, entity) => {
     switch (category) {
-      case "agency":
+      case "agency": {
         setSelectedEntities((prev) => ({
           ...prev,
           agency: entity,
@@ -153,13 +200,20 @@ const Sidebar = ({
         setStopsAndTimes([]);
         setShapes([]);
         setMapCenter(null);
-        setActiveKey("0"); 
-        const agencyRoutes = await fetchRoutesByAgencyId(entity.agency_id, project_id, token);
+        setZoom(10);
+        setActiveKey("0");
+        setSelectedShape(null); // Seçili şekli sıfırla
+        const agencyRoutes = await fetchRoutesByAgencyId(
+          entity.agency_id,
+          project_id,
+          token
+        );
         setRoutes(agencyRoutes);
-        setSelectedCategory("agency")
+        setSelectedCategory("agency");
         break;
-  
-      case "route":
+      }
+
+      case "route": {
         setSelectedEntities((prev) => ({
           ...prev,
           route: entity,
@@ -171,13 +225,16 @@ const Sidebar = ({
         setStopsAndTimes([]);
         setShapes([]);
         setMapCenter(null);
-        setActiveKey("1"); // Open "Trips" accordion
+        setZoom(10);
+        setActiveKey("1");
+        setSelectedShape(null); // Seçili şekli sıfırla
         const routeTrips = await fetchTripsByRouteId(entity.route_id, token);
         setTrips(routeTrips);
-        setSelectedCategory("route")
+        setSelectedCategory("route");
         break;
-  
-      case "trip":
+      }
+
+      case "trip": {
         setSelectedEntities((prev) => ({
           ...prev,
           trip: entity,
@@ -186,32 +243,57 @@ const Sidebar = ({
         }));
         setStopsAndTimes([]);
         setShapes([]);
-        setMapCenter(null);
-        setActiveKey("2"); // Open "Stops" accordion
+        setActiveKey("2");
+        setSelectedShape(null); // Seçili şekli sıfırla
         const [tripStops, tripShapes] = await Promise.all([
           fetchStopsAndStopTimesByTripId(entity.trip_id, project_id, token),
           fetchShapesByTripId(project_id, entity.trip_id, token),
         ]);
         setStopsAndTimes(tripStops);
         setShapes(tripShapes);
-        setMapCenter(tripShapes.length > 0 ? [tripShapes[0].shape_pt_lat, tripShapes[0].shape_pt_lon] : null);
-        setSelectedCategory("trip"); 
+
+        const center = calculateCenter(tripShapes, tripStops);
+        if (center) {
+          setMapCenter(center);
+          setZoom(12);
+        } else {
+          setMapCenter(null);
+          setZoom(10);
+        }
+        setSelectedCategory("trip");
         break;
-  
-      case "stop":
+      }
+
+      case "stop": {
         setSelectedEntities((prev) => ({ ...prev, stop: entity }));
-        setSelectedCategory("stop"); // For editing/deleting via floating actions
-        setActiveKey("3"); // Keep "Stops" accordion active
-        setMapCenter([entity.stop_lat, entity.stop_lon])
+        setSelectedCategory("stop");
+        setActiveKey("3");
+        setSelectedShape(null); // Seçili şekli sıfırla
+        if (entity.stop_lat && entity.stop_lon) {
+          setMapCenter([
+            parseFloat(entity.stop_lat),
+            parseFloat(entity.stop_lon),
+          ]);
+          setZoom(18);
+        }
         break;
-  
-      case "shape":
+      }
+
+      case "shape": {
         setSelectedEntities((prev) => ({ ...prev, shape: entity }));
-        setSelectedCategory("shape"); // For editing/deleting via floating actions
-        setActiveKey("5"); // Keep "Shapes" accordion active
-        setMapCenter([entity.shape_pt_lat, entity.shape_pt_lon])
+        setSelectedCategory("shape");
+        setActiveKey("5");
+        setSelectedShape(entity); // Seçilen şekli haritaya ilet
+        if (entity.shape_pt_lat && entity.shape_pt_lon) {
+          setMapCenter([
+            parseFloat(entity.shape_pt_lat),
+            parseFloat(entity.shape_pt_lon),
+          ]);
+          setZoom(18);
+        }
         break;
-  
+      }
+
       default:
         break;
     }
@@ -221,75 +303,204 @@ const Sidebar = ({
     try {
       if (category === "agency") {
         await deleteAgencyById(entity.agency_id, token);
-        setAgencies((prev) => prev.filter((a) => a.agency_id !== entity.agency_id));
-        setSelectedEntities((prev) => ({ ...prev, agency: null, route: null, trip: null, stop: null, shape: null }));
+        setAgencies((prev) =>
+          prev.filter((a) => a.agency_id !== entity.agency_id)
+        );
+        setSelectedEntities((prev) => ({
+          ...prev,
+          agency: null,
+          route: null,
+          trip: null,
+          stop: null,
+          shape: null,
+        }));
         setRoutes([]);
         setTrips([]);
         setStopsAndTimes([]);
         setShapes([]);
+        setSelectedShape(null);
       } else if (category === "route") {
         await deleteRouteById(entity.route_id, token);
         setRoutes((prev) => prev.filter((r) => r.route_id !== entity.route_id));
-        setSelectedEntities((prev) => ({ ...prev, route: null, trip: null, stop: null, shape: null }));
+        setSelectedEntities((prev) => ({
+          ...prev,
+          route: null,
+          trip: null,
+          stop: null,
+          shape: null,
+        }));
         setTrips([]);
         setStopsAndTimes([]);
         setShapes([]);
+        setSelectedShape(null);
       } else if (category === "trip") {
         await deleteTripById(entity.trip_id, token);
         setTrips((prev) => prev.filter((t) => t.trip_id !== entity.trip_id));
-        setSelectedEntities((prev) => ({ ...prev, trip: null, stop: null, shape: null }));
+        setSelectedEntities((prev) => ({
+          ...prev,
+          trip: null,
+          stop: null,
+          shape: null,
+        }));
         setStopsAndTimes([]);
         setShapes([]);
+        setSelectedShape(null);
       } else if (category === "stop") {
-        await deleteStopTimeById(entity.trip_id, entity.stop_id, token)
-        await deleteStopById(entity.stop_id, token)
-        setStopsAndTimes((prev) => prev.filter((s) => s.stop_id !== entity.stop_id));
+        await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
+        await deleteStopById(entity.stop_id, token);
+        setStopsAndTimes((prev) =>
+          prev.filter((s) => s.stop_id !== entity.stop_id)
+        );
         setSelectedEntities((prev) => ({ ...prev, stop: null }));
+        setSelectedShape(null);
       } else if (category === "shape") {
         await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
-        setShapes((prev) => prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence));
+        setShapes((prev) =>
+          prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
+        );
         setSelectedEntities((prev) => ({ ...prev, shape: null }));
+        setSelectedShape(null);
       }
       Swal.fire("Deleted!", `${category} has been deleted.`, "success");
     } catch (error) {
+      console.error("Error deleting entity:", error);
       Swal.fire("Error", `Failed to delete ${category}.`, "error");
     }
   };
 
-  // Render the appropriate form in the modal
   const getFormComponent = () => {
     const { action, category, entity } = formConfig;
     if (action === "add") {
       switch (category) {
         case "agency":
-          return <AgencyAddPage project_id={project_id} onClose={() => setFormConfig(null)} setAgencies={setAgencies} />;
+          return (
+            <AgencyAddPage
+              project_id={project_id}
+              onClose={() => setFormConfig(null)}
+              setAgencies={setAgencies}
+            />
+          );
         case "route":
-          return <RouteAddPage onClose={() => setFormConfig(null)} setRoutes={setRoutes} selectedAgency={selectedEntities.agency} project_id={project_id} />;
+          return (
+            <RouteAddPage
+              onClose={() => setFormConfig(null)}
+              setRoutes={setRoutes}
+              selectedAgency={selectedEntities.agency}
+              project_id={project_id}
+            />
+          );
         case "trip":
-          return <TripAddPage project_id={project_id} onClose={() => setFormConfig(null)} setTrips={setTrips} calendars={calendars} selectedRoute={selectedEntities.route} />;
+          return (
+            <TripAddPage
+              project_id={project_id}
+              onClose={() => setFormConfig(null)}
+              setTrips={setTrips}
+              calendars={calendars}
+              selectedRoute={selectedEntities.route}
+            />
+          );
         case "stop":
-          return <StopTimeAddPage project_id={project_id} trip_id={selectedEntities.trip?.trip_id} onClose={() => setFormConfig(null)} setStopsAndTimes={setStopsAndTimes} initialLat={clickedCoords?.lat} initialLon={clickedCoords?.lng} resetClickedCoords={resetClickedCoords} />;
+          return (
+            <StopTimeAddPage
+              project_id={project_id}
+              trip_id={selectedEntities.trip?.trip_id}
+              onClose={() => setFormConfig(null)}
+              setStopsAndTimes={setStopsAndTimes}
+              initialLat={clickedCoords?.lat}
+              initialLon={clickedCoords?.lng}
+              resetClickedCoords={resetClickedCoords}
+            />
+          );
         case "calendar":
-          return <CalendarAddPage project_id={project_id} onClose={() => setFormConfig(null)} setCalendars={setCalendars} />;
+          return (
+            <CalendarAddPage
+              project_id={project_id}
+              onClose={() => setFormConfig(null)}
+              setCalendars={setCalendars}
+            />
+          );
         case "shape":
-          return <ShapeAddPage project_id={project_id} onClose={() => setFormConfig(null)} shape_id={shapes[0]?.shape_id || ""} setShapes={setShapes} clickedCoords={clickedCoords} />;
+          return (
+            <ShapeAddPage
+              project_id={project_id}
+              onClose={() => setFormConfig(null)}
+              shape_id={shapes[0]?.shape_id || ""}
+              setShapes={setShapes}
+              clickedCoords={clickedCoords}
+            />
+          );
         default:
           return null;
       }
     } else if (action === "edit") {
       switch (category) {
         case "agency":
-          return <AgencyEditPage project_id={project_id} agency_id={entity.agency_id} onClose={() => setFormConfig(null)} setAgencies={setAgencies} agencies={agencies} />;
+          return (
+            <AgencyEditPage
+              project_id={project_id}
+              agency_id={entity.agency_id}
+              onClose={() => setFormConfig(null)}
+              setAgencies={setAgencies}
+              agencies={agencies}
+            />
+          );
         case "route":
-          return <RouteEditPage agencies={agencies} route_id={entity.route_id} routes={routes} onClose={() => setFormConfig(null)} setRoutes={setRoutes} project_id={project_id} />;
+          return (
+            <RouteEditPage
+              agencies={agencies}
+              route_id={entity.route_id}
+              routes={routes}
+              onClose={() => setFormConfig(null)}
+              setRoutes={setRoutes}
+              project_id={project_id}
+            />
+          );
         case "trip":
-          return <TripEditPage project_id={project_id} trip_id={entity.trip_id} onClose={() => setFormConfig(null)} setTrips={setTrips} routes={routes} calendars={calendars} selectedRoute={selectedEntities.route} trips={trips} />;
+          return (
+            <TripEditPage
+              project_id={project_id}
+              trip_id={entity.trip_id}
+              onClose={() => setFormConfig(null)}
+              setTrips={setTrips}
+              routes={routes}
+              calendars={calendars}
+              selectedRoute={selectedEntities.route}
+              trips={trips}
+            />
+          );
         case "stop":
-          return <StopTimeEditPage project_id={project_id} trip_id={selectedEntities.trip?.trip_id} stop_id={entity.stop_id} onClose={() => setFormConfig(null)} setStopsAndTimes={setStopsAndTimes} stopsAndTimes={stopsAndTimes} />;
+          return (
+            <StopTimeEditPage
+              project_id={project_id}
+              trip_id={selectedEntities.trip?.trip_id}
+              stop_id={entity.stop_id}
+              onClose={() => setFormConfig(null)}
+              setStopsAndTimes={setStopsAndTimes}
+              stopsAndTimes={stopsAndTimes}
+            />
+          );
         case "calendar":
-          return <CalendarEditPage project_id={project_id} service_id={entity.service_id} onClose={() => setFormConfig(null)} setCalendars={setCalendars} calendars={calendars} />;
+          return (
+            <CalendarEditPage
+              project_id={project_id}
+              service_id={entity.service_id}
+              onClose={() => setFormConfig(null)}
+              setCalendars={setCalendars}
+              calendars={calendars}
+            />
+          );
         case "shape":
-          return <ShapeEditPage project_id={project_id} shape_id={entity.shape_id} shape_pt_sequence={entity.shape_pt_sequence} onClose={() => setFormConfig(null)} setShapes={setShapes} shapes={shapes} clickedCoords={clickedCoords} />;
+          return (
+            <ShapeEditPage
+              project_id={project_id}
+              shape_id={entity.shape_id}
+              shape_pt_sequence={entity.shape_pt_sequence}
+              onClose={() => setFormConfig(null)}
+              setShapes={setShapes}
+              shapes={shapes}
+              clickedCoords={clickedCoords}
+            />
+          );
         default:
           return null;
       }
@@ -297,7 +508,6 @@ const Sidebar = ({
     return null;
   };
 
-  // Pagination utility
   const paginateItems = (items, currentPage) => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -309,11 +519,25 @@ const Sidebar = ({
     if (totalPages <= 1) return null;
     return (
       <Pagination size="sm" className="justify-content-center mt-2">
-        <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
-        <Pagination.Prev onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} />
-        <span className="page-info">{currentPage} / {totalPages}</span>
-        <Pagination.Next onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages} />
-        <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
+        <Pagination.First
+          onClick={() => setCurrentPage(1)}
+          disabled={currentPage === 1}
+        />
+        <Pagination.Prev
+          onClick={() => setCurrentPage(currentPage - 1)}
+          disabled={currentPage === 1}
+        />
+        <span className="page-info">
+          {currentPage} / {totalPages}
+        </span>
+        <Pagination.Next
+          onClick={() => setCurrentPage(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        />
+        <Pagination.Last
+          onClick={() => setCurrentPage(totalPages)}
+          disabled={currentPage === totalPages}
+        />
       </Pagination>
     );
   };
@@ -353,26 +577,39 @@ const Sidebar = ({
         return <BusFront />; // Assuming Trolleybus can also use Bus icon
       case 12:
         return <SignRailroad />; // Assuming Monorail can also use Rail icon
-        default:
-          return <BusFront />
-    }}
+      default:
+        return <BusFront />
+    }
+  }
 
   return (
     <div className="sidebar-container">
       <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
-        <Accordion activeKey={activeKey} onSelect={(key) => setActiveKey(key)} className="sidebar-accordion">
+        <Accordion
+          activeKey={activeKey}
+          onSelect={(key) => setActiveKey(key)}
+          className="sidebar-accordion"
+        >
           <Accordion.Item eventKey="0">
-            <Accordion.Header><Building size={20} className="me-2" /> Agencies</Accordion.Header>
+            <Accordion.Header>
+              <Building size={20} className="me-2" /> Agencies
+            </Accordion.Header>
             <Accordion.Body>
               {agencies.length > 0 ? (
                 paginateItems(agencies, pageAgencies).map((agency) => (
                   <Card
                     key={agency.agency_id}
-                    className={`mb-2 item-card ${selectedEntities.agency?.agency_id === agency.agency_id ? "active" : ""}`}
+                    className={`mb-2 item-card ${selectedEntities.agency?.agency_id === agency.agency_id
+                        ? "active"
+                        : ""
+                      }`}
                     onClick={() => handleSelectionChange("agency", agency)}
                   >
                     <Card.Body className="d-flex justify-content-between align-items-center p-2">
-                      <OverlayTrigger placement="top" overlay={renderTooltip(agency.agency_name)}>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={renderTooltip(agency.agency_name)}
+                      >
                         <span className="item-title">{agency.agency_name}</span>
                       </OverlayTrigger>
                     </Card.Body>
@@ -386,17 +623,22 @@ const Sidebar = ({
           </Accordion.Item>
 
           <Accordion.Item eventKey="1">
-            <Accordion.Header><Map size={20} className="me-2" /> Routes</Accordion.Header>
+            <Accordion.Header>
+              <Map size={20} className="me-2" /> Routes
+            </Accordion.Header>
             <Accordion.Body>
               {routes.length > 0 ? (
                 paginateItems(routes, pageRoutes).map((route) => (
                   <Card
                     key={route.route_id}
-                    className={`mb-2 item-card ${selectedEntities.route?.route_id === route.route_id ? "active" : ""}`}
+                    className={`mb-2 item-card ${selectedEntities.route?.route_id === route.route_id
+                        ? "active"
+                        : ""
+                      }`}
                     onClick={() => handleSelectionChange("route", route)}
                   >
                     <Card.Body className="d-flex justify-content-between align-items-center p-2">
-                    {getRouteTypeIcon(route.route_type)}
+                      {getRouteTypeIcon(route.route_type)}
                       <OverlayTrigger placement="top" overlay={renderTooltip(route.route_long_name || route.route_id)}>
                         <span className="item-title">{route.route_long_name || route.route_id}</span>
                       </OverlayTrigger>
@@ -404,20 +646,29 @@ const Sidebar = ({
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">{selectedEntities.agency ? "No routes found." : "Select an agency first."}</p>
+                <p className="text-muted text-center">
+                  {selectedEntities.agency
+                    ? "No routes found."
+                    : "Select an agency first."}
+                </p>
               )}
               {renderPagination(routes, pageRoutes, setPageRoutes)}
             </Accordion.Body>
           </Accordion.Item>
 
           <Accordion.Item eventKey="2">
-            <Accordion.Header><BusFront size={20} className="me-2" /> Trips</Accordion.Header>
+            <Accordion.Header>
+              <BusFront size={20} className="me-2" /> Trips
+            </Accordion.Header>
             <Accordion.Body>
               {trips.length > 0 ? (
                 paginateItems(trips, pageTrips).map((trip) => (
                   <Card
                     key={trip.trip_id}
-                    className={`mb-2 item-card ${selectedEntities.trip?.trip_id === trip.trip_id ? "active" : ""}`}
+                    className={`mb-2 item-card ${selectedEntities.trip?.trip_id === trip.trip_id
+                        ? "active"
+                        : ""
+                      }`}
                     onClick={() => handleSelectionChange("trip", trip)}
                   >
                     <Card.Body className="d-flex justify-content-between align-items-center p-2">
@@ -429,48 +680,74 @@ const Sidebar = ({
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">{selectedEntities.route ? "No trips found." : "Select a route first."}</p>
+                <p className="text-muted text-center">
+                  {selectedEntities.route
+                    ? "No trips found."
+                    : "Select a route first."}
+                </p>
               )}
               {renderPagination(trips, pageTrips, setPageTrips)}
             </Accordion.Body>
           </Accordion.Item>
 
           <Accordion.Item eventKey="3">
-            <Accordion.Header><Clock size={20} className="me-2" /> Stops</Accordion.Header>
+            <Accordion.Header>
+              <Clock size={20} className="me-2" /> Stops
+            </Accordion.Header>
             <Accordion.Body>
               {stopsAndTimes.length > 0 ? (
                 paginateItems(stopsAndTimes, pageStops).map((stop) => (
                   <Card
                     key={stop.stop_id + "-" + stop.trip_id}
-                    className={`mb-2 item-card ${selectedEntities.stop?.stop_id === stop.stop_id ? "active" : ""}`}
+                    className={`mb-2 item-card ${selectedEntities.stop?.stop_id === stop.stop_id
+                        ? "active"
+                        : ""
+                      }`}
                     onClick={() => handleSelectionChange("stop", stop)}
                   >
                     <Card.Body className="d-flex justify-content-between align-items-center p-2">
-                      <OverlayTrigger placement="top" overlay={renderTooltip(stop.stop_name || stop.stop_id)}>
-                        <span className="item-title">{stop.stop_name || stop.stop_id}</span>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={renderTooltip(stop.stop_name || stop.stop_id)}
+                      >
+                        <span className="item-title">
+                          {stop.stop_name || stop.stop_id}
+                        </span>
                       </OverlayTrigger>
                     </Card.Body>
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">{selectedEntities.trip ? "No stops found." : "Select a trip first."}</p>
+                <p className="text-muted text-center">
+                  {selectedEntities.trip
+                    ? "No stops found."
+                    : "Select a trip first."}
+                </p>
               )}
               {renderPagination(stopsAndTimes, pageStops, setPageStops)}
             </Accordion.Body>
           </Accordion.Item>
 
           <Accordion.Item eventKey="4">
-            <Accordion.Header><Calendar size={20} className="me-2" /> Calendars</Accordion.Header>
+            <Accordion.Header>
+              <Calendar size={20} className="me-2" /> Calendars
+            </Accordion.Header>
             <Accordion.Body>
               {calendars.length > 0 ? (
                 paginateItems(calendars, pageCalendars).map((cal) => (
                   <Card
                     key={cal.service_id}
-                    className={`mb-2 item-card ${selectedEntities.calendar?.service_id === cal.service_id ? "active" : ""}`}
+                    className={`mb-2 item-card ${selectedEntities.calendar?.service_id === cal.service_id
+                        ? "active"
+                        : ""
+                      }`}
                     onClick={() => handleSelectionChange("calendar", cal)}
                   >
                     <Card.Body className="d-flex justify-content-between align-items-center p-2">
-                      <OverlayTrigger placement="top" overlay={renderTooltip(getActiveDays(cal))}>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={renderTooltip(getActiveDays(cal))}
+                      >
                         <span className="item-title">{getActiveDays(cal)}</span>
                       </OverlayTrigger>
                     </Card.Body>
@@ -484,24 +761,41 @@ const Sidebar = ({
           </Accordion.Item>
 
           <Accordion.Item eventKey="5">
-            <Accordion.Header><Bezier size={20} className="me-2" /> Shapes</Accordion.Header>
+            <Accordion.Header>
+              <Bezier size={20} className="me-2" /> Shapes
+            </Accordion.Header>
             <Accordion.Body>
               {shapes.length > 0 ? (
                 paginateItems(shapes, pageShapes).map((shape) => (
                   <Card
                     key={shape.shape_pt_sequence}
-                    className={`mb-2 item-card ${selectedEntities.shape?.shape_pt_sequence === shape.shape_pt_sequence ? "active" : ""}`}
+                    className={`mb-2 item-card ${selectedEntities.shape?.shape_pt_sequence ===
+                        shape.shape_pt_sequence
+                        ? "active"
+                        : ""
+                      }`}
                     onClick={() => handleSelectionChange("shape", shape)}
                   >
                     <Card.Body className="d-flex justify-content-between align-items-center p-2">
-                      <OverlayTrigger placement="top" overlay={renderTooltip(`Shape Point ${shape.shape_pt_sequence}`)}>
-                        <span className="item-title">Point {shape.shape_pt_sequence}</span>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={renderTooltip(
+                          `Shape Point ${shape.shape_pt_sequence}`
+                        )}
+                      >
+                        <span className="item-title">
+                          Point {shape.shape_pt_sequence}
+                        </span>
                       </OverlayTrigger>
                     </Card.Body>
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">{selectedEntities.trip ? "No shapes found." : "Select a trip first."}</p>
+                <p className="text-muted text-center">
+                  {selectedEntities.trip
+                    ? "No shapes found."
+                    : "Select a trip first."}
+                </p>
               )}
               {renderPagination(shapes, pageShapes, setPageShapes)}
             </Accordion.Body>
@@ -514,7 +808,10 @@ const Sidebar = ({
       {formConfig && (
         <Modal show onHide={() => setFormConfig(null)}>
           <Modal.Header closeButton>
-            <Modal.Title>{formConfig.action === "add" ? "Add" : "Edit"} {formConfig.category}</Modal.Title>
+            <Modal.Title>
+              {formConfig.action === "add" ? "Add" : "Edit"}{" "}
+              {formConfig.category}
+            </Modal.Title>
           </Modal.Header>
           <Modal.Body>{getFormComponent()}</Modal.Body>
         </Modal>
@@ -547,6 +844,7 @@ Sidebar.propTypes = {
   shapes: PropTypes.array.isRequired,
   action: PropTypes.string.isRequired,
   setAction: PropTypes.func.isRequired,
+  setSelectedShape: PropTypes.func.isRequired,
 };
 
 export default Sidebar;

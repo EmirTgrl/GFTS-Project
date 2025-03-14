@@ -6,12 +6,12 @@ import {
   Popup,
   useMapEvents,
   useMap,
-  CircleMarker
+  CircleMarker,
 } from "react-leaflet";
 import { useEffect, useState } from "react"; // useState ekledim
 import PropTypes from "prop-types";
 import L from "leaflet";
-import MapUpdater from "./MapUpdater.jsx"
+import MapUpdater from "./MapUpdater.jsx";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -45,7 +45,7 @@ MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
 };
 
-const ShapeLayer = ({ shapes, editorMode }) => {
+const ShapeLayer = ({ shapes, editorMode, selectedShape }) => {
   const map = useMap();
   const [isInitialLoad, setIsInitialLoad] = useState(true); // İlk yükleme kontrolü
 
@@ -62,7 +62,7 @@ const ShapeLayer = ({ shapes, editorMode }) => {
     if (shapePositions.length > 0 && isInitialLoad) {
       const bounds = L.latLngBounds(shapePositions);
       map.fitBounds(bounds, { padding: [50, 50] });
-      setIsInitialLoad(false); 
+      setIsInitialLoad(false);
     }
   }, [shapePositions, map, isInitialLoad]);
 
@@ -70,33 +70,49 @@ const ShapeLayer = ({ shapes, editorMode }) => {
     return null;
   }
 
+  const isSelected = (shape, selectedShape) => {
+    return (
+      selectedShape &&
+      shape.shape_pt_sequence === selectedShape.shape_pt_sequence
+    );
+  };
+
   if (editorMode !== "close") {
-    // Render as CircleMarkers with connecting lines
     return (
       <>
         <Polyline positions={shapePositions} color="red" weight={5} />
-        {shapePositions.map((position, index) => (
-          <CircleMarker
-            key={index}
-            center={position}
-            radius={4}  // Adjust the radius to control the circle size
-            fillColor="white"
-            color="red"
-            weight={1}
-            opacity={1}
-            fillOpacity={1}
-          />
-        ))}
+        {shapes.map((shape, index) => {
+          const position = [
+            parseFloat(shape.shape_pt_lat),
+            parseFloat(shape.shape_pt_lon),
+          ];
+          const isHighlighted = isSelected(shape, selectedShape);
+          return (
+            <CircleMarker
+              key={index}
+              center={position}
+              radius={isHighlighted ? 8 : 4} // Seçiliyse daha büyük
+              fillColor={isHighlighted ? "yellow" : "white"} // Seçiliyse sarı
+              color={isHighlighted ? "red" : "red"}
+              weight={isHighlighted ? 2 : 1} // Seçiliyse kalın kenar
+              opacity={1}
+              fillOpacity={1}
+            >
+              <Popup>Shape Point {shape.shape_pt_sequence}</Popup>
+            </CircleMarker>
+          );
+        })}
       </>
     );
   } else {
-    // Render as a polyline
     return <Polyline positions={shapePositions} color="#FF0000" weight={5} />;
   }
 };
 
 ShapeLayer.propTypes = {
   shapes: PropTypes.array.isRequired,
+  editorMode: PropTypes.string.isRequired,
+  selectedShape: PropTypes.object, // Yeni prop eklendi
 };
 
 const MapView = ({
@@ -110,7 +126,8 @@ const MapView = ({
   clickedCoords,
   isStopTimeAddOpen,
   editorMode,
-  setEditorMode
+  setEditorMode,
+  selectedShape, // Yeni prop eklendi
 }) => {
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
@@ -156,7 +173,11 @@ const MapView = ({
             return null;
           })}
 
-      <ShapeLayer shapes={shapes} editorMode={editorMode} />
+      <ShapeLayer
+        shapes={shapes}
+        editorMode={editorMode}
+        selectedShape={selectedShape}
+      />
     </MapContainer>
   );
 };
@@ -173,6 +194,9 @@ MapView.propTypes = {
     lng: PropTypes.number,
   }),
   isStopTimeAddOpen: PropTypes.bool.isRequired,
+  editorMode: PropTypes.string.isRequired,
+  setEditorMode: PropTypes.func.isRequired,
+  selectedShape: PropTypes.object,
 };
 
 export default MapView;

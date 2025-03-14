@@ -5,7 +5,7 @@ import Sidebar from "../components/Map/Sidebar.jsx";
 import MapView from "../components/Map/MapView";
 import { fetchAgenciesByProjectId } from "../api/agencyApi";
 import "../styles/Map.css";
-import FloatingActions from "../components/FloatingActions/FloatingActions.jsx"
+import FloatingActions from "../components/FloatingActions/FloatingActions.jsx";
 
 const MapPage = () => {
   const { token } = useContext(AuthContext);
@@ -17,15 +17,16 @@ const MapPage = () => {
   const [stopsAndTimes, setStopsAndTimes] = useState([]);
   const [calendars, setCalendars] = useState([]);
   const [agencies, setAgencies] = useState([]);
-  const [mapCenter, setMapCenter] = useState([25.009, 54.9867]); 
+  const [mapCenter, setMapCenter] = useState([25.009, 54.9867]);
   const [zoom, setZoom] = useState(13);
   const [clickedCoords, setClickedCoords] = useState(null);
   const [shapes, setShapes] = useState([]);
   const [isStopTimeAddOpen, setIsStopTimeAddOpen] = useState(false);
+  const [selectedShape, setSelectedShape] = useState(null);
   const { project_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [action,setAction] = useState("");
+  const [action, setAction] = useState("");
   const [editorMode, setEditorMode] = useState("close");
 
   useEffect(() => {
@@ -104,23 +105,25 @@ const MapPage = () => {
         isStopTimeAddOpen={isStopTimeAddOpen}
         action={action}
         setAction={setAction}
+        setSelectedShape={setSelectedShape}
       />
-     
-        <MapView
-          mapCenter={mapCenter}
-          zoom={zoom}
-          stopsAndTimes={stopsAndTimes}
-          onMapClick={handleMapClick}
-          shapes={shapes}
-          clickedCoords={clickedCoords}
-          isEditModeOpen={isStopTimeAddOpen}
-          setStopsAndTimes={setStopsAndTimes}
-          setShapes={setShapes}
-          editorMode={editorMode}
-          setEditorMode={setEditorMode}
-        />
-     
-      <FloatingActions 
+
+      <MapView
+        mapCenter={mapCenter}
+        zoom={zoom}
+        stopsAndTimes={stopsAndTimes}
+        onMapClick={handleMapClick}
+        shapes={shapes}
+        clickedCoords={clickedCoords}
+        isEditModeOpen={isStopTimeAddOpen}
+        setStopsAndTimes={setStopsAndTimes}
+        setShapes={setShapes}
+        editorMode={editorMode}
+        setEditorMode={setEditorMode}
+        selectedShape={selectedShape} 
+      />
+
+      <FloatingActions
         setAction={setAction}
         setEditorMode={setEditorMode}
         editorMode={editorMode}
