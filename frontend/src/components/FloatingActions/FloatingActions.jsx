@@ -1,4 +1,5 @@
 import { PlusLg, Pencil, List, Trash } from "react-bootstrap-icons";
+import PropTypes from "prop-types";
 import "../../styles/FloatingActions.css";
 
 const FloatingActions = ({ setAction }) => {
@@ -22,6 +23,9 @@ const FloatingActions = ({ setAction }) => {
       </div>
     </div>
   );
+};
+FloatingActions.propTypes = {
+  setAction: PropTypes.func.isRequired,
 };
 
 export default FloatingActions;
