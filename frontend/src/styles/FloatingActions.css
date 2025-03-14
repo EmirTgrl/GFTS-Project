@@ -31,29 +31,29 @@
 
 .fab-main {
     padding: 0;
-    width: 65px;
-    height: 65px;
+    width: 3rem;
+    height: 3rem;
     border-radius: 50%;
-    background-color: #007bff;
-    color: white;
+    background-color: #fff;
+    color: black;
     border: none;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color 0.2s, transform 0.3s;
 }
 
 .fab-main:hover {
-    background-color: #0069d9;
-    transform: scale(1.05);
+    background-color: #fafafa;
+    transform: scale(1.2);
 }
 
 .fab-secondary {
     padding: 0;
-    width: 3.5rem;
-    height: 3.5rem;
+    width: 3rem;
+    height: 3rem;
     border-radius: 50%;
     background-color: white;
     color: #333;
@@ -71,17 +71,17 @@
     transform: scale(1.1);
 }
 
-.fab-secondary:nth-child(1) {
-    background-color: #dc3545; /* Trash - red */
+/* .fab-secondary:nth-child(1) {
+    background-color: #dc3545; 
     color: white;
   }
   
   .fab-secondary:nth-child(2) {
-    background-color: #ffc107; /* Pen - yellow */
+    background-color: #ffc107; 
     color: white;
   }
   
   .fab-secondary:nth-child(3) {
-    background-color: #28a745; /* PlusLg - green */
+    background-color: #28a745; 
     color: white;
-  }
+  } */

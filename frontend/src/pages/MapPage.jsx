@@ -26,6 +26,7 @@ const MapPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [action,setAction] = useState("");
+  const [editorMode, setEditorMode] = useState("");
 
   useEffect(() => {
     const { selectedRoute: prevRoute, selectedTrip: prevTrip } =
@@ -115,10 +116,14 @@ const MapPage = () => {
           isStopTimeAddOpen={isStopTimeAddOpen}
           setStopsAndTimes={setStopsAndTimes}
           setShapes={setShapes}
+          editorMode={editorMode}
+          setEditorMode={setEditorMode}
         />
      
       <FloatingActions 
         setAction={setAction}
+        setEditorMode={setEditorMode}
+        editorMode={editorMode}
       />
     </div>
   );

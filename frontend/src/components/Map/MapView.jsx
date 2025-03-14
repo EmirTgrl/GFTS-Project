@@ -6,6 +6,7 @@ import {
   Popup,
   useMapEvents,
   useMap,
+  CircleMarker
 } from "react-leaflet";
 import { useEffect, useState } from "react"; // useState ekledim
 import PropTypes from "prop-types";
@@ -43,7 +44,7 @@ MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
 };
 
-const ShapeLayer = ({ shapes }) => {
+const ShapeLayer = ({ shapes, editorMode }) => {
   const map = useMap();
   const [isInitialLoad, setIsInitialLoad] = useState(true); // İlk yükleme kontrolü
 
@@ -58,16 +59,39 @@ const ShapeLayer = ({ shapes }) => {
 
   useEffect(() => {
     if (shapePositions.length > 0 && isInitialLoad) {
-      // Sadece ilk yüklemede çalışır
       const bounds = L.latLngBounds(shapePositions);
       map.fitBounds(bounds, { padding: [50, 50] });
-      setIsInitialLoad(false); // İlk yükleme bitti
+      setIsInitialLoad(false); 
     }
   }, [shapePositions, map, isInitialLoad]);
 
-  return shapePositions.length > 0 ? (
-    <Polyline positions={shapePositions} color="#FF0000" weight={5} />
-  ) : null;
+  if (shapePositions.length === 0) {
+    return null;
+  }
+
+  if (editorMode !== "close") {
+    // Render as CircleMarkers with connecting lines
+    return (
+      <>
+        <Polyline positions={shapePositions} color="red" weight={5} />
+        {shapePositions.map((position, index) => (
+          <CircleMarker
+            key={index}
+            center={position}
+            radius={4}  // Adjust the radius to control the circle size
+            fillColor="white"
+            color="red"
+            weight={1}
+            opacity={1}
+            fillOpacity={1}
+          />
+        ))}
+      </>
+    );
+  } else {
+    // Render as a polyline
+    return <Polyline positions={shapePositions} color="#FF0000" weight={5} />;
+  }
 };
 
 ShapeLayer.propTypes = {
@@ -84,6 +108,8 @@ const MapView = ({
   shapes,
   clickedCoords,
   isStopTimeAddOpen,
+  editorMode,
+  setEditorMode
 }) => {
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
@@ -128,7 +154,7 @@ const MapView = ({
             return null;
           })}
 
-      <ShapeLayer shapes={shapes} />
+      <ShapeLayer shapes={shapes} editorMode={editorMode} />
     </MapContainer>
   );
 };
