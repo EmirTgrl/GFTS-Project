@@ -1,17 +1,17 @@
 import { PlusLg, Pencil, List, Trash } from "react-bootstrap-icons";
 import "../../styles/FloatingActions.css";
 
-const FloatingActions = () => {
+const FloatingActions = ({ setAction }) => {
   return (
     <div className="floating-actions">
       <div className="secondary-actions">
-        <button className="fab-secondary">
+        <button className="fab-secondary" onClick={() => setAction("delete")}>
           <Trash size={20} />
         </button>
-        <button className="fab-secondary">
+        <button className="fab-secondary" onClick={() => setAction("edit")}>
           <Pencil size={20} />
         </button>
-        <button className="fab-secondary">
+        <button className="fab-secondary" onClick={() => setAction("add")}>
           <PlusLg size={20} />
         </button>
       </div>
