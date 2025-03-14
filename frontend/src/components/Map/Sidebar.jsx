@@ -17,23 +17,6 @@ import {
 } from "../../api/stopTimeApi";
 import { deleteStopById } from "../../api/stopApi";
 import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Building,
-  Map,
-  BusFront,
-  Clock,
-  Calendar,
-  Bezier,
-} from "react-bootstrap-icons";
-import {
-  Accordion,
-  Pagination,
-  Card,
-  OverlayTrigger,
-  Tooltip,
-} from "react-bootstrap";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -292,6 +275,11 @@ const Sidebar = ({
           setZoom(18);
         }
         break;
+      }
+      case "calendar":{
+        setSelectedEntities((prev)=>({...prev, calendar: entity}));
+        setSelectedCategory("calendar")
+        setActiveKey("4")
       }
 
       default:
