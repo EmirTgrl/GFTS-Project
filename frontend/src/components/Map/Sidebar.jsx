@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { Modal } from "react-bootstrap";
-import { deleteRouteById} from "../../api/routeApi";
+import { deleteRouteById, fetchRoutesByAgencyId} from "../../api/routeApi";
 import { fetchCalendarsByProjectId } from "../../api/calendarApi";
 import { fetchAgenciesByProjectId, deleteAgencyById } from "../../api/agencyApi";
+import { fetchTripsByRouteId } from "../../api/tripApi";
+import { fetchStopsAndStopTimesByTripId } from "../../api/stopTimeApi";
+import { fetchShapesByTripId } from "../../api/shapeApi";
 import Swal from "sweetalert2";
 import { ChevronLeft, ChevronRight, Building, Map, BusFront, Clock, Calendar, Bezier } from "react-bootstrap-icons";
 import { Accordion, Pagination, Card, OverlayTrigger, Tooltip } from "react-bootstrap";
@@ -148,9 +151,10 @@ const Sidebar = ({
         setStopsAndTimes([]);
         setShapes([]);
         setMapCenter(null);
-        setActiveKey("0"); // Open "Routes" accordion
-        const agencyRoutes = await fetchRoutesByAgency(entity.agency_id, token);
+        setActiveKey("0"); 
+        const agencyRoutes = await fetchRoutesByAgencyId(entity.agency_id, project_id, token);
         setRoutes(agencyRoutes);
+        setSelectedCategory("agency")
         break;
   
       case "route":
@@ -166,8 +170,9 @@ const Sidebar = ({
         setShapes([]);
         setMapCenter(null);
         setActiveKey("1"); // Open "Trips" accordion
-        const routeTrips = await fetchTripsByRoute(entity.route_id, token);
+        const routeTrips = await fetchTripsByRouteId(entity.route_id, token);
         setTrips(routeTrips);
+        setSelectedCategory("route")
         break;
   
       case "trip":
@@ -182,12 +187,13 @@ const Sidebar = ({
         setMapCenter(null);
         setActiveKey("2"); // Open "Stops" accordion
         const [tripStops, tripShapes] = await Promise.all([
-          fetchStopsByTrip(entity.trip_id, token),
-          fetchShapesByTrip(entity.trip_id, token),
+          fetchStopsAndStopTimesByTripId(entity.trip_id, project_id, token),
+          fetchShapesByTripId(project_id, entity.trip_id, token),
         ]);
         setStopsAndTimes(tripStops);
         setShapes(tripShapes);
         setMapCenter(tripShapes.length > 0 ? [tripShapes[0].shape_pt_lat, tripShapes[0].shape_pt_lon] : null);
+        setSelectedCategory("trip"); 
         break;
   
       case "stop":
@@ -404,7 +410,7 @@ const Sidebar = ({
               {stopsAndTimes.length > 0 ? (
                 paginateItems(stopsAndTimes, pageStops).map((stop) => (
                   <Card
-                    key={stop.stop_id}
+                    key={stop.stop_id + "-" + stop.trip_id}
                     className={`mb-2 item-card ${selectedEntities.stop?.stop_id === stop.stop_id ? "active" : ""}`}
                     onClick={() => handleSelectionChange("stop", stop)}
                   >
