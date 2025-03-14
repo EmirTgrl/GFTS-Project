@@ -9,8 +9,8 @@ import { fetchStopsAndStopTimesByTripId, deleteStopTimeById } from "../../api/st
 import { deleteStopById } from "../../api/stopApi"
 import { fetchShapesByTripId, deleteShape } from "../../api/shapeApi";
 import Swal from "sweetalert2";
-import { ChevronLeft, ChevronRight, Building, Map, BusFront, Clock, Calendar, Bezier } from "react-bootstrap-icons";
-import { Accordion, Pagination, Card, OverlayTrigger, Tooltip } from "react-bootstrap";
+import { List, ArrowUpRight, ArrowDownLeft, Building, Map, BusFront, Clock, Calendar, Bezier } from "react-bootstrap-icons";
+import { Accordion, Pagination, Card, OverlayTrigger, Tooltip} from "react-bootstrap";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -24,6 +24,7 @@ import CalendarEditPage from "../../pages/CalendarEditPage";
 import ShapeAddPage from "../../pages/ShapeAddPage";
 import ShapeEditPage from "../../pages/ShapeEditPage";
 import "../../styles/Sidebar.css";
+import { TrainFront, TrainFreightFront, LifePreserver, TrainLightrailFront, SignRailroad } from 'react-bootstrap-icons';
 
 const Sidebar = ({
   token,
@@ -332,6 +333,30 @@ const Sidebar = ({
     return days.length > 0 ? days.join(", ") : "No days";
   };
 
+  const getRouteTypeIcon = (routeType) => {
+    switch (routeType) {
+      case 0:
+        return <TrainLightrailFront />;
+      case 1:
+        return <TrainFreightFront />;
+      case 2:
+        return <TrainFront />;
+      case 3:
+        return <BusFront />;
+      case 4:
+        return <LifePreserver />;
+      case 5:
+        return <TrainLightrailFront />;
+      case 7:
+        return <SignRailroad />;
+      case 11:
+        return <BusFront />; // Assuming Trolleybus can also use Bus icon
+      case 12:
+        return <SignRailroad />; // Assuming Monorail can also use Rail icon
+        default:
+          return <BusFront />
+    }}
+
   return (
     <div className="sidebar-container">
       <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
@@ -371,6 +396,7 @@ const Sidebar = ({
                     onClick={() => handleSelectionChange("route", route)}
                   >
                     <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    {getRouteTypeIcon(route.route_type)}
                       <OverlayTrigger placement="top" overlay={renderTooltip(route.route_long_name || route.route_id)}>
                         <span className="item-title">{route.route_long_name || route.route_id}</span>
                       </OverlayTrigger>
@@ -395,6 +421,7 @@ const Sidebar = ({
                     onClick={() => handleSelectionChange("trip", trip)}
                   >
                     <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                      {trip.direction_id === 0 ? <ArrowDownLeft /> : <ArrowUpRight />}
                       <OverlayTrigger placement="top" overlay={renderTooltip(trip.trip_headsign || trip.trip_id)}>
                         <span className="item-title">{trip.trip_headsign || trip.trip_id}</span>
                       </OverlayTrigger>
@@ -482,7 +509,7 @@ const Sidebar = ({
         </Accordion>
       </div>
       <span onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="sidebar-toggle-icon">
-        {isSidebarOpen ? <ChevronLeft size={24} /> : <ChevronRight size={24} />}
+        <List size={30} />
       </span>
       {formConfig && (
         <Modal show onHide={() => setFormConfig(null)}>
