@@ -445,7 +445,7 @@ const Sidebar = ({
             <StopTimeEditPage
               project_id={project_id}
               trip_id={selectedEntities.trip?.trip_id}
-              stop_id={entity.stop_id}
+              stop_id={selectedEntities.stop.stop_id}
               onClose={() => setFormConfig(null)}
               setStopsAndTimes={setStopsAndTimes}
               stopsAndTimes={stopsAndTimes}
