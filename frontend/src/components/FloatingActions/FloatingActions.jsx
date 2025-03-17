@@ -1,4 +1,4 @@
-import { PlusLg, Pencil, List, Trash, Map, Floppy, XLg} from "react-bootstrap-icons";
+import { PlusLg, Pencil, List, Trash, Map, Floppy, XLg, Triangle, SignStop } from "react-bootstrap-icons";
 import PropTypes from "prop-types";
 import "../../styles/FloatingActions.css";
 
@@ -23,6 +23,12 @@ const FloatingActions = ({ setAction, editorMode, setEditorMode }) => {
           </>
         ) : (
           <>
+            <button className="fab-secondary" onClick={() => setEditorMode("add-stop")}>
+              <SignStop size={20} />
+            </button>
+            <button className="fab-secondary" onClick={() => setEditorMode("add-shape")}>
+              <Triangle size={20} />
+            </button> 
             <button className="fab-secondary" onClick={() => setEditorMode("close")}>
               <XLg size={20} />
             </button>

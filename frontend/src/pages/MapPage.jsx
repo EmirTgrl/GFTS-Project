@@ -22,12 +22,19 @@ const MapPage = () => {
   const [clickedCoords, setClickedCoords] = useState(null);
   const [shapes, setShapes] = useState([]);
   const [isStopTimeAddOpen, setIsStopTimeAddOpen] = useState(false);
-  const [selectedShape, setSelectedShape] = useState(null);
   const { project_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [action, setAction] = useState("");
   const [editorMode, setEditorMode] = useState("close");
+  const [selectedEntities, setSelectedEntities] = useState({
+    agency: null,
+    route: null,
+    trip: null,
+    calendar: null,
+    shape: null,
+    stop: null,
+  });
 
   useEffect(() => {
     const { selectedRoute: prevRoute, selectedTrip: prevTrip } =
@@ -105,7 +112,8 @@ const MapPage = () => {
         isStopTimeAddOpen={isStopTimeAddOpen}
         action={action}
         setAction={setAction}
-        setSelectedShape={setSelectedShape}
+        selectedEntities={selectedEntities}
+        setSelectedEntities={setSelectedEntities}
       />
 
       <MapView
@@ -120,7 +128,8 @@ const MapPage = () => {
         setShapes={setShapes}
         editorMode={editorMode}
         setEditorMode={setEditorMode}
-        selectedShape={selectedShape} 
+        selectedEntities={selectedEntities}
+        setSelectedEntities={setSelectedEntities}
       />
 
       <FloatingActions

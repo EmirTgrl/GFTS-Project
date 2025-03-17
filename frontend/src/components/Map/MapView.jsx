@@ -31,6 +31,16 @@ const clickIcon = new L.Icon({
   shadowSize: [32, 32],
 });
 
+const xMarkerIcon = new L.Icon({
+  iconUrl: `data:image/svg+xml;utf8,<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="2" y1="2" x2="18" y2="18" stroke="red" stroke-width="3"/>
+    <line x1="18" y1="2" x2="2" y2="18" stroke="red" stroke-width="3"/>
+  </svg>`,
+  iconSize: [20, 20],       // Adjust size as needed
+  iconAnchor: [10, 10],     // Center of the X
+  popupAnchor: [0, -10],    // Adjust popup position
+});
+
 const MapClickHandler = ({ onMapClick }) => {
   useMapEvents({
     click(e) {
@@ -45,75 +55,7 @@ MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
 };
 
-const ShapeLayer = ({ shapes, editorMode, selectedShape }) => {
-  const map = useMap();
-  const [isInitialLoad, setIsInitialLoad] = useState(true); // İlk yükleme kontrolü
 
-  const shapePositions = shapes
-    .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
-    .map((shape) => {
-      const lat = parseFloat(shape.shape_pt_lat);
-      const lon = parseFloat(shape.shape_pt_lon);
-      return [lat, lon];
-    })
-    .filter((pos) => pos[0] && pos[1] && !isNaN(pos[0]) && !isNaN(pos[1]));
-
-  useEffect(() => {
-    if (shapePositions.length > 0 && isInitialLoad) {
-      const bounds = L.latLngBounds(shapePositions);
-      map.fitBounds(bounds, { padding: [50, 50] });
-      setIsInitialLoad(false);
-    }
-  }, [shapePositions, map, isInitialLoad]);
-
-  if (shapePositions.length === 0) {
-    return null;
-  }
-
-  const isSelected = (shape, selectedShape) => {
-    return (
-      selectedShape &&
-      shape.shape_pt_sequence === selectedShape.shape_pt_sequence
-    );
-  };
-
-  if (editorMode !== "close") {
-    return (
-      <>
-        <Polyline positions={shapePositions} color="red" weight={5} />
-        {shapes.map((shape, index) => {
-          const position = [
-            parseFloat(shape.shape_pt_lat),
-            parseFloat(shape.shape_pt_lon),
-          ];
-          const isHighlighted = isSelected(shape, selectedShape);
-          return (
-            <CircleMarker
-              key={index}
-              center={position}
-              radius={isHighlighted ? 8 : 4} // Seçiliyse daha büyük
-              fillColor={isHighlighted ? "yellow" : "white"} // Seçiliyse sarı
-              color={isHighlighted ? "red" : "red"}
-              weight={isHighlighted ? 2 : 1} // Seçiliyse kalın kenar
-              opacity={1}
-              fillOpacity={1}
-            >
-              <Popup>Shape Point {shape.shape_pt_sequence}</Popup>
-            </CircleMarker>
-          );
-        })}
-      </>
-    );
-  } else {
-    return <Polyline positions={shapePositions} color="#FF0000" weight={5} />;
-  }
-};
-
-ShapeLayer.propTypes = {
-  shapes: PropTypes.array.isRequired,
-  editorMode: PropTypes.string.isRequired,
-  selectedShape: PropTypes.object, // Yeni prop eklendi
-};
 
 const MapView = ({
   mapCenter,
@@ -127,39 +69,120 @@ const MapView = ({
   isStopTimeAddOpen,
   editorMode,
   setEditorMode,
-  selectedShape, // Yeni prop eklendi
+  selectedEntities,
+  setSelectedEntities
 }) => {
+  const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
+  const [tempShapes, setTempShapes] = useState([]);
+  
+  useEffect(()=>{
+    setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes)));
+    setTempShapes(JSON.parse(JSON.stringify(shapes)));
+  },[stopsAndTimes, shapes])
+
+  useEffect(() => {
+
+    if (editorMode === "save") {
+      setStopsAndTimes(tempStopsAndTimes)
+      setShapes(tempShapes)
+      setEditorMode("close")
+    }
+    if (editorMode === "close") {
+      setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes)));
+      setTempShapes(JSON.parse(JSON.stringify(shapes)));
+    }
+    if(editorMode === "add-stop"){
+      setTempStopsAndTimes(prev => [...prev,{
+        stop_lat:clickedCoords.lat,
+        stop_lon:clickedCoords.lng,
+        arrival_time: "00:00:00",
+        departure_time: "00:00:00",
+        stop_sequence: tempStopsAndTimes.length > 0 ? Math.max(...tempStopsAndTimes.map(stop => stop.stop_sequence)) + 1 : 1,
+      }])
+      setEditorMode("open")
+
+    }
+    if(editorMode === "add-shape"){
+      setTempShapes(prev => [...prev,{
+        shape_pt_lat:clickedCoords.lat,
+        shape_pt_lon:clickedCoords.lng,
+        shape_pt_sequence: tempShapes.length>0? Math.max(...tempShapes.map(shape=> shape.shape_pt_sequence)) + 1 : 1,
+      }])
+      setEditorMode("open")
+    }
+  }, [editorMode,]);
+
+  const handleStopDrag = (e, stopSequence) => {
+    if (editorMode !== "open") return;
+
+    const newLatLng = e.target.getLatLng();
+
+    setTempStopsAndTimes((prevStopsAndTimes) =>
+      prevStopsAndTimes.map((stopTime) => {
+        if (stopTime.stop_sequence === stopSequence) {
+          return {
+            ...stopTime,
+            stop_lat: newLatLng.lat,
+            stop_lon: newLatLng.lng,
+          };
+        }
+        return stopTime;
+      })
+    );
+  };
+  const handleShapeDrag = (e, shapePtSequence) => {
+    if (editorMode !== "open") return;
+
+    const newLatLng = e.target.getLatLng();
+      setTempShapes(prevShapes =>
+          prevShapes.map(shape => {
+              if(shape.shape_pt_sequence === shapePtSequence){
+                  return {
+                      ...shape,
+                      shape_pt_lat : newLatLng.lat,
+                      shape_pt_lon : newLatLng.lng
+                  }
+              }
+              return shape;
+          })
+      );
+  };
+
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <MapClickHandler onMapClick={onMapClick} />
       <MapUpdater mapCenter={mapCenter} zoom={zoom} />
 
-      {isStopTimeAddOpen &&
+      {editorMode === "open" &&
         clickedCoords &&
         clickedCoords.lat &&
         clickedCoords.lng && (
           <Marker
             position={[clickedCoords.lat, clickedCoords.lng]}
-            icon={clickIcon}
+            icon={xMarkerIcon}
           >
             <Popup>Tıkladığınız yer burası!</Popup>
           </Marker>
         )}
 
-      {stopsAndTimes.length > 0 &&
-        stopsAndTimes
+      {tempStopsAndTimes.length > 0 &&
+        tempStopsAndTimes
           .sort((a, b) => a.stop_sequence - b.stop_sequence)
           .map((stopTime) => {
             if (stopTime && stopTime.stop_lat && stopTime.stop_lon) {
               return (
                 <Marker
+                  draggable={editorMode === "open"}
                   key={`${stopTime.stop_id}`}
                   position={[
                     parseFloat(stopTime.stop_lat),
                     parseFloat(stopTime.stop_lon),
                   ]}
                   icon={stopIcon}
+                  eventHandlers={{
+                    dragend: (e) => handleStopDrag(e, stopTime.stop_sequence)
+                  }}
                 >
                   <Popup>
                     {stopTime.stop_sequence}.{" "}
@@ -173,11 +196,52 @@ const MapView = ({
             return null;
           })}
 
-      <ShapeLayer
-        shapes={shapes}
-        editorMode={editorMode}
-        selectedShape={selectedShape}
-      />
+      {tempShapes.length > 0 && (
+        <>
+          <Polyline
+            positions={tempShapes
+              .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
+              .map((shape) => [
+                parseFloat(shape.shape_pt_lat),
+                parseFloat(shape.shape_pt_lon),
+              ])}
+            color={editorMode === "open" ? "red" : "#FF0000"} // Conditional color
+            weight={5}
+            
+          />
+          {editorMode === "open" &&
+            tempShapes.map((shape, index) => {
+              const position = [
+                parseFloat(shape.shape_pt_lat),
+                parseFloat(shape.shape_pt_lon),
+              ];
+              const isHighlighted = shape.shape_pt_sequence === selectedEntities.shape?.shape_pt_sequence;
+              return (
+                <Marker
+                  key={index}
+                  position={position}
+                  draggable={editorMode === "open"}
+                  icon={L.divIcon({
+                    className: 'custom-circle-marker', // Important for styling!
+                    iconSize: [isHighlighted ? 20 : 12, isHighlighted ? 20 : 12], // Double the radius for diameter
+                    iconAnchor: [isHighlighted ? 10 : 6, isHighlighted ? 10 : 6], // Anchor in the center
+                    html: `<div style="${isHighlighted
+                        ? 'background-color: yellow; border: 2px solid yellow;'
+                        : 'background-color: white; border: 1px solid red;'
+                      } width: 100%; height: 100%; border-radius: 50%;"></div>`,
+                  })}
+                  eventHandlers={{
+                    dragend: (e) => handleShapeDrag(e, shape.shape_pt_sequence)
+                  }}
+                >
+                  <Popup>Shape Point {shape.shape_pt_sequence}</Popup>
+                </Marker>
+              );
+            })}
+        </>
+      )}
+
+
     </MapContainer>
   );
 };
@@ -196,7 +260,7 @@ MapView.propTypes = {
   isStopTimeAddOpen: PropTypes.bool.isRequired,
   editorMode: PropTypes.string.isRequired,
   setEditorMode: PropTypes.func.isRequired,
-  selectedShape: PropTypes.object,
+
 };
 
 export default MapView;

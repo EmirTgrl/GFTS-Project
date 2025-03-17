@@ -53,7 +53,8 @@ const Sidebar = ({
   shapes,
   action,
   setAction,
-  setSelectedShape, // Yeni prop eklendi
+  selectedEntities,
+  setSelectedEntities
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -64,14 +65,7 @@ const Sidebar = ({
   const [pageCalendars, setPageCalendars] = useState(1);
   const [pageShapes, setPageShapes] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedEntities, setSelectedEntities] = useState({
-    agency: null,
-    route: null,
-    trip: null,
-    calendar: null,
-    shape: null,
-    stop: null,
-  });
+ 
   const [formConfig, setFormConfig] = useState(null);
   const itemsPerPage = 8;
 
@@ -185,7 +179,6 @@ const Sidebar = ({
         setMapCenter(null);
         setZoom(10);
         setActiveKey("0");
-        setSelectedShape(null); // Seçili şekli sıfırla
         const agencyRoutes = await fetchRoutesByAgencyId(
           entity.agency_id,
           project_id,
@@ -210,7 +203,6 @@ const Sidebar = ({
         setMapCenter(null);
         setZoom(10);
         setActiveKey("1");
-        setSelectedShape(null); // Seçili şekli sıfırla
         const routeTrips = await fetchTripsByRouteId(entity.route_id, token);
         setTrips(routeTrips);
         setSelectedCategory("route");
@@ -227,7 +219,6 @@ const Sidebar = ({
         setStopsAndTimes([]);
         setShapes([]);
         setActiveKey("2");
-        setSelectedShape(null); // Seçili şekli sıfırla
         const [tripStops, tripShapes] = await Promise.all([
           fetchStopsAndStopTimesByTripId(entity.trip_id, project_id, token),
           fetchShapesByTripId(project_id, entity.trip_id, token),
@@ -251,7 +242,6 @@ const Sidebar = ({
         setSelectedEntities((prev) => ({ ...prev, stop: entity }));
         setSelectedCategory("stop");
         setActiveKey("3");
-        setSelectedShape(null); // Seçili şekli sıfırla
         if (entity.stop_lat && entity.stop_lon) {
           setMapCenter([
             parseFloat(entity.stop_lat),
@@ -266,7 +256,6 @@ const Sidebar = ({
         setSelectedEntities((prev) => ({ ...prev, shape: entity }));
         setSelectedCategory("shape");
         setActiveKey("5");
-        setSelectedShape(entity); // Seçilen şekli haritaya ilet
         if (entity.shape_pt_lat && entity.shape_pt_lon) {
           setMapCenter([
             parseFloat(entity.shape_pt_lat),
@@ -306,7 +295,6 @@ const Sidebar = ({
         setTrips([]);
         setStopsAndTimes([]);
         setShapes([]);
-        setSelectedShape(null);
       } else if (category === "route") {
         await deleteRouteById(entity.route_id, token);
         setRoutes((prev) => prev.filter((r) => r.route_id !== entity.route_id));
@@ -320,7 +308,6 @@ const Sidebar = ({
         setTrips([]);
         setStopsAndTimes([]);
         setShapes([]);
-        setSelectedShape(null);
       } else if (category === "trip") {
         await deleteTripById(entity.trip_id, token);
         setTrips((prev) => prev.filter((t) => t.trip_id !== entity.trip_id));
@@ -332,7 +319,6 @@ const Sidebar = ({
         }));
         setStopsAndTimes([]);
         setShapes([]);
-        setSelectedShape(null);
       } else if (category === "stop") {
         await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
         await deleteStopById(entity.stop_id, token);
@@ -340,14 +326,12 @@ const Sidebar = ({
           prev.filter((s) => s.stop_id !== entity.stop_id)
         );
         setSelectedEntities((prev) => ({ ...prev, stop: null }));
-        setSelectedShape(null);
       } else if (category === "shape") {
         await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
         setShapes((prev) =>
           prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
         );
         setSelectedEntities((prev) => ({ ...prev, shape: null }));
-        setSelectedShape(null);
       }
       Swal.fire("Deleted!", `${category} has been deleted.`, "success");
     } catch (error) {
@@ -832,7 +816,6 @@ Sidebar.propTypes = {
   shapes: PropTypes.array.isRequired,
   action: PropTypes.string.isRequired,
   setAction: PropTypes.func.isRequired,
-  setSelectedShape: PropTypes.func.isRequired,
 };
 
 export default Sidebar;
