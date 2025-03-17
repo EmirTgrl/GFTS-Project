@@ -71,17 +71,7 @@
     transform: scale(1.1);
 }
 
-/* .fab-secondary:nth-child(1) {
-    background-color: #dc3545; 
+.active{
+    background-color: #066aab;
     color: white;
-  }
-  
-  .fab-secondary:nth-child(2) {
-    background-color: #ffc107; 
-    color: white;
-  }
-  
-  .fab-secondary:nth-child(3) {
-    background-color: #28a745; 
-    color: white;
-  } */
+}
