@@ -163,12 +163,12 @@ const MapView = ({
       {tempStopsAndTimes.length > 0 &&
         tempStopsAndTimes
           .sort((a, b) => a.stop_sequence - b.stop_sequence)
-          .map((stopTime, index) => {
+          .map((stopTime, stop_sequence) => {
             if (stopTime && stopTime.stop_lat && stopTime.stop_lon) {
               return (
                 <Marker
                   draggable={editorMode !== "close"}
-                  key={`${index}`}
+                  key={`${stop_sequence}`}
                   position={[
                     parseFloat(stopTime.stop_lat),
                     parseFloat(stopTime.stop_lon),
@@ -204,7 +204,7 @@ const MapView = ({
             
           />
           {editorMode !== "close" &&
-            tempShapes.map((shape, index) => {
+            tempShapes.map((shape) => {
               const position = [
                 parseFloat(shape.shape_pt_lat),
                 parseFloat(shape.shape_pt_lon),
@@ -212,7 +212,7 @@ const MapView = ({
               const isHighlighted = shape.shape_pt_sequence === selectedEntities.shape?.shape_pt_sequence;
               return (
                 <Marker
-                  key={index}
+                  key={shape.shape_pt_sequence}
                   position={position}
                   draggable={editorMode !== "close"}
                   icon={L.divIcon({
