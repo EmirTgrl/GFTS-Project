@@ -85,3 +85,18 @@ export const saveStopTime = async (stopTimeData, token) => {
   if (!response.ok) throw new Error("Failed to save stop time");
   return response.json();
 };
+
+export const saveMultipleStopsAndTimes = async (stopsAndTimes, token) => {
+  const response = await fetch(`${API_BASE_URL}/create-multiple`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(stopsAndTimes),
+  });
+  if (!response.ok) throw new Error("Failed to save stop time");
+  return response.json();
+}
+
+
