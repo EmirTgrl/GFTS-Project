@@ -8,7 +8,7 @@ import {
   useMap,
   CircleMarker,
 } from "react-leaflet";
-import { useEffect, useState } from "react"; // useState ekledim
+import { useEffect, useState } from "react"; 
 import PropTypes from "prop-types";
 import L from "leaflet";
 import MapUpdater from "./MapUpdater.jsx";
@@ -38,7 +38,6 @@ const MapClickHandler = ({ onMapClick }) => {
 MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
 };
-
 
 
 const MapView = ({

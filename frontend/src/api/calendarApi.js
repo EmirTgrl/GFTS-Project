@@ -10,7 +10,7 @@ export const fetchCalendarByServiceId = async (serviceId, token) => {
     throw new Error(`Failed to fetch calendar: ${errorText}`);
   }
   const data = await response.json();
-  return data; // Tek bir obje bekleniyor
+  return data; 
 };
 
 export const fetchCalendarsByProjectId = async (projectId, token) => {
@@ -22,7 +22,7 @@ export const fetchCalendarsByProjectId = async (projectId, token) => {
     console.error("Failed to fetch calendars:", response.status, errorText);
     throw new Error(`Failed to fetch calendars: ${errorText}`);
   }
-  return response.json(); // Dizi bekleniyor
+  return response.json(); 
 };
 
 export const deleteCalendarById = async (serviceId, token) => {
@@ -34,7 +34,7 @@ export const deleteCalendarById = async (serviceId, token) => {
     const errorText = await response.text();
     throw new Error(`Failed to delete calendar: ${errorText}`);
   }
-  return response.json(); // { message: "Calendar deleted successfully" }
+  return response.json(); 
 };
 
 export const updateCalendar = async (calendarData, token) => {
@@ -53,7 +53,7 @@ export const updateCalendar = async (calendarData, token) => {
     const errorText = await response.text();
     throw new Error(`Failed to update calendar: ${errorText}`);
   }
-  return response.json(); // Güncellenmiş takvim objesi
+  return response.json(); 
 };
 
 export const saveCalendar = async (calendarData, token) => {
@@ -69,5 +69,5 @@ export const saveCalendar = async (calendarData, token) => {
     const errorText = await response.text();
     throw new Error(`Failed to save calendar: ${errorText}`);
   }
-  return response.json(); // Yeni takvim objesi
+  return response.json();
 };

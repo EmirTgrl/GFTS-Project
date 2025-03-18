@@ -1,11 +1,34 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Modal } from "react-bootstrap";
+import {
+  Modal,
+  Form,
+  Accordion,
+  Pagination,
+  Card,
+  OverlayTrigger,
+  Tooltip,
+} from "react-bootstrap";
+import {
+  List,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Building,
+  Map as MapIcon,
+  BusFront,
+  Clock,
+  Calendar,
+  TrainFront,
+  TrainFreightFront,
+  LifePreserver,
+  TrainLightrailFront,
+  SignRailroad,
+  GeoAlt, 
+  BoundingBoxCircles 
+} from "react-bootstrap-icons";
+import Swal from "sweetalert2";
 import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
 import { fetchCalendarsByProjectId } from "../../api/calendarApi";
-import Swal from "sweetalert2";
-import { List, ArrowUpRight, ArrowDownLeft, Building, Map, BusFront, GeoAlt, Calendar, BoundingBoxCircles } from "react-bootstrap-icons";
-import { Accordion, Pagination, Card, OverlayTrigger, Tooltip } from "react-bootstrap";
 import {
   fetchAgenciesByProjectId,
   deleteAgencyById,
@@ -30,7 +53,6 @@ import CalendarEditPage from "../../pages/CalendarEditPage";
 import ShapeAddPage from "../../pages/ShapeAddPage";
 import ShapeEditPage from "../../pages/ShapeEditPage";
 import "../../styles/Sidebar.css";
-import { TrainFront, TrainFreightFront, LifePreserver, TrainLightrailFront, SignRailroad } from 'react-bootstrap-icons';
 
 const Sidebar = ({
   token,
@@ -67,39 +89,107 @@ const Sidebar = ({
   const [selectedCategory, setSelectedCategory] = useState("");
  
   const [formConfig, setFormConfig] = useState(null);
+  const [filteredAgencies, setFilteredAgencies] = useState(agencies);
+  const [filteredRoutes, setFilteredRoutes] = useState(routes);
+  const [filteredTrips, setFilteredTrips] = useState(trips);
+  const [filteredStops, setFilteredStops] = useState([]);
+  const [filteredCalendars, setFilteredCalendars] = useState(calendars);
+  const [filteredShapes, setFilteredShapes] = useState(shapes);
+  const [searchTerms, setSearchTerms] = useState({
+    agencies: "",
+    routes: "",
+    trips: "",
+    stops: "",
+    calendars: "",
+    shapes: "",
+  });
   const itemsPerPage = 8;
 
   const categoryMap = {
     0: "agency",
     1: "route",
-    2: "trip",
-    3: "stop",
-    4: "calendar",
-    5: "shape",
+    2: "calendar",
+    3: "trip",
+    4: "shape",
+    5: "stop",
   };
+
+  useEffect(() => {
+    setFilteredAgencies(agencies);
+    setFilteredRoutes(routes);
+    setFilteredTrips(trips);
+    setFilteredCalendars(calendars);
+    setFilteredShapes(shapes);
+  }, [agencies, routes, trips, calendars, shapes]);
 
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         const agencyData = await fetchAgenciesByProjectId(project_id, token);
         setAgencies(agencyData);
+        setFilteredAgencies(agencyData);
         const calendarData = await fetchCalendarsByProjectId(project_id, token);
         setCalendars(calendarData);
+        setFilteredCalendars(calendarData);
       } catch (error) {
         console.error("Error fetching initial data:", error);
         setAgencies([]);
+        setFilteredAgencies([]);
         setCalendars([]);
+        setFilteredCalendars([]);
       }
     };
     if (token && project_id) loadInitialData();
-  }, [token, project_id, setAgencies, setCalendars]);
+  }, [token, project_id]);
 
   useEffect(() => {
     if (action) {
       handleAction(action);
       setAction("");
     }
-  }, [action, activeKey, selectedCategory, selectedEntities]);
+  }, [action]);
+
+  const loadTripTimes = async () => {
+    if (!selectedEntities.route || trips.length === 0) return;
+    const updatedTrips = await Promise.all(
+      trips.map(async (trip) => {
+        if (trip.departure_time) return trip; // Zaten saat varsa atla
+        const stops = await fetchStopsAndStopTimesByTripId(
+          trip.trip_id,
+          project_id,
+          token
+        );
+        return {
+          ...trip,
+          departure_time: stops[0]?.departure_time || "N/A",
+          arrival_time: stops[stops.length - 1]?.arrival_time || "N/A",
+        };
+      })
+    );
+    setTrips(updatedTrips);
+    setFilteredTrips(updatedTrips);
+  };
+
+  const handleSearch = (category, term, items, setFiltered, setPage) => {
+    const filtered = items.filter((item) => {
+      let searchValue = "";
+      if (category === "agencies") searchValue = item.agency_name || "";
+      if (category === "routes")
+        searchValue = item.route_long_name || item.route_id || "";
+      if (category === "trips")
+        searchValue = item.trip_headsign || item.trip_id || "";
+      if (category === "stops")
+        searchValue = item.stop_name || item.stop_id || "";
+      if (category === "calendars") searchValue = getActiveDays(item) || "";
+      if (category === "shapes")
+        searchValue = item.shape_pt_sequence
+          ? `Point ${item.shape_pt_sequence}`
+          : "";
+      return searchValue.toLowerCase().includes(term.toLowerCase());
+    });
+    setFiltered(filtered);
+    setPage(1);
+  };
 
   const handleAction = (actionType) => {
     if (actionType === "add") {
@@ -147,7 +237,8 @@ const Sidebar = ({
         lonSum += parseFloat(shape.shape_pt_lon);
         count++;
       });
-    } else if (stops && stops.length > 0) {
+    }
+    if (stops && stops.length > 0) {
       stops.forEach((stop) => {
         latSum += parseFloat(stop.stop_lat);
         lonSum += parseFloat(stop.stop_lon);
@@ -164,104 +255,204 @@ const Sidebar = ({
   const handleSelectionChange = async (category, entity) => {
     switch (category) {
       case "agency": {
-        setSelectedEntities((prev) => ({
-          ...prev,
-          agency: entity,
-          route: null,
-          trip: null,
-          stop: null,
-          shape: null,
-        }));
-        setRoutes([]);
-        setTrips([]);
-        setStopsAndTimes([]);
-        setShapes([]);
-        setMapCenter(null);
-        setZoom(10);
-        setActiveKey("0");
-        const agencyRoutes = await fetchRoutesByAgencyId(
-          entity.agency_id,
-          project_id,
-          token
-        );
-        setRoutes(agencyRoutes);
-        setSelectedCategory("agency");
+        if (selectedEntities.agency?.agency_id === entity.agency_id) {
+          setSelectedEntities((prev) => ({
+            ...prev,
+            agency: null,
+            route: null,
+            calendar: null,
+            trip: null,
+            shape: null,
+            stop: null,
+          }));
+          setRoutes([]);
+          setTrips([]);
+          setCalendars([]);
+          setShapes([]);
+          setStopsAndTimes([]);
+          setFilteredStops([]);
+          setSelectedCategory("");
+        } else {
+          setSelectedEntities((prev) => ({
+            ...prev,
+            agency: entity,
+            route: null,
+            calendar: null,
+            trip: null,
+            shape: null,
+            stop: null,
+          }));
+          setRoutes([]);
+          setTrips([]);
+          setCalendars([]);
+          setShapes([]);
+          setStopsAndTimes([]);
+          setFilteredStops([]);
+          const agencyRoutes = await fetchRoutesByAgencyId(
+            entity.agency_id,
+            project_id,
+            token
+          );
+          setRoutes(agencyRoutes);
+          setFilteredRoutes(agencyRoutes);
+          setSelectedCategory("agency");
+        }
         break;
       }
 
       case "route": {
-        setSelectedEntities((prev) => ({
-          ...prev,
-          route: entity,
-          trip: null,
-          stop: null,
-          shape: null,
-        }));
-        setTrips([]);
-        setStopsAndTimes([]);
-        setShapes([]);
-        setMapCenter(null);
-        setZoom(10);
-        setActiveKey("1");
-        const routeTrips = await fetchTripsByRouteId(entity.route_id, token);
-        setTrips(routeTrips);
-        setSelectedCategory("route");
+        if (selectedEntities.route?.route_id === entity.route_id) {
+          setSelectedEntities((prev) => ({
+            ...prev,
+            route: null,
+            calendar: null,
+            trip: null,
+            shape: null,
+            stop: null,
+          }));
+          setTrips([]);
+          setShapes([]);
+          setStopsAndTimes([]);
+          setFilteredStops([]);
+          setSelectedCategory("agency");
+        } else {
+          setSelectedEntities((prev) => ({
+            ...prev,
+            route: entity,
+            calendar: null,
+            trip: null,
+            shape: null,
+            stop: null,
+          }));
+          setTrips([]);
+          setShapes([]);
+          setStopsAndTimes([]);
+          setFilteredStops([]);
+          const [calendarData, routeTrips] = await Promise.all([
+            fetchCalendarsByProjectId(project_id, token),
+            fetchTripsByRouteId(entity.route_id, token),
+          ]);
+          setCalendars(calendarData);
+          setFilteredCalendars(calendarData);
+          setTrips(routeTrips);
+          setFilteredTrips(routeTrips);
+          setSelectedCategory("route");
+        }
+        break;
+      }
+
+      case "calendar": {
+        if (selectedEntities.calendar?.service_id === entity.service_id) {
+          setSelectedEntities((prev) => ({
+            ...prev,
+            calendar: null,
+            trip: null,
+            shape: null,
+            stop: null,
+          }));
+          setShapes([]);
+          setFilteredStops([]);
+          const routeTrips = await fetchTripsByRouteId(
+            selectedEntities.route.route_id,
+            token
+          );
+          setTrips(routeTrips);
+          setFilteredTrips(routeTrips);
+          setSelectedCategory("route");
+        } else {
+          setSelectedEntities((prev) => ({
+            ...prev,
+            calendar: entity,
+            trip: null,
+            shape: null,
+            stop: null,
+          }));
+          setShapes([]);
+          setFilteredStops([]);
+          const routeTrips = await fetchTripsByRouteId(
+            selectedEntities.route.route_id,
+            token
+          );
+          const filteredTrips = routeTrips.filter(
+            (trip) => trip.service_id === entity.service_id
+          );
+          setTrips(filteredTrips);
+          setFilteredTrips(filteredTrips);
+          setSelectedCategory("calendar");
+        }
         break;
       }
 
       case "trip": {
-        setSelectedEntities((prev) => ({
-          ...prev,
-          trip: entity,
-          stop: null,
-          shape: null,
-        }));
-        setStopsAndTimes([]);
-        setShapes([]);
-        setActiveKey("2");
-        const [tripStops, tripShapes] = await Promise.all([
-          fetchStopsAndStopTimesByTripId(entity.trip_id, project_id, token),
-          fetchShapesByShapeId(project_id, entity.shape_id, token),
-        ]);
-        setStopsAndTimes(tripStops);
-        setShapes(tripShapes);
-
-        const center = calculateCenter(tripShapes, tripStops);
-        if (center) {
-          setMapCenter(center);
-          setZoom(12);
+        if (selectedEntities.trip?.trip_id === entity.trip_id) {
+          setSelectedEntities((prev) => ({
+            ...prev,
+            trip: null,
+            shape: null,
+            stop: null,
+          }));
+          setShapes([]);
+          setFilteredStops([]);
+          setSelectedCategory("calendar");
         } else {
-          setMapCenter(null);
-          setZoom(10);
-        }
-        setSelectedCategory("trip");
-        break;
-      }
-
-      case "stop": {
-        setSelectedEntities((prev) => ({ ...prev, stop: entity }));
-        setSelectedCategory("stop");
-        setActiveKey("3");
-        if (entity.stop_lat && entity.stop_lon) {
-          setMapCenter([
-            parseFloat(entity.stop_lat),
-            parseFloat(entity.stop_lon),
+          setSelectedEntities((prev) => ({
+            ...prev,
+            trip: entity,
+            shape: null,
+            stop: null,
+          }));
+          const [tripStops, tripShapes] = await Promise.all([
+            fetchStopsAndStopTimesByTripId(entity.trip_id, project_id, token),
+            fetchShapesByShapeId(project_id, entity.shape_id, token),
           ]);
-          setZoom(18);
+          setShapes(tripShapes);
+          setFilteredShapes(tripShapes);
+          setStopsAndTimes(tripStops);
+          setFilteredStops(tripStops);
+          const center = calculateCenter(tripShapes, tripStops);
+          if (center) {
+            setMapCenter(center);
+            setZoom(12);
+          }
+          setSelectedCategory("trip");
         }
         break;
       }
 
       case "shape": {
-        setSelectedEntities((prev) => ({ ...prev, shape: entity }));
-        setSelectedCategory("shape");
-        setActiveKey("5");
-        if (entity.shape_pt_lat && entity.shape_pt_lon) {
-          setMapCenter([
-            parseFloat(entity.shape_pt_lat),
-            parseFloat(entity.shape_pt_lon),
-          ]);
-          setZoom(18);
+        if (
+          selectedEntities.shape?.shape_pt_sequence === entity.shape_pt_sequence
+        ) {
+          setSelectedEntities((prev) => ({ ...prev, shape: null }));
+          setSelectedCategory("trip");
+        } else {
+          setSelectedEntities((prev) => ({ ...prev, shape: entity }));
+          setSelectedCategory("shape");
+          if (entity.shape_pt_lat && entity.shape_pt_lon) {
+            setMapCenter([
+              parseFloat(entity.shape_pt_lat),
+              parseFloat(entity.shape_pt_lon),
+            ]);
+            setZoom(18);
+          }
+        }
+        break;
+      }
+
+      case "stop": {
+        if (selectedEntities.stop?.stop_id === entity.stop_id) {
+          setSelectedEntities((prev) => ({ ...prev, stop: null }));
+          setSelectedCategory("trip");
+        } else {
+          setSelectedEntities((prev) => ({ ...prev, stop: entity }));
+          setSelectedCategory("stop");
+          if (entity.stop_lat && entity.stop_lon) {
+            setMapCenter([
+              parseFloat(entity.stop_lat),
+              parseFloat(entity.stop_lon),
+            ]);
+            setZoom(18);
+          }
         }
         break;
       }
@@ -283,6 +474,9 @@ const Sidebar = ({
         setAgencies((prev) =>
           prev.filter((a) => a.agency_id !== entity.agency_id)
         );
+        setFilteredAgencies((prev) =>
+          prev.filter((a) => a.agency_id !== entity.agency_id)
+        );
         setSelectedEntities((prev) => ({
           ...prev,
           agency: null,
@@ -292,12 +486,19 @@ const Sidebar = ({
           shape: null,
         }));
         setRoutes([]);
+        setFilteredRoutes([]);
         setTrips([]);
+        setFilteredTrips([]);
         setStopsAndTimes([]);
+        setFilteredStops([]);
         setShapes([]);
+        setFilteredShapes([]);
       } else if (category === "route") {
         await deleteRouteById(entity.route_id, token);
         setRoutes((prev) => prev.filter((r) => r.route_id !== entity.route_id));
+        setFilteredRoutes((prev) =>
+          prev.filter((r) => r.route_id !== entity.route_id)
+        );
         setSelectedEntities((prev) => ({
           ...prev,
           route: null,
@@ -306,29 +507,45 @@ const Sidebar = ({
           shape: null,
         }));
         setTrips([]);
+        setFilteredTrips([]);
         setStopsAndTimes([]);
+        setFilteredStops([]);
         setShapes([]);
+        setFilteredShapes([]);
       } else if (category === "trip") {
         await deleteTripById(entity.trip_id, token);
         setTrips((prev) => prev.filter((t) => t.trip_id !== entity.trip_id));
+        setFilteredTrips((prev) =>
+          prev.filter((t) => t.trip_id !== entity.trip_id)
+        );
         setSelectedEntities((prev) => ({
           ...prev,
           trip: null,
           stop: null,
           shape: null,
         }));
-        setStopsAndTimes([]);
+        setStopsAndTimes((prev) =>
+          prev.filter((s) => s.trip_id !== entity.trip_id)
+        );
+        setFilteredStops([]);
         setShapes([]);
+        setFilteredShapes([]);
       } else if (category === "stop") {
         await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
         await deleteStopById(entity.stop_id, token);
         setStopsAndTimes((prev) =>
           prev.filter((s) => s.stop_id !== entity.stop_id)
         );
+        setFilteredStops((prev) =>
+          prev.filter((s) => s.stop_id !== entity.stop_id)
+        );
         setSelectedEntities((prev) => ({ ...prev, stop: null }));
       } else if (category === "shape") {
         await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
         setShapes((prev) =>
+          prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
+        );
+        setFilteredShapes((prev) =>
           prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
         );
         setSelectedEntities((prev) => ({ ...prev, shape: null }));
@@ -517,16 +734,23 @@ const Sidebar = ({
   const renderTooltip = (text) => <Tooltip id="tooltip">{text}</Tooltip>;
 
   const getActiveDays = (calendar) => {
-    if (!calendar) return "No data";
+    if (!calendar) return "N/A";
     const days = [];
-    if (calendar.monday === 1) days.push("Mon");
-    if (calendar.tuesday === 1) days.push("Tue");
-    if (calendar.wednesday === 1) days.push("Wed");
-    if (calendar.thursday === 1) days.push("Thu");
-    if (calendar.friday === 1) days.push("Fri");
-    if (calendar.saturday === 1) days.push("Sat");
-    if (calendar.sunday === 1) days.push("Sun");
-    return days.length > 0 ? days.join(", ") : "No days";
+    if (calendar.monday === 1) days.push("Pzt");
+    if (calendar.tuesday === 1) days.push("Sal");
+    if (calendar.wednesday === 1) days.push("Çar");
+    if (calendar.thursday === 1) days.push("Per");
+    if (calendar.friday === 1) days.push("Cum");
+    if (calendar.saturday === 1) days.push("Cts");
+    if (calendar.sunday === 1) days.push("Paz");
+    return days.length > 0 ? days.join(",") : "N/A";
+  };
+
+  const getTripDays = (tripId) => {
+    const trip = trips.find((t) => t.trip_id === tripId);
+    if (!trip || !calendars) return "N/A";
+    const calendar = calendars.find((c) => c.service_id === trip.service_id);
+    return getActiveDays(calendar);
   };
 
   const getRouteTypeIcon = (routeType) => {
@@ -546,20 +770,55 @@ const Sidebar = ({
       case 7:
         return <SignRailroad />;
       case 11:
-        return <BusFront />; // Assuming Trolleybus can also use Bus icon
+        return <BusFront />;
       case 12:
-        return <SignRailroad />; // Assuming Monorail can also use Rail icon
+        return <SignRailroad />;
       default:
-        return <BusFront />
+        return <BusFront />;
     }
-  }
+  };
+
+  const parseTimeToDate = (timeStr) => {
+    if (!timeStr || timeStr === "N/A") return null;
+    const [hours, minutes, seconds] = timeStr.split(":").map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, seconds, 0);
+    return date;
+  };
+
+  const getTripTimes = (tripId) => {
+    const trip = trips.find((t) => t.trip_id === tripId);
+    return {
+      departure: trip?.departure_time || "N/A",
+      arrival: trip?.arrival_time || "N/A",
+    };
+  };
+
+  const getTripStyle = (tripId) => {
+    const now = new Date();
+    const times = getTripTimes(tripId);
+    const departureTime = parseTimeToDate(times.departure);
+
+    if (!departureTime) return {};
+
+    if (departureTime < now) {
+      return { opacity: 0.5, backgroundColor: "#f8f9fa" };
+    }
+
+    return {};
+  };
 
   return (
     <div className="sidebar-container">
       <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
         <Accordion
           activeKey={activeKey}
-          onSelect={(key) => setActiveKey(key)}
+          onSelect={(key) => {
+            setActiveKey(key);
+            if (key === "3" && trips.length > 0 && !trips[0].departure_time) {
+              loadTripTimes();
+            }
+          }}
           className="sidebar-accordion"
         >
           <Accordion.Item eventKey="0">
@@ -567,17 +826,38 @@ const Sidebar = ({
               <Building size={20} className="me-2" /> Agencies
             </Accordion.Header>
             <Accordion.Body>
-              {agencies.length > 0 ? (
-                paginateItems(agencies, pageAgencies).map((agency) => (
+              <Form.Group className="mb-3">
+                <Form.Control
+                  type="text"
+                  placeholder="Search agencies..."
+                  value={searchTerms.agencies}
+                  onChange={(e) => {
+                    setSearchTerms({
+                      ...searchTerms,
+                      agencies: e.target.value,
+                    });
+                    handleSearch(
+                      "agencies",
+                      e.target.value,
+                      agencies,
+                      setFilteredAgencies,
+                      setPageAgencies
+                    );
+                  }}
+                />
+              </Form.Group>
+              {filteredAgencies.length > 0 ? (
+                paginateItems(filteredAgencies, pageAgencies).map((agency) => (
                   <Card
                     key={agency.agency_id}
-                    className={`mb-2 item-card ${selectedEntities.agency?.agency_id === agency.agency_id
+                    className={`mb-2 item-card ${
+                      selectedEntities.agency?.agency_id === agency.agency_id
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("agency", agency)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    <Card.Body className="d-flex align-items-center p-2">
                       <OverlayTrigger
                         placement="top"
                         overlay={renderTooltip(agency.agency_name)}
@@ -590,29 +870,58 @@ const Sidebar = ({
               ) : (
                 <p className="text-muted text-center">No agencies found.</p>
               )}
-              {renderPagination(agencies, pageAgencies, setPageAgencies)}
+              {renderPagination(
+                filteredAgencies,
+                pageAgencies,
+                setPageAgencies
+              )}
             </Accordion.Body>
           </Accordion.Item>
 
           <Accordion.Item eventKey="1">
             <Accordion.Header>
-              <Map size={20} className="me-2" /> Routes
+              <MapIcon size={20} className="me-2" /> Routes
             </Accordion.Header>
             <Accordion.Body>
-              {routes.length > 0 ? (
-                paginateItems(routes, pageRoutes).map((route) => (
+              <Form.Group className="mb-3">
+                <Form.Control
+                  type="text"
+                  placeholder="Search routes..."
+                  value={searchTerms.routes}
+                  onChange={(e) => {
+                    setSearchTerms({ ...searchTerms, routes: e.target.value });
+                    handleSearch(
+                      "routes",
+                      e.target.value,
+                      routes,
+                      setFilteredRoutes,
+                      setPageRoutes
+                    );
+                  }}
+                />
+              </Form.Group>
+              {filteredRoutes.length > 0 ? (
+                paginateItems(filteredRoutes, pageRoutes).map((route) => (
                   <Card
                     key={route.route_id}
-                    className={`mb-2 item-card ${selectedEntities.route?.route_id === route.route_id
+                    className={`mb-2 item-card ${
+                      selectedEntities.route?.route_id === route.route_id
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("route", route)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    <Card.Body className="d-flex align-items-center p-2">
                       {getRouteTypeIcon(route.route_type)}
-                      <OverlayTrigger placement="top" overlay={renderTooltip(route.route_long_name || route.route_id)}>
-                        <span className="item-title">{route.route_long_name || route.route_id}</span>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={renderTooltip(
+                          route.route_long_name || route.route_id
+                        )}
+                      >
+                        <span className="item-title ms-2">
+                          {route.route_long_name || route.route_id}
+                        </span>
                       </OverlayTrigger>
                     </Card.Body>
                   </Card>
@@ -624,98 +933,47 @@ const Sidebar = ({
                     : "Select an agency first."}
                 </p>
               )}
-              {renderPagination(routes, pageRoutes, setPageRoutes)}
+              {renderPagination(filteredRoutes, pageRoutes, setPageRoutes)}
             </Accordion.Body>
           </Accordion.Item>
 
           <Accordion.Item eventKey="2">
             <Accordion.Header>
-              <BusFront size={20} className="me-2" /> Trips
-            </Accordion.Header>
-            <Accordion.Body>
-              {trips.length > 0 ? (
-                paginateItems(trips, pageTrips).map((trip) => (
-                  <Card
-                    key={trip.trip_id}
-                    className={`mb-2 item-card ${selectedEntities.trip?.trip_id === trip.trip_id
-                        ? "active"
-                        : ""
-                      }`}
-                    onClick={() => handleSelectionChange("trip", trip)}
-                  >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
-                      {trip.direction_id === 0 ? <ArrowDownLeft /> : <ArrowUpRight />}
-                      <OverlayTrigger placement="top" overlay={renderTooltip(trip.trip_headsign || trip.trip_id)}>
-                        <span className="item-title">{trip.trip_headsign || trip.trip_id}</span>
-                      </OverlayTrigger>
-                    </Card.Body>
-                  </Card>
-                ))
-              ) : (
-                <p className="text-muted text-center">
-                  {selectedEntities.route
-                    ? "No trips found."
-                    : "Select a route first."}
-                </p>
-              )}
-              {renderPagination(trips, pageTrips, setPageTrips)}
-            </Accordion.Body>
-          </Accordion.Item>
-
-          <Accordion.Item eventKey="3">
-            <Accordion.Header>
-              <GeoAlt size={20} className="me-2" /> Stops
-            </Accordion.Header>
-            <Accordion.Body>
-              {stopsAndTimes.length > 0 ? (
-                paginateItems(stopsAndTimes, pageStops).map((stop) => (
-                  <Card
-                    key={stop.stop_id + "-" + stop.trip_id}
-                    className={`mb-2 item-card ${selectedEntities.stop?.stop_id === stop.stop_id
-                        ? "active"
-                        : ""
-                      }`}
-                    onClick={() => handleSelectionChange("stop", stop)}
-                  >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
-                      <OverlayTrigger
-                        placement="top"
-                        overlay={renderTooltip(stop.stop_name || stop.stop_id)}
-                      >
-                        <span className="item-title">
-                          {stop.stop_name || stop.stop_id}
-                        </span>
-                      </OverlayTrigger>
-                    </Card.Body>
-                  </Card>
-                ))
-              ) : (
-                <p className="text-muted text-center">
-                  {selectedEntities.trip
-                    ? "No stops found."
-                    : "Select a trip first."}
-                </p>
-              )}
-              {renderPagination(stopsAndTimes, pageStops, setPageStops)}
-            </Accordion.Body>
-          </Accordion.Item>
-
-          <Accordion.Item eventKey="4">
-            <Accordion.Header>
               <Calendar size={20} className="me-2" /> Calendars
             </Accordion.Header>
             <Accordion.Body>
-              {calendars.length > 0 ? (
-                paginateItems(calendars, pageCalendars).map((cal) => (
+              <Form.Group className="mb-3">
+                <Form.Control
+                  type="text"
+                  placeholder="Search calendars..."
+                  value={searchTerms.calendars}
+                  onChange={(e) => {
+                    setSearchTerms({
+                      ...searchTerms,
+                      calendars: e.target.value,
+                    });
+                    handleSearch(
+                      "calendars",
+                      e.target.value,
+                      calendars,
+                      setFilteredCalendars,
+                      setPageCalendars
+                    );
+                  }}
+                />
+              </Form.Group>
+              {filteredCalendars.length > 0 ? (
+                paginateItems(filteredCalendars, pageCalendars).map((cal) => (
                   <Card
                     key={cal.service_id}
-                    className={`mb-2 item-card ${selectedEntities.calendar?.service_id === cal.service_id
+                    className={`mb-2 item-card ${
+                      selectedEntities.calendar?.service_id === cal.service_id
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("calendar", cal)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    <Card.Body className="d-flex align-items-center p-2">
                       <OverlayTrigger
                         placement="top"
                         overlay={renderTooltip(getActiveDays(cal))}
@@ -728,27 +986,131 @@ const Sidebar = ({
               ) : (
                 <p className="text-muted text-center">No calendars found.</p>
               )}
-              {renderPagination(calendars, pageCalendars, setPageCalendars)}
+              {renderPagination(
+                filteredCalendars,
+                pageCalendars,
+                setPageCalendars
+              )}
             </Accordion.Body>
           </Accordion.Item>
 
-          <Accordion.Item eventKey="5">
+          <Accordion.Item eventKey="3">
+            <Accordion.Header>
+              <BusFront size={20} className="me-2" /> Trips
+            </Accordion.Header>
+            <Accordion.Body>
+              <Form.Group className="mb-3">
+                <Form.Control
+                  type="text"
+                  placeholder="Search trips..."
+                  value={searchTerms.trips}
+                  onChange={(e) => {
+                    setSearchTerms({ ...searchTerms, trips: e.target.value });
+                    handleSearch(
+                      "trips",
+                      e.target.value,
+                      trips,
+                      setFilteredTrips,
+                      setPageTrips
+                    );
+                  }}
+                />
+              </Form.Group>
+              {filteredTrips.length > 0 ? (
+                paginateItems(filteredTrips, pageTrips).map((trip, index) => {
+                  const times = getTripTimes(trip.trip_id);
+                  const days = getTripDays(trip.trip_id);
+                  return (
+                    <Card
+                      key={`${trip.trip_id}-${index}`}
+                      className={`mb-2 item-card ${
+                        selectedEntities.trip?.trip_id === trip.trip_id
+                          ? "active"
+                          : ""
+                      }`}
+                      onClick={() => handleSelectionChange("trip", trip)}
+                      style={getTripStyle(trip.trip_id)}
+                    >
+                      <Card.Body className="d-flex align-items-center p-2">
+                        {trip.direction_id === 0 ? (
+                          <ArrowDownLeft className="me-2" />
+                        ) : (
+                          <ArrowUpRight className="me-2" />
+                        )}
+                        <div className="flex-grow-1">
+                          <OverlayTrigger
+                            placement="top"
+                            overlay={renderTooltip(
+                              trip.trip_headsign || trip.trip_id
+                            )}
+                          >
+                            <span className="item-title d-block">
+                              {trip.trip_headsign || trip.trip_id}
+                            </span>
+                          </OverlayTrigger>
+                          <span style={{ fontSize: "0.8em" }}>
+                            {times.departure !== "N/A" &&
+                            times.arrival !== "N/A"
+                              ? `${times.departure} - ${times.arrival}`
+                              : "N/A"}
+                            {" | "}
+                            <span
+                              style={{ fontSize: "0.7em", color: "#6c757d" }}
+                            >
+                              {days}
+                            </span>
+                          </span>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  );
+                })
+              ) : (
+                <p className="text-muted text-center">
+                  {selectedEntities.route
+                    ? "No trips found."
+                    : "Select a route first."}
+                </p>
+              )}
+              {renderPagination(filteredTrips, pageTrips, setPageTrips)}
+            </Accordion.Body>
+          </Accordion.Item>
+
+          <Accordion.Item eventKey="4">
             <Accordion.Header>
               <BoundingBoxCircles size={20} className="me-2" /> Shapes
             </Accordion.Header>
             <Accordion.Body>
-              {shapes.length > 0 ? (
-                paginateItems(shapes, pageShapes).map((shape) => (
+              <Form.Group className="mb-3">
+                <Form.Control
+                  type="text"
+                  placeholder="Search shapes..."
+                  value={searchTerms.shapes}
+                  onChange={(e) => {
+                    setSearchTerms({ ...searchTerms, shapes: e.target.value });
+                    handleSearch(
+                      "shapes",
+                      e.target.value,
+                      shapes,
+                      setFilteredShapes,
+                      setPageShapes
+                    );
+                  }}
+                />
+              </Form.Group>
+              {filteredShapes.length > 0 ? (
+                paginateItems(filteredShapes, pageShapes).map((shape) => (
                   <Card
-                    key={shape.shape_pt_sequence}
-                    className={`mb-2 item-card ${selectedEntities.shape?.shape_pt_sequence ===
-                        shape.shape_pt_sequence
+                    key={`${shape.shape_id}-${shape.shape_pt_sequence}`}
+                    className={`mb-2 item-card ${
+                      selectedEntities.shape?.shape_pt_sequence ===
+                      shape.shape_pt_sequence
                         ? "active"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => handleSelectionChange("shape", shape)}
                   >
-                    <Card.Body className="d-flex justify-content-between align-items-center p-2">
+                    <Card.Body className="d-flex align-items-center p-2">
                       <OverlayTrigger
                         placement="top"
                         overlay={renderTooltip(
@@ -769,12 +1131,71 @@ const Sidebar = ({
                     : "Select a trip first."}
                 </p>
               )}
-              {renderPagination(shapes, pageShapes, setPageShapes)}
+              {renderPagination(filteredShapes, pageShapes, setPageShapes)}
+            </Accordion.Body>
+          </Accordion.Item>
+
+          <Accordion.Item eventKey="5">
+            <Accordion.Header>
+              <Clock size={20} className="me-2" /> Stops
+            </Accordion.Header>
+            <Accordion.Body>
+              <Form.Group className="mb-3">
+                <Form.Control
+                  type="text"
+                  placeholder="Search stops..."
+                  value={searchTerms.stops}
+                  onChange={(e) => {
+                    setSearchTerms({ ...searchTerms, stops: e.target.value });
+                    handleSearch(
+                      "stops",
+                      e.target.value,
+                      filteredStops,
+                      setFilteredStops,
+                      setPageStops
+                    );
+                  }}
+                />
+              </Form.Group>
+              {filteredStops.length > 0 && selectedEntities.trip ? (
+                paginateItems(filteredStops, pageStops).map((stop) => (
+                  <Card
+                    key={`${stop.trip_id}-${stop.stop_id}-${stop.stop_sequence}`}
+                    className={`mb-2 item-card ${
+                      selectedEntities.stop?.stop_id === stop.stop_id
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() => handleSelectionChange("stop", stop)}
+                  >
+                    <Card.Body className="d-flex align-items-center p-2">
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={renderTooltip(stop.stop_name || stop.stop_id)}
+                      >
+                        <span className="item-title">
+                          {stop.stop_sequence}. {stop.stop_name || stop.stop_id}
+                        </span>
+                      </OverlayTrigger>
+                    </Card.Body>
+                  </Card>
+                ))
+              ) : (
+                <p className="text-muted text-center">
+                  {selectedEntities.trip
+                    ? "No stops found."
+                    : "Select a trip first."}
+                </p>
+              )}
+              {renderPagination(filteredStops, pageStops, setPageStops)}
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
       </div>
-      <span onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="sidebar-toggle-icon">
+      <span
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="sidebar-toggle-icon"
+      >
         <List size={30} />
       </span>
       {formConfig && (

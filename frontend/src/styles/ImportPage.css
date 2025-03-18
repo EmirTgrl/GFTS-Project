@@ -1,14 +1,12 @@
 .import-page {
-  background-image: url("/src/assets/map.png"); /* Resmin tam adını buraya yaz */
+  background-image: url("/src/assets/map.png"); 
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   min-height: 100vh;
-  /* filter yok, soluklaştırma yok */
 }
 
-/* Geri kalan her şey aynı */
 .import-card {
   border: none;
   border-radius: 10px;
