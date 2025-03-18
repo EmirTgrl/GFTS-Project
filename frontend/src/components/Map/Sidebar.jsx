@@ -16,7 +16,7 @@ import {
   deleteStopTimeById,
 } from "../../api/stopTimeApi";
 import { deleteStopById } from "../../api/stopApi";
-import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
+import { deleteShape, fetchShapesByShapeId } from "../../api/shapeApi";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -221,10 +221,11 @@ const Sidebar = ({
         setActiveKey("2");
         const [tripStops, tripShapes] = await Promise.all([
           fetchStopsAndStopTimesByTripId(entity.trip_id, project_id, token),
-          fetchShapesByTripId(project_id, entity.trip_id, token),
+          fetchShapesByShapeId(project_id, entity.shape_id, token),
         ]);
         setStopsAndTimes(tripStops);
         setShapes(tripShapes);
+        console.log(tripShapes)
 
         const center = calculateCenter(tripShapes, tripStops);
         if (center) {

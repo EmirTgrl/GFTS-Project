@@ -1,8 +1,8 @@
 const API_BASE_URL = "http://localhost:5000/api/shapes";
 
-export const fetchShapesByTripId = async (projectId, tripId, token) => {
+export const fetchShapesByShapeId = async (projectId, shape_id, token) => {
   const response = await fetch(
-    `${API_BASE_URL}?project_id=${projectId}&trip_id=${tripId}`,
+    `${API_BASE_URL}?project_id=${projectId}&shape_id=${shape_id}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -61,6 +61,23 @@ export const saveShape = async (shapeData, token) => {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(shapeData),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to save shape: ${errorText}`);
+  }
+  return response.json();
+};
+
+export const saveMultipleShapes = async (shapesData, trip_id, token) => {
+  console.log(shapesData)
+  const response = await fetch(`${API_BASE_URL}/create-multiple/${trip_id}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(shapesData),
   });
   if (!response.ok) {
     const errorText = await response.text();
