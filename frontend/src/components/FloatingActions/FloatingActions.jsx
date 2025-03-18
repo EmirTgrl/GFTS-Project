@@ -1,4 +1,4 @@
-import { PlusLg, Pencil, List, Trash, Map, Floppy, XLg, BoundingBoxCircles, GeoAlt } from "react-bootstrap-icons";
+import { PlusLg, Pencil, List, Trash, Map, Floppy, Arrow90degLeft, BoundingBoxCircles, GeoAlt } from "react-bootstrap-icons";
 import PropTypes from "prop-types";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import "../../styles/FloatingActions.css";
@@ -64,19 +64,43 @@ const FloatingActions = ({ setAction, editorMode, setEditorMode }) => {
           </>
         ) : (
           <>
+          <OverlayTrigger
+            placement="left"
+            overlay={renderTooltip("Add Stop")}
+            trigger={["hover", "focus"]}
+          >
             <button className={`fab-secondary ${editorMode === "add-stop" ? "active":""}`} onClick={() => setEditorMode(editorMode==="add-stop" ? "open":"add-stop")}>
               <GeoAlt size={20} />
             </button>
+          </OverlayTrigger>
+          <OverlayTrigger
+            placement="left"
+            overlay={renderTooltip("Add Shape")}
+            trigger={["hover", "focus"]}
+          >
             <button className={`fab-secondary ${editorMode === "add-shape" ? "active":""}`} onClick={() => setEditorMode(editorMode==="add-shape" ? "open":"add-shape")}>
               <BoundingBoxCircles size={20} />
-            </button> 
-            <button className="fab-secondary" onClick={() => setEditorMode("close")}>
-              <XLg size={20} />
             </button>
+          </OverlayTrigger> 
+          <OverlayTrigger
+            placement="left"
+            overlay={renderTooltip("Close Editor")}
+            trigger={["hover", "focus"]}
+          >
+            <button className="fab-secondary" onClick={() => setEditorMode("close")}>
+              <Arrow90degLeft size={20} />
+            </button>
+          </OverlayTrigger>
+          <OverlayTrigger
+            placement="left"
+            overlay={renderTooltip("Save Changes")}
+            trigger={["hover", "focus"]}
+          >
             <button className="fab-secondary" onClick={() => setEditorMode("save")}>
               <Floppy size={20} />
             </button>
-          </>
+          </OverlayTrigger>
+        </>
         )}
       </div>
       <div className="main-action">
