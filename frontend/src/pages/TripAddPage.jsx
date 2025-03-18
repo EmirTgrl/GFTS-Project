@@ -73,7 +73,7 @@ const TripAddPage = ({
 
     if (result.isConfirmed) {
       try {
-        const formData = { ...tripData, project_id, route_id: selectedRoute };
+        const formData = { ...tripData, project_id, route_id: selectedRoute.route_id };
         const response = await saveTrip(formData, token);
         const trip_id = response.trip_id;
         setTrips((prev) => [...prev, { ...formData, trip_id }]);
