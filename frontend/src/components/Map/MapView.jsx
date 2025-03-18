@@ -8,13 +8,18 @@ import {
   useMap,
   CircleMarker,
 } from "react-leaflet";
-import { useEffect, useState } from "react"; 
+import { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import L from "leaflet";
 import MapUpdater from "./MapUpdater.jsx";
 import Swal from 'sweetalert2';
 import {saveMultipleStopsAndTimes} from "../../api/stopTimeApi.js"
 import {saveMultipleShapes} from "../../api/shapeApi.js"
+import { CaretUpFill } from 'react-bootstrap-icons';
+import { renderToString } from 'react-dom/server';
+
+// Import the plugin
+import 'leaflet-polylinedecorator';
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -237,6 +242,58 @@ const MapView = ({
       );
   };
 
+
+function PolylineWithDirectionalArrows({ positions, color, weight }) {
+  const map = useMap();
+  const decoratorRef = useRef(null);
+
+  useEffect(() => {
+    if (!map || !positions || positions.length < 2) {
+      return;
+    }
+
+    // Remove previous decorator if it exists
+    if (decoratorRef.current) {
+      map.removeLayer(decoratorRef.current);
+    }
+
+    const decorator = L.polylineDecorator(positions, {
+      patterns: [
+        {
+          offset: 20, // Adjust starting position
+          repeat: 50, // Adjust spacing of the arrows
+          symbol: L.Symbol.marker({
+            rotate: true,
+            markerOptions: {
+              icon: L.divIcon({
+                className: 'arrow-icon',
+                html: renderToString(<CaretUpFill color="white" />),
+                iconSize: [12, 12], // Size of the icon
+                iconAnchor: [6, 6], // Anchor point
+              }),
+            },
+          }),
+        },
+      ],
+    }).addTo(map);
+
+    decoratorRef.current = decorator; // Store the decorator for cleanup
+
+    return () => {
+      if (decorator) {
+        map.removeLayer(decorator);
+      }
+    };
+  }, [map, positions]);
+  return (
+    <Polyline
+      positions={positions}
+      color={color}
+      weight={weight}
+    />
+  );
+}
+
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -276,7 +333,7 @@ const MapView = ({
 
       {tempShapes.length > 0 && (
         <>
-          <Polyline
+          <PolylineWithDirectionalArrows
             positions={tempShapes
               .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
               .map((shape) => [
@@ -284,7 +341,7 @@ const MapView = ({
                 parseFloat(shape.shape_pt_lon),
               ])}
             color={editorMode !== "close" ? "red" : "#FF0000"} // Conditional color
-            weight={5}
+            weight={8}
             
           />
           {editorMode !== "close" &&
