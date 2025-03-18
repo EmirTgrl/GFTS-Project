@@ -35,6 +35,7 @@ const MapPage = () => {
     shape: null,
     stop: null,
   });
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   useEffect(() => {
     const { selectedRoute: prevRoute, selectedTrip: prevTrip } =
@@ -104,6 +105,8 @@ const MapPage = () => {
         setAction={setAction}
         selectedEntities={selectedEntities}
         setSelectedEntities={setSelectedEntities}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
       />
 
       <MapView
@@ -127,6 +130,8 @@ const MapPage = () => {
         setAction={setAction}
         editorMode={editorMode}
         setEditorMode={setEditorMode}
+        selectedCategory={selectedCategory}
+        selectedEntities={selectedEntities}
       />
     </div>
   );

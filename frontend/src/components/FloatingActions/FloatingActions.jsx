@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import "../../styles/FloatingActions.css";
 
-const FloatingActions = ({ setAction, editorMode, setEditorMode }) => {
+const FloatingActions = ({ setAction, editorMode, setEditorMode, selectedCategory, selectedEntities}) => {
   const renderTooltip = (text) => (
     <Tooltip id={`tooltip-${text.toLowerCase()}`}>{text}</Tooltip>
   );
@@ -13,9 +13,11 @@ const FloatingActions = ({ setAction, editorMode, setEditorMode }) => {
       <div className="secondary-actions">
         {editorMode === "close" ? (
           <>
-            <OverlayTrigger
+            {selectedEntities.trip !== null && (
+              <>
+              <OverlayTrigger
               placement="left"
-              overlay={renderTooltip("Edit Map")}
+              overlay={renderTooltip("Edit Mode")}
               trigger={["hover", "focus"]}
             >
               <button
@@ -25,42 +27,48 @@ const FloatingActions = ({ setAction, editorMode, setEditorMode }) => {
                 <Map size={20} />
               </button>
             </OverlayTrigger>
-            <OverlayTrigger
-              placement="left"
-              overlay={renderTooltip("Delete")}
-              trigger={["hover", "focus"]}
-            >
-              <button
-                className="fab-secondary"
-                onClick={() => setAction("delete")}
-              >
-                <Trash size={20} />
-              </button>
-            </OverlayTrigger>
-            <OverlayTrigger
-              placement="left"
-              overlay={renderTooltip("Edit")}
-              trigger={["hover", "focus"]}
-            >
-              <button
-                className="fab-secondary"
-                onClick={() => setAction("edit")}
-              >
-                <Pencil size={20} />
-              </button>
-            </OverlayTrigger>
-            <OverlayTrigger
-              placement="left"
-              overlay={renderTooltip("Add")}
-              trigger={["hover", "focus"]}
-            >
-              <button
-                className="fab-secondary"
-                onClick={() => setAction("add")}
-              >
-                <PlusLg size={20} />
-              </button>
-            </OverlayTrigger>
+              </>
+            )}
+            {selectedCategory && selectedCategory !== "" && (
+              <>
+                <OverlayTrigger
+                  placement="left"
+                  overlay={renderTooltip("Delete " + selectedCategory)}
+                  trigger={["hover", "focus"]}
+                >
+                  <button
+                    className="fab-secondary"
+                    onClick={() => setAction("delete")}
+                  >
+                    <Trash size={20} />
+                  </button>
+                </OverlayTrigger>
+                <OverlayTrigger
+                  placement="left"
+                  overlay={renderTooltip("Edit " + selectedCategory)}
+                  trigger={["hover", "focus"]}
+                >
+                  <button
+                    className="fab-secondary"
+                    onClick={() => setAction("edit")}
+                  >
+                    <Pencil size={20} />
+                  </button>
+                </OverlayTrigger>
+                <OverlayTrigger
+                  placement="left"
+                  overlay={renderTooltip("Add " + selectedCategory)}
+                  trigger={["hover", "focus"]}
+                >
+                  <button
+                    className="fab-secondary"
+                    onClick={() => setAction("add")}
+                  >
+                    <PlusLg size={20} />
+                  </button>
+                </OverlayTrigger>
+              </>
+            )}
           </>
         ) : (
           <>
@@ -122,6 +130,7 @@ FloatingActions.propTypes = {
   setAction: PropTypes.func.isRequired,
   editorMode: PropTypes.string.isRequired,
   setEditorMode: PropTypes.func.isRequired,
+  selectedCategory: PropTypes.string
 };
 
 export default FloatingActions;

@@ -76,7 +76,9 @@ const Sidebar = ({
   action,
   setAction,
   selectedEntities,
-  setSelectedEntities
+  setSelectedEntities,
+  selectedCategory,
+  setSelectedCategory,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeKey, setActiveKey] = useState("0");
@@ -86,7 +88,6 @@ const Sidebar = ({
   const [pageStops, setPageStops] = useState(1);
   const [pageCalendars, setPageCalendars] = useState(1);
   const [pageShapes, setPageShapes] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState("");
  
   const [formConfig, setFormConfig] = useState(null);
   const [filteredAgencies, setFilteredAgencies] = useState(agencies);
