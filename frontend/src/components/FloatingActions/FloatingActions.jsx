@@ -92,20 +92,20 @@ const FloatingActions = ({ setAction, editorMode, setEditorMode, selectedCategor
           </OverlayTrigger> 
           <OverlayTrigger
             placement="left"
-            overlay={renderTooltip("Close Editor")}
-            trigger={["hover", "focus"]}
-          >
-            <button className="fab-secondary" onClick={() => setEditorMode("close")}>
-              <Arrow90degLeft size={20} />
-            </button>
-          </OverlayTrigger>
-          <OverlayTrigger
-            placement="left"
             overlay={renderTooltip("Save Changes")}
             trigger={["hover", "focus"]}
           >
             <button className="fab-secondary" onClick={() => setEditorMode("save")}>
               <Floppy size={20} />
+            </button>
+          </OverlayTrigger>
+          <OverlayTrigger
+            placement="left"
+            overlay={renderTooltip("Close Editor")}
+            trigger={["hover", "focus"]}
+          >
+            <button className="fab-secondary" onClick={() => setEditorMode("close")}>
+              <Arrow90degLeft size={20} />
             </button>
           </OverlayTrigger>
         </>
