@@ -130,6 +130,7 @@ const MapPage = () => {
         setEditorMode={setEditorMode}
         selectedEntities={selectedEntities}
         setSelectedEntities={setSelectedEntities}
+        token={token}
       />
 
       <FloatingActions

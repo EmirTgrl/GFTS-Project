@@ -13,6 +13,8 @@ import PropTypes from "prop-types";
 import L from "leaflet";
 import MapUpdater from "./MapUpdater.jsx";
 import Swal from 'sweetalert2';
+import {saveMultipleStopsAndTimes} from "../../api/stopTimeApi.js"
+import {saveMultipleShapes} from "../../api/shapeApi.js"
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -52,7 +54,8 @@ const MapView = ({
   editorMode,
   setEditorMode,
   selectedEntities,
-  setSelectedEntities
+  setSelectedEntities,
+  token,
 }) => {
   const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
   const [tempShapes, setTempShapes] = useState([]);
@@ -67,6 +70,8 @@ const MapView = ({
     if (editorMode === "save") {
       setStopsAndTimes(tempStopsAndTimes)
       setShapes(tempShapes)
+      saveMultipleShapes(tempShapes, selectedEntities.trip.trip_id ,token)
+      saveMultipleStopsAndTimes(tempStopsAndTimes,token)
       setEditorMode("close")
     }
     if (editorMode === "close") {
@@ -76,21 +81,89 @@ const MapView = ({
   }, [editorMode,]);
 
   useEffect(()=>{
+    
     if(editorMode === "add-shape"){
-      setTempShapes(prev => [...prev,{
-        shape_pt_lat:clickedCoords.lat,
-        shape_pt_lon:clickedCoords.lng,
-        shape_pt_sequence: tempShapes.length>0? Math.max(...tempShapes.map(shape=> shape.shape_pt_sequence)) + 1 : 1,
-      }])
-    }
-    if(editorMode === "add-stop"){
-      setTempStopsAndTimes(prev => [...prev,{
-        stop_lat:clickedCoords.lat,
-        stop_lon:clickedCoords.lng,
-        arrival_time: "00:00:00",
-        departure_time: "00:00:00",
-        stop_sequence: tempStopsAndTimes.length > 0 ? Math.max(...tempStopsAndTimes.map(stop => stop.stop_sequence)) + 1 : 1,
-      }])
+      if (tempShapes.length === 0) {
+        // Prompt the user to enter a shape ID using SweetAlert2.
+        Swal.fire({
+          title: 'Enter Shape ID',
+          input: 'text',
+          inputAttributes: {
+            autocapitalize: 'off'
+          },
+          showCancelButton: true,
+          confirmButtonText: 'Save',
+          cancelButtonText: 'Cancel',
+          showLoaderOnConfirm: true,
+          preConfirm: (shapeId) => {
+            if (!shapeId) {
+              Swal.showValidationMessage(`Shape ID is required`);
+            }
+            return shapeId;
+          },
+          allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+          if (result.isConfirmed) {
+            const shapeId = result.value;
+            setTempShapes(prev => [...prev,{
+              shape_id: shapeId, // Use the provided shape ID
+              shape_pt_lat:clickedCoords.lat,
+              shape_pt_lon:clickedCoords.lng,
+              shape_pt_sequence: tempShapes.length>0? Math.max(...tempShapes.map(shape=> shape.shape_pt_sequence)) + 1 : 1,
+              project_id:selectedEntities.trip.project_id,
+              shape_dist_traveled:null,
+            }]);
+          } else {
+            // User cancelled, so exit add-shape mode.
+            setEditorMode("open");
+          }
+        });
+      }
+      else {
+        setTempShapes(prev => [...prev,{
+          shape_id: tempShapes[0].shape_id,
+          shape_pt_lat:clickedCoords.lat,
+          shape_pt_lon:clickedCoords.lng,
+          shape_pt_sequence: tempShapes.length>0? Math.max(...tempShapes.map(shape=> shape.shape_pt_sequence)) + 1 : 1,
+          project_id:selectedEntities.trip.project_id,
+          shape_dist_traveled:null,
+        }])
+      }}
+      if(editorMode === "add-stop"){
+        Swal.fire({
+            title: 'Enter Stop Name',
+            input: 'text',
+            inputAttributes: {
+                autocapitalize: 'off'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Save',
+            cancelButtonText: 'Cancel',
+            showLoaderOnConfirm: true,
+            preConfirm: (stopName) => {
+                if (!stopName) {
+                    Swal.showValidationMessage(`Stop Name is required`);
+                }
+                return stopName;
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const stopName = result.value;
+                setTempStopsAndTimes(prev => [...prev, {
+                    trip_id: selectedEntities.trip.trip_id,
+                    stop_name: stopName,
+                    stop_lat: clickedCoords.lat,
+                    stop_lon: clickedCoords.lng,
+                    arrival_time: "00:00:00",
+                    departure_time: "00:00:00",
+                    stop_sequence: tempStopsAndTimes.length > 0 ? Math.max(...tempStopsAndTimes.map(stop => stop.stop_sequence)) + 1 : 1,
+                    project_id: selectedEntities.trip.project_id,
+                }]);
+            } else {
+                setEditorMode("open");
+            }
+        });
     }
   },[clickedCoords,])
 
@@ -119,7 +192,7 @@ const MapView = ({
   }, [editorMode]);
 
   const handleStopDrag = (e, stopSequence) => {
-    if (editorMode !== "open") return;
+    if (editorMode === "close") return;
 
     const newLatLng = e.target.getLatLng();
 
@@ -137,7 +210,7 @@ const MapView = ({
     );
   };
   const handleShapeDrag = (e, shapePtSequence) => {
-    if (editorMode !== "open") return;
+    if (editorMode === "close") return;
 
     const newLatLng = e.target.getLatLng();
       setTempShapes(prevShapes =>
