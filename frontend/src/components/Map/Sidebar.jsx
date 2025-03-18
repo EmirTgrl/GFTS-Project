@@ -457,11 +457,6 @@ const Sidebar = ({
         }
         break;
       }
-      case "calendar":{
-        setSelectedEntities((prev)=>({...prev, calendar: entity}));
-        setSelectedCategory("calendar")
-        setActiveKey("4")
-      }
 
       default:
         break;
