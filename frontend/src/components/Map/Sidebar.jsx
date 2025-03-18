@@ -4,7 +4,7 @@ import { Modal } from "react-bootstrap";
 import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
 import { fetchCalendarsByProjectId } from "../../api/calendarApi";
 import Swal from "sweetalert2";
-import { List, ArrowUpRight, ArrowDownLeft, Building, Map, BusFront, Clock, Calendar, Bezier } from "react-bootstrap-icons";
+import { List, ArrowUpRight, ArrowDownLeft, Building, Map, BusFront, GeoAlt, Calendar, BoundingBoxCircles } from "react-bootstrap-icons";
 import { Accordion, Pagination, Card, OverlayTrigger, Tooltip } from "react-bootstrap";
 import {
   fetchAgenciesByProjectId,
@@ -225,7 +225,6 @@ const Sidebar = ({
         ]);
         setStopsAndTimes(tripStops);
         setShapes(tripShapes);
-        console.log(tripShapes)
 
         const center = calculateCenter(tripShapes, tripStops);
         if (center) {
@@ -665,7 +664,7 @@ const Sidebar = ({
 
           <Accordion.Item eventKey="3">
             <Accordion.Header>
-              <Clock size={20} className="me-2" /> Stops
+              <GeoAlt size={20} className="me-2" /> Stops
             </Accordion.Header>
             <Accordion.Body>
               {stopsAndTimes.length > 0 ? (
@@ -735,7 +734,7 @@ const Sidebar = ({
 
           <Accordion.Item eventKey="5">
             <Accordion.Header>
-              <Bezier size={20} className="me-2" /> Shapes
+              <BoundingBoxCircles size={20} className="me-2" /> Shapes
             </Accordion.Header>
             <Accordion.Body>
               {shapes.length > 0 ? (
