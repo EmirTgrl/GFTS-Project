@@ -55,6 +55,7 @@ const MapView = ({
   selectedEntities,
   setSelectedEntities,
   token,
+  setSelectedCategory
 }) => {
   const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
   const [tempShapes, setTempShapes] = useState([]);
@@ -190,6 +191,16 @@ const MapView = ({
 
   }, [editorMode]);
 
+  const handleStopClick = (stopTime) => {
+    setSelectedCategory("stop");
+    setSelectedEntities({...selectedEntities, stop: stopTime});
+  };
+
+  const handleShapeClick = (shape) => {
+    setSelectedCategory("shape");
+    setSelectedEntities({...selectedEntities, shape: shape});
+  };
+
   const handleStopDrag = (e, stopSequence) => {
     if (editorMode === "close") return;
 
@@ -247,7 +258,8 @@ const MapView = ({
                   ]}
                   icon={stopIcon}
                   eventHandlers={{
-                    dragend: (e) => handleStopDrag(e, stopTime.stop_sequence)
+                    dragend: (e) => handleStopDrag(e, stopTime.stop_sequence),
+                    click: () => handleStopClick(stopTime)
                   }}
                 >
                   <Popup>
@@ -297,7 +309,8 @@ const MapView = ({
                       } width: 100%; height: 100%; border-radius: 50%;"></div>`,
                   })}
                   eventHandlers={{
-                    dragend: (e) => handleShapeDrag(e, shape.shape_pt_sequence)
+                    dragend: (e) => handleShapeDrag(e, shape.shape_pt_sequence),
+                    click: ()=> handleShapeClick(shape)
                   }}
                 >
                   <Popup>Shape Point {shape.shape_pt_sequence}</Popup>

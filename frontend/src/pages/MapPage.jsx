@@ -123,6 +123,7 @@ const MapPage = () => {
         setEditorMode={setEditorMode}
         selectedEntities={selectedEntities}
         setSelectedEntities={setSelectedEntities}
+        setSelectedCategory={setSelectedCategory}
         token={token}
       />
 
