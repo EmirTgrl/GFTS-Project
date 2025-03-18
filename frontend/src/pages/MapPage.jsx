@@ -49,25 +49,6 @@ const MapPage = () => {
     }
   }, [location.state]);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const agencyData = await fetchAgenciesByProjectId(project_id, token);
-        setAgencies(Array.isArray(agencyData) ? agencyData : []);
-      } catch (error) {
-        console.error("Error loading data:", error);
-        setAgencies([]);
-        setCalendars([]);
-        navigate("/login");
-      }
-    };
-    if (token && project_id) {
-      loadData();
-    } else {
-      navigate("/login");
-    }
-  }, [token, project_id, navigate]);
-
   const handleMapClick = (coords) => {
     setClickedCoords(coords);
   };
