@@ -1,14 +1,8 @@
 const API_BASE_URL = "http://localhost:5000/api/shapes";
 
-export const fetchShapesByTripId = async (
-  projectId,
-  tripId,
-  token,
-  page = 1,
-  limit = 8
-) => {
+export const fetchShapesByTripId = async (projectId, shape_id, token) => {
   const response = await fetch(
-    `${API_BASE_URL}?project_id=${projectId}&trip_id=${tripId}&page=${page}&limit=${limit}`,
+    `${API_BASE_URL}?project_id=${projectId}&shape_id=${shape_id}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }

@@ -3,30 +3,15 @@ const API_BASE_URL = "http://localhost:5000/api/stop-times";
 export const fetchStopsAndStopTimesByTripId = async (
   tripId,
   projectId,
-  token,
-  page = 1,
-  limit = 8,
-  searchTerm = ""
+  token
 ) => {
-  const url = new URL(`${API_BASE_URL}`);
-  url.searchParams.append("project_id", projectId);
-  url.searchParams.append("trip_id", tripId);
-  url.searchParams.append("page", page);
-  url.searchParams.append("limit", limit);
-  if (searchTerm) url.searchParams.append("stop_name", searchTerm);
-
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(
-      "Failed to fetch stops and stop times:",
-      response.status,
-      errorText
-    );
-    throw new Error(`Failed to fetch stops and stop times: ${errorText}`);
-  }
+  const response = await fetch(
+    `${API_BASE_URL}?project_id=${projectId}&trip_id=${tripId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  if (!response.ok) throw new Error("Failed to fetch stops and stop times");
   return response.json();
 };
 

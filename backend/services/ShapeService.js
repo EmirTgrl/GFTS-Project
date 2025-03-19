@@ -3,7 +3,7 @@ const { pool } = require("../db.js");
 const shapeService = {
   getShapeByQuery: async (req, res) => {
     const user_id = req.user.id;
-    const validFieldsShape = [
+    const validFields = [
       "shape_id",
       "shape_pt_lat",
       "shape_pt_lon",
@@ -11,59 +11,29 @@ const shapeService = {
       "shape_dist_traveled",
       "project_id",
     ];
-    const validFieldsTrip = ["trip_id"];
 
     const fields = [];
     const values = [];
-    fields.push("shapes.user_id = ?");
+    fields.push("user_id = ?")
     values.push(user_id);
-
-    // Query parametrelerini dinamik olarak ekle
+  
     for (const param in req.query) {
-      if (validFieldsShape.includes(param)) {
-        fields.push(`shapes.${param} = ?`);
-        values.push(req.query[param]);
-      } else if (validFieldsTrip.includes(param)) {
-        fields.push(`trips.${param} = ?`);
-        values.push(req.query[param]);
-      } else if (param !== "page" && param !== "limit") {
-        console.warn(`Unexpected query parameter: ${param}`);
+      if (validFields.includes(param)) {
+        fields.push(`${param} = ?`); 
+        values.push(req.query[param]); 
+      } else {
+        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
       }
     }
-
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 8;
-    const offset = (page - 1) * limit;
-
-    const countQuery = `
-      SELECT COUNT(*) AS total
-      FROM shapes
-      JOIN trips ON shapes.shape_id = trips.shape_id
-      WHERE ${fields.join(" AND ")}
-    `;
-
-    const dataQuery = `
-      SELECT shapes.*
-      FROM shapes
-      JOIN trips ON shapes.shape_id = trips.shape_id
-      WHERE ${fields.join(" AND ")}
-      LIMIT ${limit} OFFSET ${offset}
-    `;
+  
+    let query = `SELECT * FROM shapes 
+    WHERE ${fields.join(" AND ")}`;
 
     try {
-      const [countRows] = await pool.execute(countQuery, values);
-      const total = countRows[0].total;
-
-      const [dataRows] = await pool.execute(dataQuery, values);
-
-      res.json({
-        data: dataRows.length > 0 ? dataRows : [],
-        total: total,
-        page,
-        limit,
-      });
+      const [rows] = await pool.execute(query, values);
+      res.json(rows.length > 0 ? rows : []);
     } catch (error) {
-      console.error("Query execution error in getShapeByQuery:", error);
+      console.error(error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },

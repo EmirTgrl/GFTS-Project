@@ -23,8 +23,8 @@ import {
   LifePreserver,
   TrainLightrailFront,
   SignRailroad,
-  GeoAlt, 
-  BoundingBoxCircles 
+  GeoAlt,
+  BoundingBoxCircles
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
@@ -39,7 +39,7 @@ import {
   deleteStopTimeById,
 } from "../../api/stopTimeApi";
 import { deleteStopById } from "../../api/stopApi";
-import { deleteShape, fetchShapesByTripId} from "../../api/shapeApi";
+import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -88,7 +88,7 @@ const Sidebar = ({
   const [pageStops, setPageStops] = useState(1);
   const [pageCalendars, setPageCalendars] = useState(1);
   const [pageShapes, setPageShapes] = useState(1);
- 
+
   const [formConfig, setFormConfig] = useState(null);
   const [searchTerms, setSearchTerms] = useState({
     agencies: "",
@@ -155,9 +155,9 @@ const Sidebar = ({
 
           const filteredTrips = selectedEntities.calendar
             ? routeTrips.data.filter(
-                (trip) =>
-                  trip.service_id === selectedEntities.calendar.service_id
-              )
+              (trip) =>
+                trip.service_id === selectedEntities.calendar.service_id
+            )
             : routeTrips.data;
           setTrips({
             data: filteredTrips,
@@ -173,17 +173,14 @@ const Sidebar = ({
                 trip.trip_id,
                 project_id,
                 token,
-                1,
-                itemsPerPage,
-                ""
               );
               tripTimesData[trip.trip_id] =
-                stops.data.length > 0
+                stops.length > 0
                   ? {
-                      firstArrival: stops.data[0].arrival_time,
-                      lastDeparture:
-                        stops.data[stops.data.length - 1].departure_time,
-                    }
+                    firstArrival: stops[0].arrival_time,
+                    lastDeparture:
+                      stops[stops.length - 1].departure_time,
+                  }
                   : { firstArrival: null, lastDeparture: null };
             })
           );
@@ -196,25 +193,20 @@ const Sidebar = ({
         if (selectedEntities.trip) {
           const shapesResponse = await fetchShapesByTripId(
             project_id,
-            selectedEntities.trip.trip_id,
+            selectedEntities.trip.shape_id,
             token,
-            pageShapes,
-            itemsPerPage
           );
           setShapesData(shapesResponse);
-          setShapes(shapesResponse.data);
+          setShapes(shapesResponse);
 
           const stopsResponse = await fetchStopsAndStopTimesByTripId(
             selectedEntities.trip.trip_id,
             project_id,
             token,
-            pageStops,
-            itemsPerPage,
-            searchTerms.stops
           );
           setStopsAndTimes(stopsResponse);
 
-          const center = calculateCenter(shapesResponse.data, stopsResponse);
+          const center = calculateCenter(shapesResponse, stopsResponse);
           if (center) {
             setMapCenter(center);
             setZoom(12);
@@ -243,21 +235,11 @@ const Sidebar = ({
     pageAgencies,
     pageRoutes,
     pageTrips,
-    pageStops,
-    pageShapes,
     searchTerms,
     selectedEntities.agency,
     selectedEntities.route,
     selectedEntities.trip,
     selectedEntities.calendar,
-    setAgencies,
-    setRoutes,
-    setTrips,
-    setCalendars,
-    setShapes,
-    setStopsAndTimes,
-    setMapCenter,
-    setZoom,
   ]);
 
   useEffect(() => {
@@ -633,9 +615,9 @@ const Sidebar = ({
         case "route":
           return (
             <RouteEditPage
-              agencies={agencies.data} 
+              agencies={agencies.data}
               route_id={entity.route_id}
-              routes={routes.data} 
+              routes={routes.data}
               onClose={() => setFormConfig(null)}
               setRoutes={setRoutes}
               project_id={project_id}
@@ -648,10 +630,10 @@ const Sidebar = ({
               trip_id={entity.trip_id}
               onClose={() => setFormConfig(null)}
               setTrips={setTrips}
-              routes={routes.data} 
+              routes={routes.data}
               calendars={calendars}
               selectedRoute={selectedEntities.route}
-              trips={trips.data} 
+              trips={trips.data}
             />
           );
         case "stop":
@@ -662,7 +644,7 @@ const Sidebar = ({
               stop_id={selectedEntities.stop.stop_id}
               onClose={() => setFormConfig(null)}
               setStopsAndTimes={setStopsAndTimes}
-              stopsAndTimes={stopsAndTimes.data} 
+              stopsAndTimes={stopsAndTimes.data}
             />
           );
         case "calendar":
@@ -774,6 +756,12 @@ const Sidebar = ({
     return departureTime < now;
   };
 
+  const paginateItems = (items, currentPage) => {
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return items.slice(indexOfFirstItem, indexOfLastItem);
+  };
+
   return (
     <div className="sidebar-container">
       <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
@@ -799,11 +787,10 @@ const Sidebar = ({
                 agencies.data.map((agency) => (
                   <Card
                     key={agency.agency_id}
-                    className={`mb-2 item-card ${
-                      selectedEntities.agency?.agency_id === agency.agency_id
+                    className={`mb-2 item-card ${selectedEntities.agency?.agency_id === agency.agency_id
                         ? "active"
                         : ""
-                    }`}
+                      }`}
                     onClick={() => handleSelectionChange("agency", agency)}
                   >
                     <Card.Body className="d-flex align-items-center p-2">
@@ -840,11 +827,10 @@ const Sidebar = ({
                 routes.data.map((route) => (
                   <Card
                     key={route.route_id}
-                    className={`mb-2 item-card ${
-                      selectedEntities.route?.route_id === route.route_id
+                    className={`mb-2 item-card ${selectedEntities.route?.route_id === route.route_id
                         ? "active"
                         : ""
-                    }`}
+                      }`}
                     onClick={() => handleSelectionChange("route", route)}
                   >
                     <Card.Body className="d-flex align-items-center p-2">
@@ -890,11 +876,10 @@ const Sidebar = ({
                 calendars.map((cal) => (
                   <Card
                     key={cal.service_id}
-                    className={`mb-2 item-card ${
-                      selectedEntities.calendar?.service_id === cal.service_id
+                    className={`mb-2 item-card ${selectedEntities.calendar?.service_id === cal.service_id
                         ? "active"
                         : ""
-                    }`}
+                      }`}
                     onClick={() => handleSelectionChange("calendar", cal)}
                   >
                     <Card.Body className="d-flex align-items-center p-2">
@@ -940,11 +925,10 @@ const Sidebar = ({
                   return (
                     <Card
                       key={trip.trip_id}
-                      className={`mb-2 item-card ${
-                        selectedEntities.trip?.trip_id === trip.trip_id
+                      className={`mb-2 item-card ${selectedEntities.trip?.trip_id === trip.trip_id
                           ? "active"
                           : ""
-                      } ${isTripInPast(trip.trip_id) ? "past-trip" : ""}`}
+                        } ${isTripInPast(trip.trip_id) ? "past-trip" : ""}`}
                       onClick={() => handleSelectionChange("trip", trip)}
                     >
                       <Card.Body className="d-flex align-items-center p-2">
@@ -960,14 +944,14 @@ const Sidebar = ({
                           )}
                         >
                           <div className="d-flex flex-column">
-                            <span className="item-title">
+                            <div className="item-title">
                               {trip.trip_headsign || trip.trip_id}
-                            </span>
-                            <span className="trip-times">
+                            </div>
+                            <div>
                               {times.firstArrival && times.lastDeparture
                                 ? `${times.firstArrival} - ${times.lastDeparture}`
                                 : "No times available"}
-                            </span>
+                            </div>
                           </div>
                         </OverlayTrigger>
                       </Card.Body>
@@ -990,16 +974,15 @@ const Sidebar = ({
               <BoundingBoxCircles size={20} className="me-2" /> Shapes
             </Accordion.Header>
             <Accordion.Body>
-              {shapesData.data.length > 0 ? (
-                shapesData.data.map((shape) => (
+              {shapesData.length > 0 ? (
+                paginateItems(shapesData, pageShapes).map((shape) => (
                   <Card
                     key={`${shape.shape_id}-${shape.shape_pt_sequence}`}
-                    className={`mb-2 item-card ${
-                      selectedEntities.shape?.shape_pt_sequence ===
-                      shape.shape_pt_sequence
+                    className={`mb-2 item-card ${selectedEntities.shape?.shape_pt_sequence ===
+                        shape.shape_pt_sequence
                         ? "active"
                         : ""
-                    }`}
+                      }`}
                     onClick={() => handleSelectionChange("shape", shape)}
                   >
                     <Card.Body className="d-flex align-items-center p-2">
@@ -1023,7 +1006,7 @@ const Sidebar = ({
                     : "Select a trip first."}
                 </p>
               )}
-              {renderPagination(shapesData.total, pageShapes, setPageShapes)}
+              {renderPagination(shapesData.length, pageShapes, setPageShapes)}
             </Accordion.Body>
           </Accordion.Item>
 
@@ -1040,33 +1023,35 @@ const Sidebar = ({
                   onChange={(e) => handleSearch("stops", e.target.value)}
                 />
               </Form.Group>
-              {stopsAndTimes.data && stopsAndTimes.data.length > 0 ? (
-                stopsAndTimes.data.map((stop) => (
+              {stopsAndTimes && stopsAndTimes.length > 0 ? (
+
+                paginateItems(stopsAndTimes, pageStops).map((stop) => (
                   <Card
                     key={`${stop.trip_id}-${stop.stop_id}`}
-                    className={`mb-2 item-card ${
-                      selectedEntities.stop?.stop_id === stop.stop_id
+                    className={`mb-2 item-card ${selectedEntities.stop?.stop_id === stop.stop_id
                         ? "active"
                         : ""
-                    }`}
+                      }`}
                     onClick={() => handleSelectionChange("stop", stop)}
                   >
                     <Card.Body className="d-flex align-items-center p-2">
                       <div className="flex-grow-1">
-                      <OverlayTrigger
-                        placement="top"
-                        overlay={renderTooltip(stop.stop_name || stop.stop_id)}
-                      >
-                        <span className="item-title">
-                          {stop.stop_name || stop.stop_id}
-                        </span>
-                      </OverlayTrigger>
-                      <span style={{ fontSize: "0.8em" }}>
-                            {stop.departure_time !== "N/A" &&
-                            stop.arrival !== "N/A"
-                              ? `${stop.departure_time} - ${stop.arrival_time}`
-                              : "N/A"}
-                          </span>
+                        <OverlayTrigger
+                          placement="top"
+                          overlay={renderTooltip(stop.stop_name || stop.stop_id)}
+                        >
+                          <div className="d-flex flex-column">
+                            <div className="item-title">
+                              {stop.stop_name || stop.stop_id}
+                            </div>
+                            <div style={{ fontSize: "0.8em" }}>
+                              {stop.departure_time !== "N/A" &&
+                                stop.arrival !== "N/A"
+                                ? `${stop.departure_time} - ${stop.arrival_time}`
+                                : "N/A"}
+                            </div>
+                          </div>
+                        </OverlayTrigger>
                       </div>
                     </Card.Body>
                   </Card>
@@ -1078,7 +1063,7 @@ const Sidebar = ({
                     : "Select a trip first."}
                 </p>
               )}
-              {renderPagination(stopsAndTimes.total, pageStops, setPageStops)}
+              {renderPagination(stopsAndTimes.length, pageStops, setPageStops)}
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>

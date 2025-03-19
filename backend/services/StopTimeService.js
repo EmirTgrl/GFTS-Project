@@ -5,7 +5,7 @@ const stopTimeService = {
     const user_id = req.user.id;
     const validFieldsStopTime = [
       "trip_id",
-      "stop_id",
+      "stop_id", 
       "project_id",
       "arrival_time",
       "departure_time",
@@ -16,7 +16,7 @@ const stopTimeService = {
       "shape_dist_traveled",
       "timepoint",
     ];
-
+  
     const validFieldsStop = [
       "stop_code",
       "stop_name",
@@ -30,69 +30,40 @@ const stopTimeService = {
       "stop_timezone",
       "wheelchair_boarding",
     ];
-
+  
     const fields = [];
     const values = [];
     fields.push("stop_times.user_id = ?");
     values.push(user_id);
-
+  
     for (const param in req.query) {
       if (validFieldsStopTime.includes(param)) {
         fields.push(`stop_times.${param} = ?`);
         values.push(req.query[param]);
       } else if (validFieldsStop.includes(param)) {
-        if (param === "stop_name") {
-          fields.push(`stops.${param} LIKE ?`);
-          values.push(`%${req.query[param]}%`);
-        } else {
-          fields.push(`stops.${param} = ?`);
-          values.push(req.query[param]);
-        }
-      } else if (param !== "page" && param !== "limit") {
+        fields.push(`stops.${param} = ?`);
+        values.push(req.query[param]);
+      } else {
         console.warn(`Unexpected query parameter: ${param}`);
       }
     }
-
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 8;
-    const offset = (page - 1) * limit;
-
-    const countQuery = `
-      SELECT COUNT(*) AS total
+  
+    let query = `
+      SELECT *
       FROM stop_times
       JOIN stops ON stop_times.stop_id = stops.stop_id
       WHERE ${fields.join(" AND ")}
     `;
-
-    const dataQuery = `
-      SELECT stop_times.*, stops.*
-      FROM stop_times
-      JOIN stops ON stop_times.stop_id = stops.stop_id
-      WHERE ${fields.join(" AND ")}
-      LIMIT ${limit} OFFSET ${offset}
-    `;
-
+  
     try {
-      const [countRows] = await pool.execute(countQuery, values);
-      const total = countRows[0].total;
-
-      const [dataRows] = await pool.execute(dataQuery, values);
-
-      res.json({
-        data: dataRows.length > 0 ? dataRows : [],
-        total,
-        page,
-        limit,
-      });
+      const [rows] = await pool.execute(query, values);
+      res.json(rows.length > 0 ? rows : []);
     } catch (error) {
-      console.error(
-        "Query execution error in getStopsAndStopTimesByQuery:",
-        error
-      );
+      console.error(error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
-
+  
   deleteStopTimeById: async (req, res) => {
     try {
       const user_id = req.user.id;
