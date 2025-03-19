@@ -150,26 +150,7 @@ const Sidebar = ({
     }
   }, [action]);
 
-  const loadTripTimes = async () => {
-    if (!selectedEntities.route || trips.length === 0) return;
-    const updatedTrips = await Promise.all(
-      trips.map(async (trip) => {
-        if (trip.departure_time) return trip; // Zaten saat varsa atla
-        const stops = await fetchStopsAndStopTimesByTripId(
-          trip.trip_id,
-          project_id,
-          token
-        );
-        return {
-          ...trip,
-          departure_time: stops[0]?.departure_time || "N/A",
-          arrival_time: stops[stops.length - 1]?.arrival_time || "N/A",
-        };
-      })
-    );
-    setTrips(updatedTrips);
-    setFilteredTrips(updatedTrips);
-  };
+
 
   const handleSearch = (category, term, items, setFiltered, setPage) => {
     const filtered = items.filter((item) => {
