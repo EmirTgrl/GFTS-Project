@@ -5,11 +5,10 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   width: 100vw;
-  margin-left: calc(-50vw + 50%);
-  margin-right: calc(-50vw + 50%);
 }
 
 .navbar-brand {
+  margin-left: 35px;
   font-size: 1.2rem !important;
   font-weight: 700;
   color: #fff !important;

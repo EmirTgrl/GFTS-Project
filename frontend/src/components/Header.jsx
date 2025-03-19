@@ -16,7 +16,6 @@ const Header = () => {
 
   return (
     <Navbar expand="lg" className="custom-navbar" fixed="top">
-      <Container>
         <Navbar.Brand as={Link} to="/" className="navbar-brand">
           <span className="fs-4">KentKart</span>
         </Navbar.Brand>
@@ -51,7 +50,6 @@ const Header = () => {
             ) : null}
           </Nav>
         </Navbar.Collapse>
-      </Container>
     </Navbar>
   );
 };
