@@ -1165,14 +1165,22 @@ const Sidebar = ({
                     onClick={() => handleSelectionChange("stop", stop)}
                   >
                     <Card.Body className="d-flex align-items-center p-2">
+                      <div className="flex-grow-1">
                       <OverlayTrigger
                         placement="top"
                         overlay={renderTooltip(stop.stop_name || stop.stop_id)}
                       >
-                        <span className="item-title">
+                        <span className="item-title d-block">
                           {stop.stop_sequence}. {stop.stop_name || stop.stop_id}
                         </span>
                       </OverlayTrigger>
+                      <span style={{ fontSize: "0.8em" }}>
+                            {stop.departure_time !== "N/A" &&
+                            stop.arrival !== "N/A"
+                              ? `${stop.departure_time} - ${stop.arrival_time}`
+                              : "N/A"}
+                          </span>
+                      </div>
                     </Card.Body>
                   </Card>
                 ))
