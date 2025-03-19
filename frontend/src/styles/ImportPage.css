@@ -13,8 +13,13 @@
   background: #ffffff;
 }
 
-.custom-file-input {
-  padding: 0.5rem;
+.custom-file-input{
+  padding: 0 !important;
+}
+
+.custom-file-input::file-selector-button {
+  margin: 0 1rem 0 0 !important;
+  padding: 1rem !important; /*Adjust as needed*/
 }
 
 .upload-btn {
