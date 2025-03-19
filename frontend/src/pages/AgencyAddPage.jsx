@@ -48,7 +48,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         const agencyData = { project_id, ...formData };
         const response = await saveAgency(agencyData, token);
         const agency_id = response.agency_id;
-        setAgencies((prev) => [...prev, { ...agencyData, agency_id }]);
+        setAgencies((prev) => ({ ...prev, data: [...prev.data, { ...agencyData, agency_id }]}));
         Swal.fire("Eklendi!", "Ajans başarıyla eklendi.", "success");
         onClose();
       } catch (error) {

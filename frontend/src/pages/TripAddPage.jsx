@@ -76,7 +76,7 @@ const TripAddPage = ({
         const formData = { ...tripData, project_id, route_id: selectedRoute.route_id };
         const response = await saveTrip(formData, token);
         const trip_id = response.trip_id;
-        setTrips((prev) => [...prev, { ...formData, trip_id }]);
+        setTrips((prev) => ({...prev, data: [...prev.data, { ...formData, trip_id }]}));
         Swal.fire("Eklendi!", "Trip başarıyla eklendi.", "success");
         onClose();
       } catch (error) {

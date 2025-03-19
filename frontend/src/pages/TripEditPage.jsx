@@ -101,9 +101,10 @@ const TripEditPage = ({
       try {
         const tripDataForApi = { ...tripData, project_id, trip_id };
         await updateTrip(tripDataForApi, token);
-        setTrips((prev) =>
-          prev.map((t) => (t.trip_id === trip_id ? tripData : t))
-        );
+        setTrips((prev) => ({
+          ...prev,
+          data: prev.data.map((t) => (t.trip_id === trip_id ? tripData : t)),
+        }));
         Swal.fire("Güncellendi!", "Trip başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {

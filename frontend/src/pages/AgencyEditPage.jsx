@@ -78,13 +78,14 @@ const AgencyEditPage = ({
         setLoading(true);
         const agencyData = { project_id, ...formData };
         await updateAgency(agencyData, token);
-        setAgencies((prevAgencies) =>
-          prevAgencies.map((agency) =>
+        setAgencies((prevAgencies) => ({
+          ...prevAgencies,
+          data: prevAgencies.data.map((agency) =>
             agency.agency_id === formData.agency_id
               ? { ...agency, ...formData }
               : agency
-          )
-        );
+          ),
+        }));
         Swal.fire("Güncellendi!", "Ajans başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {

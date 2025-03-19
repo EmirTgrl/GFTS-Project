@@ -28,7 +28,7 @@ import {
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
-import { fetchCalendarsByProjectId } from "../../api/calendarApi";
+import { deleteCalendarById, fetchCalendarsByProjectId } from "../../api/calendarApi";
 import {
   fetchAgenciesByProjectId,
   deleteAgencyById,
@@ -510,24 +510,24 @@ const Sidebar = ({
       } else if (category === "stop") {
         await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
         await deleteStopById(entity.stop_id, token);
-        setStopsAndTimes((prev) => ({
-          ...prev,
-          data: prev.data.filter((s) => s.stop_id !== entity.stop_id),
-        }));
+        setStopsAndTimes((prev) => (
+          prev ? prev.filter((s) => s.stop_id !== entity.stop_id) : []
+        ));
         setSelectedEntities((prev) => ({ ...prev, stop: null }));
       } else if (category === "shape") {
         await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
         setShapes((prev) =>
           prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
         );
-        setShapesData((prev) => ({
-          ...prev,
-          data: prev.data.filter(
+        setShapesData((prev) => (
+          prev ? prev.filter(
             (s) => s.shape_pt_sequence !== entity.shape_pt_sequence
-          ),
-          total: prev.total - 1,
-        }));
+          ) : []
+        ));
         setSelectedEntities((prev) => ({ ...prev, shape: null }));
+      }else if(category === "calendar"){
+        await deleteCalendarById(entity.service_id,token)
+        setCalendars(prevCalendars => prevCalendars.filter(calendar => calendar.service_id !== entity.service_id));
       }
       Swal.fire("Deleted!", `${category} has been deleted.`, "success");
     } catch (error) {

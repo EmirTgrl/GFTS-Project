@@ -52,10 +52,10 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
     });
     if (result.isConfirmed) {
       try {
-        const newRoute = { ...routeData, agency_id: selectedAgency };
+        const newRoute = { ...routeData, agency_id: selectedAgency.agency_id };
         const response = await saveRoute(newRoute, token);
         const route_id = response.route_id;
-        setRoutes((prev) => [...prev, { ...newRoute, route_id }]);
+        setRoutes((prev) => ({ ...prev, data: [...prev.data, { ...newRoute, route_id }] }));
         Swal.fire("Eklendi!", "Rota başarıyla eklendi.", "success");
         onClose();
       } catch (error) {

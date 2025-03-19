@@ -20,7 +20,6 @@ const RouteEditPage = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log("ROUTES ", routes);
         const initialRouteData = routes.find((rt) => rt.route_id === route_id);
         const prepareRouteData = (data) => ({
           agency_id: data?.agency_id || "",
@@ -87,11 +86,12 @@ const RouteEditPage = ({
       try {
         const updatedRouteData = { route_id, ...routeData };
         await updateRoute(updatedRouteData, token);
-        setRoutes((prev) =>
-          prev.map((r) =>
+        setRoutes((prev) => ({
+          ...prev,
+          data: prev.data.map((r) =>
             r.route_id === route_id ? { ...r, ...updatedRouteData } : r
-          )
-        );
+          ),
+        }));
         Swal.fire("Güncellendi!", "Rota başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {
