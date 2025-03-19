@@ -39,7 +39,7 @@ import {
   deleteStopTimeById,
 } from "../../api/stopTimeApi";
 import { deleteStopById } from "../../api/stopApi";
-import { deleteShape, fetchShapesByShapeId } from "../../api/shapeApi";
+import { deleteShape, fetchShapesByTripId} from "../../api/shapeApi";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";

@@ -3,7 +3,7 @@ const { pool } = require("../db.js");
 const shapeService = {
   getShapeByQuery: async (req, res) => {
     const user_id = req.user.id;
-    const validFields = [
+    const validFieldsShape = [
       "shape_id",
       "shape_pt_lat",
       "shape_pt_lon",
@@ -15,7 +15,7 @@ const shapeService = {
 
     const fields = [];
     const values = [];
-    fields.push("user_id = ?")
+    fields.push("shapes.user_id = ?");
     values.push(user_id);
 
     // Query parametrelerini dinamik olarak ekle

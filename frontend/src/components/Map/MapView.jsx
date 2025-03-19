@@ -299,9 +299,9 @@ function PolylineWithDirectionalArrows({ positions, color, weight }) {
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <MapClickHandler onMapClick={onMapClick} />
       <MapUpdater mapCenter={mapCenter} zoom={zoom} />
-
-      {tempStopsAndTimes.length > 0 &&
-        tempStopsAndTimes
+      {console.log("TEMPSTOPSANDTIMES", tempStopsAndTimes)}
+      {tempStopsAndTimes.data.length > 0 &&
+        tempStopsAndTimes.data
           .sort((a, b) => a.stop_sequence - b.stop_sequence)
           .map((stopTime, stop_sequence) => {
             if (stopTime && stopTime.stop_lat && stopTime.stop_lon) {
