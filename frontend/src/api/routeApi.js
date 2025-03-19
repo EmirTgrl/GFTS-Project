@@ -18,13 +18,24 @@ export const fetchRoutesByProjectId = async (projectId, token) => {
   return response.json();
 };
 
-export const fetchRoutesByAgencyId = async (agencyId, projectId, token) => {
-  const response = await fetch(
-    `${API_BASE_URL}?project_id=${projectId}&agency_id=${agencyId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+export const fetchRoutesByAgencyId = async (
+  agencyId,
+  projectId,
+  token,
+  page = 1,
+  limit = 8,
+  searchTerm = ""
+) => {
+  const url = new URL(`${API_BASE_URL}`);
+  url.searchParams.append("project_id", projectId);
+  url.searchParams.append("agency_id", agencyId);
+  url.searchParams.append("page", page);
+  url.searchParams.append("limit", limit);
+  if (searchTerm) url.searchParams.append("route_long_name", searchTerm);
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!response.ok) {
     const errorText = await response.text();
     console.error(
@@ -34,7 +45,9 @@ export const fetchRoutesByAgencyId = async (agencyId, projectId, token) => {
     );
     throw new Error(`Failed to fetch routes by agency: ${errorText}`);
   }
-  return response.json();
+  const data = await response.json();
+  console.log("fetchRoutesByAgencyId response:", data); // Debug için
+  return data; // { data: [], total: X } bekleniyor
 };
 
 export const fetchRouteById = async (routeId, projectId, token) => {
@@ -88,24 +101,5 @@ export const saveRoute = async (routeData, token) => {
     body: JSON.stringify(routeData),
   });
   if (!response.ok) throw new Error("Failed to save route");
-  return response.json();
-};
-
-export const fetchAgenciesByProjectId = async (projectId, token) => {
-  const response = await fetch(
-    `http://localhost:5000/api/agencies?project_id=${projectId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(
-      "HTTP error in fetchAgenciesByProjectId!",
-      response.status,
-      errorText
-    );
-    throw new Error(`Fetch agencies failed: ${errorText}`);
-  }
   return response.json();
 };

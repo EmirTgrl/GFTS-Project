@@ -1,7 +1,19 @@
 const API_BASE_URL = "http://localhost:5000/api/agencies";
 
-export const fetchAgenciesByProjectId = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}?project_id=${projectId}`, {
+export const fetchAgenciesByProjectId = async (
+  projectId,
+  token,
+  page = 1,
+  limit = 8,
+  searchTerm = ""
+) => {
+  const url = new URL(`${API_BASE_URL}`);
+  url.searchParams.append("project_id", projectId);
+  url.searchParams.append("page", page);
+  url.searchParams.append("limit", limit);
+  if (searchTerm) url.searchParams.append("agency_name", searchTerm);
+
+  const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -29,14 +41,17 @@ export const saveAgency = async (agencyData, token) => {
 };
 
 export const updateAgency = async (agencyData, token) => {
-  const response = await fetch(`${API_BASE_URL}/update/${agencyData.agency_id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(agencyData),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/update/${agencyData.agency_id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(agencyData),
+    }
+  );
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Failed to update agency: ${errorText}`);
@@ -45,7 +60,7 @@ export const updateAgency = async (agencyData, token) => {
 };
 
 export const deleteAgencyById = async (agencyId, token) => {
-  if (!agencyId  || !token) {
+  if (!agencyId || !token) {
     throw new Error(
       "Missing required parameters: " +
         (!agencyId ? "agencyId " : "") +
@@ -53,13 +68,10 @@ export const deleteAgencyById = async (agencyId, token) => {
     );
   }
 
-  const response = await fetch(
-    `${API_BASE_URL}/delete/${agencyId}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await fetch(`${API_BASE_URL}/delete/${agencyId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Failed to delete agency: ${errorText}`);

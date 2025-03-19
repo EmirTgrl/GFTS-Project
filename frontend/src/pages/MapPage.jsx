@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../components/Auth/AuthContext";
 import Sidebar from "../components/Map/Sidebar.jsx";
 import MapView from "../components/Map/MapView";
-import { fetchAgenciesByProjectId } from "../api/agencyApi";
 import "../styles/Map.css";
 import FloatingActions from "../components/FloatingActions/FloatingActions.jsx";
 

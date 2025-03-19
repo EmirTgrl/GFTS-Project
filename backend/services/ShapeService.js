@@ -1,4 +1,4 @@
-const {pool} = require("../db.js");
+const { pool } = require("../db.js");
 
 const shapeService = {
   getShapeByQuery: async (req, res) => {
@@ -11,29 +11,59 @@ const shapeService = {
       "shape_dist_traveled",
       "project_id",
     ];
+    const validFieldsTrip = ["trip_id"];
 
     const fields = [];
     const values = [];
     fields.push("user_id = ?")
     values.push(user_id);
-  
+
+    // Query parametrelerini dinamik olarak ekle
     for (const param in req.query) {
-      if (validFields.includes(param)) {
-        fields.push(`${param} = ?`); 
-        values.push(req.query[param]); 
-      } else {
-        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+      if (validFieldsShape.includes(param)) {
+        fields.push(`shapes.${param} = ?`);
+        values.push(req.query[param]);
+      } else if (validFieldsTrip.includes(param)) {
+        fields.push(`trips.${param} = ?`);
+        values.push(req.query[param]);
+      } else if (param !== "page" && param !== "limit") {
+        console.warn(`Unexpected query parameter: ${param}`);
       }
     }
-  
-    let query = `SELECT * FROM shapes 
-    WHERE ${fields.join(" AND ")}`;
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 8;
+    const offset = (page - 1) * limit;
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM shapes
+      JOIN trips ON shapes.shape_id = trips.shape_id
+      WHERE ${fields.join(" AND ")}
+    `;
+
+    const dataQuery = `
+      SELECT shapes.*
+      FROM shapes
+      JOIN trips ON shapes.shape_id = trips.shape_id
+      WHERE ${fields.join(" AND ")}
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
     try {
-      const [rows] = await pool.execute(query, values);
-      res.json(rows.length > 0 ? rows : []);
+      const [countRows] = await pool.execute(countQuery, values);
+      const total = countRows[0].total;
+
+      const [dataRows] = await pool.execute(dataQuery, values);
+
+      res.json({
+        data: dataRows.length > 0 ? dataRows : [],
+        total: total,
+        page,
+        limit,
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Query execution error in getShapeByQuery:", error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
@@ -52,10 +82,13 @@ const shapeService = {
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Shape not found" });
       }
-      res.status(200).json({ message: "Shape deleted successfully" , affectedRows:result.affectedRows});
+      res.status(200).json({
+        message: "Shape deleted successfully",
+        affectedRows: result.affectedRows,
+      });
     } catch (error) {
       console.error(
-        `Error in deleteShapeById for shape_id: ${req.params.service_id}:`,
+        `Error in deleteShapeById for shape_id: ${req.params.shape_id}:`,
         error
       );
       res.status(500).json({ error: "Server Error" });
@@ -103,7 +136,7 @@ const shapeService = {
         return res.status(404).json({ error: "Shape not found" });
       }
 
-      res.status(200).json({message:"shape updated successfully"});
+      res.status(200).json({ message: "Shape updated successfully" });
     } catch (error) {
       console.error(`Error in updateShape:`, error);
       res.status(500).json({ error: "Server Error" });
@@ -147,7 +180,7 @@ const shapeService = {
       `;
       const [result] = await pool.execute(query, values);
 
-      res.status(201).json({shape_id:result.insertId});
+      res.status(201).json({ shape_id: result.insertId });
     } catch (error) {
       console.error(`Error in saveShape:`, error);
       res.status(500).json({ error: "Server Error" });

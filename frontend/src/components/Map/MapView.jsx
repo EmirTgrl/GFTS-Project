@@ -385,8 +385,9 @@ function PolylineWithDirectionalArrows({ positions, color, weight }) {
 MapView.propTypes = {
   mapCenter: PropTypes.arrayOf(PropTypes.number).isRequired,
   zoom: PropTypes.number.isRequired,
-  stopsAndTimes: PropTypes.array.isRequired,
-  selectedTrip: PropTypes.string,
+  stopsAndTimes: PropTypes.object.isRequired,
+  setStopsAndTimes: PropTypes.func.isRequired,
+  setShapes: PropTypes.func.isRequired,
   onMapClick: PropTypes.func.isRequired,
   shapes: PropTypes.array.isRequired,
   clickedCoords: PropTypes.shape({

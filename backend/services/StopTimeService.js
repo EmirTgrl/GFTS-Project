@@ -5,7 +5,7 @@ const stopTimeService = {
     const user_id = req.user.id;
     const validFieldsStopTime = [
       "trip_id",
-      "stop_id", 
+      "stop_id",
       "project_id",
       "arrival_time",
       "departure_time",
@@ -16,7 +16,7 @@ const stopTimeService = {
       "shape_dist_traveled",
       "timepoint",
     ];
-  
+
     const validFieldsStop = [
       "stop_code",
       "stop_name",
@@ -30,36 +30,65 @@ const stopTimeService = {
       "stop_timezone",
       "wheelchair_boarding",
     ];
-  
+
     const fields = [];
     const values = [];
     fields.push("stop_times.user_id = ?");
     values.push(user_id);
-  
+
     for (const param in req.query) {
       if (validFieldsStopTime.includes(param)) {
         fields.push(`stop_times.${param} = ?`);
         values.push(req.query[param]);
       } else if (validFieldsStop.includes(param)) {
-        fields.push(`stops.${param} = ?`);
-        values.push(req.query[param]);
-      } else {
+        if (param === "stop_name") {
+          fields.push(`stops.${param} LIKE ?`);
+          values.push(`%${req.query[param]}%`);
+        } else {
+          fields.push(`stops.${param} = ?`);
+          values.push(req.query[param]);
+        }
+      } else if (param !== "page" && param !== "limit") {
         console.warn(`Unexpected query parameter: ${param}`);
       }
     }
-  
-    let query = `
-      SELECT *
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 8;
+    const offset = (page - 1) * limit;
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
       FROM stop_times
       JOIN stops ON stop_times.stop_id = stops.stop_id
       WHERE ${fields.join(" AND ")}
     `;
-  
+
+    const dataQuery = `
+      SELECT stop_times.*, stops.*
+      FROM stop_times
+      JOIN stops ON stop_times.stop_id = stops.stop_id
+      WHERE ${fields.join(" AND ")}
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
     try {
-      const [rows] = await pool.execute(query, values);
-      res.json(rows.length > 0 ? rows : []);
+      const [countRows] = await pool.execute(countQuery, values);
+      const total = countRows[0].total;
+
+      const [dataRows] = await pool.execute(dataQuery, values);
+
+      res.json({
+        data: dataRows.length > 0 ? dataRows : [],
+        total,
+        page,
+        limit,
+      });
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Query execution error in getStopsAndStopTimesByQuery:",
+        error
+      );
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
@@ -88,7 +117,7 @@ const stopTimeService = {
   updateStopTime: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {trip_id, stop_id} = req.params;
+      const { trip_id, stop_id } = req.params;
       const validFields = [
         "trip_id",
         "stop_id",
@@ -100,10 +129,10 @@ const stopTimeService = {
         "pickup_type",
         "drop_off_type",
         "shape_dist_traveled",
-        "timepoint"
+        "timepoint",
       ];
 
-      const {...params} = req.body;
+      const { ...params } = req.body;
 
       const fields = [];
       const values = [];
@@ -113,7 +142,7 @@ const stopTimeService = {
           fields.push(`${param} = ?`);
           values.push(params[param]);
         } else {
-          console.warn(`unexpected field ${param}`);
+          console.warn(`Unexpected field ${param}`);
         }
       }
 
@@ -124,7 +153,10 @@ const stopTimeService = {
         WHERE trip_id = ? AND stop_id = ? AND user_id = ?`;
 
       const [result] = await pool.execute(query, [
-        ...values, trip_id, stop_id, user_id
+        ...values,
+        trip_id,
+        stop_id,
+        user_id,
       ]);
 
       if (result.affectedRows === 0) {
@@ -139,7 +171,6 @@ const stopTimeService = {
   },
 
   saveStopTime: async (req, res) => {
-
     try {
       const user_id = req.user.id;
       const validFields = [
@@ -153,8 +184,8 @@ const stopTimeService = {
         "drop_off_type",
         "shape_dist_traveled",
         "timepoint",
-        "stop_sequence"
-       ];
+        "stop_sequence",
+      ];
 
       const params = req.body;
 
@@ -166,16 +197,16 @@ const stopTimeService = {
         if (validFields.includes(param)) {
           fields.push(param);
           values.push(params[param]);
-          placeholders.push("?")
+          placeholders.push("?");
         } else {
-          console.warn(`unexpected field in ${param}`);
+          console.warn(`Unexpected field in ${param}`);
         }
       }
 
       fields.push("user_id");
       placeholders.push("?");
       values.push(user_id);
-      
+
       const query = `
         INSERT INTO stop_times (${fields.join(", ")}) 
         VALUES (${placeholders.join(", ")})
