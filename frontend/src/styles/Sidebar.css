@@ -194,3 +194,12 @@
   border-color: #007bff;
   box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
 }
+
+.item-card.past-trip {
+  opacity: 0.5;
+}
+
+.trip-times {
+  font-size: 0.8em;
+  color: #666;
+}

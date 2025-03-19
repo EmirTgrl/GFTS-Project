@@ -8,7 +8,7 @@ import {
   useMap,
   CircleMarker,
 } from "react-leaflet";
-import { useEffect, useState } from "react"; 
+import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import L from "leaflet";
 import MapUpdater from "./MapUpdater.jsx";
@@ -113,7 +113,7 @@ const ShapeLayer = ({ shapes, editorMode, selectedShape }) => {
 ShapeLayer.propTypes = {
   shapes: PropTypes.array.isRequired,
   editorMode: PropTypes.string.isRequired,
-  selectedShape: PropTypes.object, // Yeni prop eklendi
+  selectedShape: PropTypes.object,
 };
 
 const MapView = ({
@@ -128,7 +128,7 @@ const MapView = ({
   isStopTimeAddOpen,
   editorMode,
   setEditorMode,
-  selectedShape, // Yeni prop eklendi
+  selectedShape,
 }) => {
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
@@ -148,8 +148,9 @@ const MapView = ({
           </Marker>
         )}
 
-      {stopsAndTimes.length > 0 &&
-        stopsAndTimes
+      {stopsAndTimes.data &&
+        stopsAndTimes.data.length > 0 &&
+        stopsAndTimes.data
           .sort((a, b) => a.stop_sequence - b.stop_sequence)
           .map((stopTime) => {
             if (stopTime && stopTime.stop_lat && stopTime.stop_lon) {
@@ -186,8 +187,9 @@ const MapView = ({
 MapView.propTypes = {
   mapCenter: PropTypes.arrayOf(PropTypes.number).isRequired,
   zoom: PropTypes.number.isRequired,
-  stopsAndTimes: PropTypes.array.isRequired,
-  selectedTrip: PropTypes.string,
+  stopsAndTimes: PropTypes.object.isRequired,
+  setStopsAndTimes: PropTypes.func.isRequired,
+  setShapes: PropTypes.func.isRequired,
   onMapClick: PropTypes.func.isRequired,
   shapes: PropTypes.array.isRequired,
   clickedCoords: PropTypes.shape({

@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../components/Auth/AuthContext";
 import Sidebar from "../components/Map/Sidebar.jsx";
 import MapView from "../components/Map/MapView";
-import { fetchAgenciesByProjectId } from "../api/agencyApi";
 import "../styles/Map.css";
 import FloatingActions from "../components/FloatingActions/FloatingActions.jsx";
 
@@ -48,25 +47,6 @@ const MapPage = () => {
       setSelectedEntities((prev) => ({ ...prev, trip: prevTrip }));
     }
   }, [location.state]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const agencyData = await fetchAgenciesByProjectId(project_id, token);
-        setAgencies(Array.isArray(agencyData) ? agencyData : []);
-      } catch (error) {
-        console.error("Error loading data:", error);
-        setAgencies([]);
-        setCalendars([]);
-        navigate("/login");
-      }
-    };
-    if (token && project_id) {
-      loadData();
-    } else {
-      navigate("/login");
-    }
-  }, [token, project_id, navigate]);
 
   const handleMapClick = (coords) => {
     setClickedCoords(coords);

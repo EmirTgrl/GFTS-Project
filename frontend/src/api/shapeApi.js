@@ -1,8 +1,14 @@
 const API_BASE_URL = "http://localhost:5000/api/shapes";
 
-export const fetchShapesByTripId = async (projectId, tripId, token) => {
+export const fetchShapesByTripId = async (
+  projectId,
+  tripId,
+  token,
+  page = 1,
+  limit = 8
+) => {
   const response = await fetch(
-    `${API_BASE_URL}?project_id=${projectId}&trip_id=${tripId}`,
+    `${API_BASE_URL}?project_id=${projectId}&trip_id=${tripId}&page=${page}&limit=${limit}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -30,11 +36,7 @@ export const deleteShape = async (shape_id, shape_pt_sequence, token) => {
   return response.json();
 };
 
-export const updateShape = async (
-  shape_pt_sequence,
-  shapeData,
-  token
-) => {
+export const updateShape = async (shape_pt_sequence, shapeData, token) => {
   const response = await fetch(
     `${API_BASE_URL}/update/${shapeData.shape_id}/${shape_pt_sequence}`,
     {

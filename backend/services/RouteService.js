@@ -20,31 +20,52 @@ const routeService = {
     const fields = [];
     const values = [];
 
-    // Her zaman user_id ile filtrele
     fields.push("user_id = ?");
     values.push(user_id);
 
-    // Query parametrelerini kontrol et
     for (const param in req.query) {
       if (validFields.includes(param)) {
-        fields.push(`${param} = ?`);
-        values.push(req.query[param]);
-      } else {
+        if (param === "route_long_name") {
+          fields.push(`${param} LIKE ?`);
+          values.push(`%${req.query[param]}%`); 
+        } else {
+          fields.push(`${param} = ?`);
+          values.push(req.query[param]);
+        }
+      } else if (param !== "page" && param !== "limit") {
         console.warn(`Unexpected query parameter: ${param}`);
       }
     }
 
-    // SQL sorgusunu oluştur
-    const query = `
-      SELECT * FROM routes 
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 8;
+    const offset = (page - 1) * limit;
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM routes
       WHERE ${fields.join(" AND ")}
     `;
 
+    const dataQuery = `
+      SELECT r.*
+      FROM routes r
+      WHERE ${fields.join(" AND ")}
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
     try {
-      const [rows] = await pool.execute(query, values);
-      res.json(rows.length > 0 ? rows : []);
+      const [countRows] = await pool.query(countQuery, values);
+      const total = countRows[0].total;
+
+      const [dataRows] = await pool.query(dataQuery, values);
+
+      res.json({
+        data: dataRows.length > 0 ? dataRows : [],
+        total: total,
+      });
     } catch (error) {
-      console.error("Error fetching routes:", error);
+      console.error("Query execution error:", error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },

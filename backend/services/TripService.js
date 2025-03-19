@@ -16,29 +16,55 @@ const tripService = {
       "bikes_allowed",
       "project_id",
     ];
-  
+
     const fields = [];
     const values = [];
-    fields.push("user_id = ?")
+    fields.push("user_id = ?");
     values.push(user_id);
-  
+
     for (const param in req.query) {
       if (validFields.includes(param)) {
-        fields.push(`${param} = ?`); 
-        values.push(req.query[param]); 
-      } else {
-        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+        if (param === "trip_short_name") {
+          fields.push(`${param} LIKE ?`);
+          values.push(`%${req.query[param]}%`);
+        } else {
+          fields.push(`${param} = ?`);
+          values.push(req.query[param]);
+        }
+      } else if (param !== "page" && param !== "limit") {
+        console.warn(`Unexpected query parameter: ${param}`);
       }
     }
-  
-    let query = `SELECT * FROM trips 
-    WHERE ${fields.join(" AND ")}`;
-  
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 8;
+    const offset = (page - 1) * limit;
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM trips
+      WHERE ${fields.join(" AND ")}
+    `;
+
+    const dataQuery = `
+      SELECT t.*
+      FROM trips t
+      WHERE ${fields.join(" AND ")}
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
     try {
-      const [rows] = await pool.execute(query, values);
-      res.json(rows.length > 0 ? rows : []);
+      const [countRows] = await pool.query(countQuery, values);
+      const total = countRows[0].total;
+
+      const [dataRows] = await pool.query(dataQuery, values);
+
+      res.json({
+        data: dataRows.length > 0 ? dataRows : [],
+        total: total,
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Query execution error:", error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
@@ -67,7 +93,7 @@ const tripService = {
   updateTrip: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {trip_id} = req.params;
+      const { trip_id } = req.params;
       const validFields = [
         "route_id",
         "service_id",
@@ -82,7 +108,7 @@ const tripService = {
         "project_id",
       ];
       const { ...params } = req.body;
-      
+
       const fields = [];
       const values = [];
 
@@ -94,7 +120,7 @@ const tripService = {
           console.warn(`unexpected field ${param}`);
         }
       }
-      
+
       const query = `
         UPDATE trips
         SET
@@ -102,7 +128,7 @@ const tripService = {
         WHERE trip_id = ? AND user_id = ?
       `;
       const [result] = await pool.execute(query, [...values, trip_id, user_id]);
-      
+
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Trip not found" });
       }
@@ -129,7 +155,7 @@ const tripService = {
         "bikes_allowed",
         "project_id",
       ];
-      const { ...params} = req.body;
+      const { ...params } = req.body;
 
       const fields = [];
       const values = [];
@@ -139,7 +165,7 @@ const tripService = {
         if (validFields.includes(param)) {
           fields.push(param);
           values.push(params[param]);
-          placeholders.push("?")
+          placeholders.push("?");
         } else {
           console.warn(`unexpected field in ${param}`);
         }

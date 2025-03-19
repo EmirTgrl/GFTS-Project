@@ -93,20 +93,15 @@ const Sidebar = ({
     stop: null,
   });
   const [formConfig, setFormConfig] = useState(null);
-  const [filteredAgencies, setFilteredAgencies] = useState(agencies);
-  const [filteredRoutes, setFilteredRoutes] = useState(routes);
-  const [filteredTrips, setFilteredTrips] = useState(trips);
-  const [filteredStops, setFilteredStops] = useState([]);
-  const [filteredCalendars, setFilteredCalendars] = useState(calendars);
-  const [filteredShapes, setFilteredShapes] = useState(shapes);
   const [searchTerms, setSearchTerms] = useState({
     agencies: "",
     routes: "",
     trips: "",
     stops: "",
     calendars: "",
-    shapes: "",
   });
+  const [tripTimes, setTripTimes] = useState({});
+  const [shapesData, setShapesData] = useState({ data: [], total: 0 });
   const itemsPerPage = 8;
 
   const categoryMap = {
@@ -119,32 +114,154 @@ const Sidebar = ({
   };
 
   useEffect(() => {
-    setFilteredAgencies(agencies);
-    setFilteredRoutes(routes);
-    setFilteredTrips(trips);
-    setFilteredCalendars(calendars);
-    setFilteredShapes(shapes);
-  }, [agencies, routes, trips, calendars, shapes]);
-
-  useEffect(() => {
-    const loadInitialData = async () => {
+    const fetchData = async () => {
       try {
-        const agencyData = await fetchAgenciesByProjectId(project_id, token);
-        setAgencies(agencyData);
-        setFilteredAgencies(agencyData);
-        const calendarData = await fetchCalendarsByProjectId(project_id, token);
-        setCalendars(calendarData);
-        setFilteredCalendars(calendarData);
+        if (token && project_id) {
+          const agencyData = await fetchAgenciesByProjectId(
+            project_id,
+            token,
+            pageAgencies,
+            itemsPerPage,
+            searchTerms.agencies
+          );
+          setAgencies(agencyData);
+        }
+
+        if (selectedEntities.agency) {
+          const routeData = await fetchRoutesByAgencyId(
+            selectedEntities.agency.agency_id,
+            project_id,
+            token,
+            pageRoutes,
+            itemsPerPage,
+            searchTerms.routes
+          );
+          setRoutes(routeData);
+        }
+
+        if (selectedEntities.route) {
+          const [calendarData, routeTrips] = await Promise.all([
+            fetchCalendarsByProjectId(project_id, token),
+            fetchTripsByRouteId(
+              selectedEntities.route.route_id,
+              project_id,
+              token,
+              pageTrips,
+              itemsPerPage,
+              searchTerms.trips
+            ),
+          ]);
+
+          setCalendars(
+            Array.isArray(calendarData) ? calendarData : calendarData.data || []
+          );
+
+          const filteredTrips = selectedEntities.calendar
+            ? routeTrips.data.filter(
+                (trip) =>
+                  trip.service_id === selectedEntities.calendar.service_id
+              )
+            : routeTrips.data;
+          setTrips({
+            data: filteredTrips,
+            total: selectedEntities.calendar
+              ? filteredTrips.length
+              : routeTrips.total,
+          });
+
+          const tripTimesData = {};
+          await Promise.all(
+            filteredTrips.map(async (trip) => {
+              const stops = await fetchStopsAndStopTimesByTripId(
+                trip.trip_id,
+                project_id,
+                token,
+                1,
+                itemsPerPage,
+                ""
+              );
+              tripTimesData[trip.trip_id] =
+                stops.data.length > 0
+                  ? {
+                      firstArrival: stops.data[0].arrival_time,
+                      lastDeparture:
+                        stops.data[stops.data.length - 1].departure_time,
+                    }
+                  : { firstArrival: null, lastDeparture: null };
+            })
+          );
+          setTripTimes(tripTimesData);
+        } else {
+          setTrips({ data: [], total: 0 });
+          setTripTimes({});
+        }
+
+        if (selectedEntities.trip) {
+          const shapesResponse = await fetchShapesByTripId(
+            project_id,
+            selectedEntities.trip.trip_id,
+            token,
+            pageShapes,
+            itemsPerPage
+          );
+          setShapesData(shapesResponse);
+          setShapes(shapesResponse.data);
+
+          const stopsResponse = await fetchStopsAndStopTimesByTripId(
+            selectedEntities.trip.trip_id,
+            project_id,
+            token,
+            pageStops,
+            itemsPerPage,
+            searchTerms.stops
+          );
+          setStopsAndTimes(stopsResponse);
+
+          const center = calculateCenter(shapesResponse.data, stopsResponse);
+          if (center) {
+            setMapCenter(center);
+            setZoom(12);
+          }
+        } else {
+          setShapes([]);
+          setShapesData({ data: [], total: 0 });
+          setStopsAndTimes({ data: [], total: 0 });
+        }
       } catch (error) {
-        console.error("Error fetching initial data:", error);
-        setAgencies([]);
-        setFilteredAgencies([]);
-        setCalendars([]);
-        setFilteredCalendars([]);
+        console.error("Veri yüklenirken hata oluştu:", error);
+        setAgencies({ data: [], total: 0 });
+        setRoutes({ data: [], total: 0 });
+        setTrips({ data: [], total: 0 });
+        setShapes([]);
+        setShapesData({ data: [], total: 0 });
+        setStopsAndTimes({ data: [], total: 0 });
+        setTripTimes({});
       }
     };
-    if (token && project_id) loadInitialData();
-  }, [token, project_id, setAgencies, setCalendars]);
+
+    fetchData();
+  }, [
+    token,
+    project_id,
+    pageAgencies,
+    pageRoutes,
+    pageTrips,
+    pageStops,
+    pageShapes,
+    searchTerms,
+    selectedEntities.agency,
+    selectedEntities.route,
+    selectedEntities.trip,
+    selectedEntities.calendar,
+    setAgencies,
+    setRoutes,
+    setTrips,
+    setCalendars,
+    setShapes,
+    setStopsAndTimes,
+    setMapCenter,
+    setZoom,
+  ]);
 
   useEffect(() => {
     if (action) {
@@ -153,46 +270,13 @@ const Sidebar = ({
     }
   }, [action, activeKey, selectedCategory, selectedEntities]);
 
-  const loadTripTimes = async () => {
-    if (!selectedEntities.route || trips.length === 0) return;
-    const updatedTrips = await Promise.all(
-      trips.map(async (trip) => {
-        if (trip.departure_time) return trip; // Zaten saat varsa atla
-        const stops = await fetchStopsAndStopTimesByTripId(
-          trip.trip_id,
-          project_id,
-          token
-        );
-        return {
-          ...trip,
-          departure_time: stops[0]?.departure_time || "N/A",
-          arrival_time: stops[stops.length - 1]?.arrival_time || "N/A",
-        };
-      })
-    );
-    setTrips(updatedTrips);
-    setFilteredTrips(updatedTrips);
-  };
-
-  const handleSearch = (category, term, items, setFiltered, setPage) => {
-    const filtered = items.filter((item) => {
-      let searchValue = "";
-      if (category === "agencies") searchValue = item.agency_name || "";
-      if (category === "routes")
-        searchValue = item.route_long_name || item.route_id || "";
-      if (category === "trips")
-        searchValue = item.trip_headsign || item.trip_id || "";
-      if (category === "stops")
-        searchValue = item.stop_name || item.stop_id || "";
-      if (category === "calendars") searchValue = getActiveDays(item) || "";
-      if (category === "shapes")
-        searchValue = item.shape_pt_sequence
-          ? `Point ${item.shape_pt_sequence}`
-          : "";
-      return searchValue.toLowerCase().includes(term.toLowerCase());
-    });
-    setFiltered(filtered);
-    setPage(1);
+  const handleSearch = (category, term) => {
+    setSearchTerms({ ...searchTerms, [category]: term });
+    if (category === "agencies") setPageAgencies(1);
+    if (category === "routes") setPageRoutes(1);
+    if (category === "trips") setPageTrips(1);
+    if (category === "stops") setPageStops(1);
+    if (category === "calendars") setPageCalendars(1);
   };
 
   const handleAction = (actionType) => {
@@ -242,8 +326,8 @@ const Sidebar = ({
         count++;
       });
     }
-    if (stops && stops.length > 0) {
-      stops.forEach((stop) => {
+    if (stops && stops.data && stops.data.length > 0) {
+      stops.data.forEach((stop) => {
         latSum += parseFloat(stop.stop_lat);
         lonSum += parseFloat(stop.stop_lon);
         count++;
@@ -269,12 +353,6 @@ const Sidebar = ({
             shape: null,
             stop: null,
           }));
-          setRoutes([]);
-          setTrips([]);
-          setCalendars([]);
-          setShapes([]);
-          setStopsAndTimes([]);
-          setFilteredStops([]);
           setSelectedCategory("");
         } else {
           setSelectedEntities((prev) => ({
@@ -286,19 +364,6 @@ const Sidebar = ({
             shape: null,
             stop: null,
           }));
-          setRoutes([]);
-          setTrips([]);
-          setCalendars([]);
-          setShapes([]);
-          setStopsAndTimes([]);
-          setFilteredStops([]);
-          const agencyRoutes = await fetchRoutesByAgencyId(
-            entity.agency_id,
-            project_id,
-            token
-          );
-          setRoutes(agencyRoutes);
-          setFilteredRoutes(agencyRoutes);
           setSelectedCategory("agency");
         }
         break;
@@ -314,10 +379,6 @@ const Sidebar = ({
             shape: null,
             stop: null,
           }));
-          setTrips([]);
-          setShapes([]);
-          setStopsAndTimes([]);
-          setFilteredStops([]);
           setSelectedCategory("agency");
         } else {
           setSelectedEntities((prev) => ({
@@ -328,18 +389,6 @@ const Sidebar = ({
             shape: null,
             stop: null,
           }));
-          setTrips([]);
-          setShapes([]);
-          setStopsAndTimes([]);
-          setFilteredStops([]);
-          const [calendarData, routeTrips] = await Promise.all([
-            fetchCalendarsByProjectId(project_id, token),
-            fetchTripsByRouteId(entity.route_id, token),
-          ]);
-          setCalendars(calendarData);
-          setFilteredCalendars(calendarData);
-          setTrips(routeTrips);
-          setFilteredTrips(routeTrips);
           setSelectedCategory("route");
         }
         break;
@@ -354,14 +403,6 @@ const Sidebar = ({
             shape: null,
             stop: null,
           }));
-          setShapes([]);
-          setFilteredStops([]);
-          const routeTrips = await fetchTripsByRouteId(
-            selectedEntities.route.route_id,
-            token
-          );
-          setTrips(routeTrips);
-          setFilteredTrips(routeTrips);
           setSelectedCategory("route");
         } else {
           setSelectedEntities((prev) => ({
@@ -371,17 +412,6 @@ const Sidebar = ({
             shape: null,
             stop: null,
           }));
-          setShapes([]);
-          setFilteredStops([]);
-          const routeTrips = await fetchTripsByRouteId(
-            selectedEntities.route.route_id,
-            token
-          );
-          const filteredTrips = routeTrips.filter(
-            (trip) => trip.service_id === entity.service_id
-          );
-          setTrips(filteredTrips);
-          setFilteredTrips(filteredTrips);
           setSelectedCategory("calendar");
         }
         break;
@@ -395,8 +425,6 @@ const Sidebar = ({
             shape: null,
             stop: null,
           }));
-          setShapes([]);
-          setFilteredStops([]);
           setSelectedCategory("calendar");
         } else {
           setSelectedEntities((prev) => ({
@@ -405,19 +433,6 @@ const Sidebar = ({
             shape: null,
             stop: null,
           }));
-          const [tripShapes, tripStops] = await Promise.all([
-            fetchShapesByTripId(project_id, entity.trip_id, token),
-            fetchStopsAndStopTimesByTripId(entity.trip_id, project_id, token),
-          ]);
-          setShapes(tripShapes);
-          setFilteredShapes(tripShapes);
-          setStopsAndTimes(tripStops);
-          setFilteredStops(tripStops);
-          const center = calculateCenter(tripShapes, tripStops);
-          if (center) {
-            setMapCenter(center);
-            setZoom(12);
-          }
           setSelectedCategory("trip");
         }
         break;
@@ -470,12 +485,10 @@ const Sidebar = ({
     try {
       if (category === "agency") {
         await deleteAgencyById(entity.agency_id, token);
-        setAgencies((prev) =>
-          prev.filter((a) => a.agency_id !== entity.agency_id)
-        );
-        setFilteredAgencies((prev) =>
-          prev.filter((a) => a.agency_id !== entity.agency_id)
-        );
+        setAgencies((prev) => ({
+          ...prev,
+          data: prev.data.filter((a) => a.agency_id !== entity.agency_id),
+        }));
         setSelectedEntities((prev) => ({
           ...prev,
           agency: null,
@@ -484,20 +497,12 @@ const Sidebar = ({
           stop: null,
           shape: null,
         }));
-        setRoutes([]);
-        setFilteredRoutes([]);
-        setTrips([]);
-        setFilteredTrips([]);
-        setStopsAndTimes([]);
-        setFilteredStops([]);
-        setShapes([]);
-        setFilteredShapes([]);
       } else if (category === "route") {
         await deleteRouteById(entity.route_id, token);
-        setRoutes((prev) => prev.filter((r) => r.route_id !== entity.route_id));
-        setFilteredRoutes((prev) =>
-          prev.filter((r) => r.route_id !== entity.route_id)
-        );
+        setRoutes((prev) => ({
+          ...prev,
+          data: prev.data.filter((r) => r.route_id !== entity.route_id),
+        }));
         setSelectedEntities((prev) => ({
           ...prev,
           route: null,
@@ -505,48 +510,43 @@ const Sidebar = ({
           stop: null,
           shape: null,
         }));
-        setTrips([]);
-        setFilteredTrips([]);
-        setStopsAndTimes([]);
-        setFilteredStops([]);
-        setShapes([]);
-        setFilteredShapes([]);
       } else if (category === "trip") {
         await deleteTripById(entity.trip_id, token);
-        setTrips((prev) => prev.filter((t) => t.trip_id !== entity.trip_id));
-        setFilteredTrips((prev) =>
-          prev.filter((t) => t.trip_id !== entity.trip_id)
-        );
+        setTrips((prev) => ({
+          ...prev,
+          data: prev.data.filter((t) => t.trip_id !== entity.trip_id),
+        }));
         setSelectedEntities((prev) => ({
           ...prev,
           trip: null,
           stop: null,
           shape: null,
         }));
-        setStopsAndTimes((prev) =>
-          prev.filter((s) => s.trip_id !== entity.trip_id)
-        );
-        setFilteredStops([]);
-        setShapes([]);
-        setFilteredShapes([]);
+        setTripTimes((prev) => {
+          const newTripTimes = { ...prev };
+          delete newTripTimes[entity.trip_id];
+          return newTripTimes;
+        });
       } else if (category === "stop") {
         await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
         await deleteStopById(entity.stop_id, token);
-        setStopsAndTimes((prev) =>
-          prev.filter((s) => s.stop_id !== entity.stop_id)
-        );
-        setFilteredStops((prev) =>
-          prev.filter((s) => s.stop_id !== entity.stop_id)
-        );
+        setStopsAndTimes((prev) => ({
+          ...prev,
+          data: prev.data.filter((s) => s.stop_id !== entity.stop_id),
+        }));
         setSelectedEntities((prev) => ({ ...prev, stop: null }));
       } else if (category === "shape") {
         await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
         setShapes((prev) =>
           prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
         );
-        setFilteredShapes((prev) =>
-          prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
-        );
+        setShapesData((prev) => ({
+          ...prev,
+          data: prev.data.filter(
+            (s) => s.shape_pt_sequence !== entity.shape_pt_sequence
+          ),
+          total: prev.total - 1,
+        }));
         setSelectedEntities((prev) => ({ ...prev, shape: null }));
       }
       Swal.fire("Deleted!", `${category} has been deleted.`, "success");
@@ -629,15 +629,15 @@ const Sidebar = ({
               agency_id={entity.agency_id}
               onClose={() => setFormConfig(null)}
               setAgencies={setAgencies}
-              agencies={agencies}
+              agencies={agencies.data}
             />
           );
         case "route":
           return (
             <RouteEditPage
-              agencies={agencies}
+              agencies={agencies.data} 
               route_id={entity.route_id}
-              routes={routes}
+              routes={routes.data} 
               onClose={() => setFormConfig(null)}
               setRoutes={setRoutes}
               project_id={project_id}
@@ -650,10 +650,10 @@ const Sidebar = ({
               trip_id={entity.trip_id}
               onClose={() => setFormConfig(null)}
               setTrips={setTrips}
-              routes={routes}
+              routes={routes.data} 
               calendars={calendars}
               selectedRoute={selectedEntities.route}
-              trips={trips}
+              trips={trips.data} 
             />
           );
         case "stop":
@@ -664,7 +664,7 @@ const Sidebar = ({
               stop_id={entity.stop_id}
               onClose={() => setFormConfig(null)}
               setStopsAndTimes={setStopsAndTimes}
-              stopsAndTimes={stopsAndTimes}
+              stopsAndTimes={stopsAndTimes.data} 
             />
           );
         case "calendar":
@@ -696,14 +696,8 @@ const Sidebar = ({
     return null;
   };
 
-  const paginateItems = (items, currentPage) => {
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    return items.slice(indexOfFirstItem, indexOfLastItem);
-  };
-
-  const renderPagination = (items, currentPage, setCurrentPage) => {
-    const totalPages = Math.ceil(items.length / itemsPerPage);
+  const renderPagination = (total, currentPage, setCurrentPage) => {
+    const totalPages = Math.ceil(total / itemsPerPage);
     if (totalPages <= 1) return null;
     return (
       <Pagination size="sm" className="justify-content-center mt-2">
@@ -745,13 +739,6 @@ const Sidebar = ({
     return days.length > 0 ? days.join(",") : "N/A";
   };
 
-  const getTripDays = (tripId) => {
-    const trip = trips.find((t) => t.trip_id === tripId);
-    if (!trip || !calendars) return "N/A";
-    const calendar = calendars.find((c) => c.service_id === trip.service_id);
-    return getActiveDays(calendar);
-  };
-
   const getRouteTypeIcon = (routeType) => {
     switch (routeType) {
       case 0:
@@ -777,34 +764,16 @@ const Sidebar = ({
     }
   };
 
-  const parseTimeToDate = (timeStr) => {
-    if (!timeStr || timeStr === "N/A") return null;
-    const [hours, minutes, seconds] = timeStr.split(":").map(Number);
-    const date = new Date();
-    date.setHours(hours, minutes, seconds, 0);
-    return date;
-  };
-
-  const getTripTimes = (tripId) => {
-    const trip = trips.find((t) => t.trip_id === tripId);
-    return {
-      departure: trip?.departure_time || "N/A",
-      arrival: trip?.arrival_time || "N/A",
-    };
-  };
-
-  const getTripStyle = (tripId) => {
+  const isTripInPast = (tripId) => {
+    const times = tripTimes[tripId];
+    if (!times || !times.lastDeparture) return false;
     const now = new Date();
-    const times = getTripTimes(tripId);
-    const departureTime = parseTimeToDate(times.departure);
-
-    if (!departureTime) return {};
-
-    if (departureTime < now) {
-      return { opacity: 0.5, backgroundColor: "#f8f9fa" };
-    }
-
-    return {};
+    const departureTime = new Date();
+    const [hours, minutes, seconds] = times.lastDeparture
+      .split(":")
+      .map(Number);
+    departureTime.setHours(hours, minutes, seconds, 0);
+    return departureTime < now;
   };
 
   return (
@@ -812,12 +781,7 @@ const Sidebar = ({
       <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
         <Accordion
           activeKey={activeKey}
-          onSelect={(key) => {
-            setActiveKey(key);
-            if (key === "3" && trips.length > 0 && !trips[0].departure_time) {
-              loadTripTimes();
-            }
-          }}
+          onSelect={(key) => setActiveKey(key)}
           className="sidebar-accordion"
         >
           <Accordion.Item eventKey="0">
@@ -830,23 +794,11 @@ const Sidebar = ({
                   type="text"
                   placeholder="Search agencies..."
                   value={searchTerms.agencies}
-                  onChange={(e) => {
-                    setSearchTerms({
-                      ...searchTerms,
-                      agencies: e.target.value,
-                    });
-                    handleSearch(
-                      "agencies",
-                      e.target.value,
-                      agencies,
-                      setFilteredAgencies,
-                      setPageAgencies
-                    );
-                  }}
+                  onChange={(e) => handleSearch("agencies", e.target.value)}
                 />
               </Form.Group>
-              {filteredAgencies.length > 0 ? (
-                paginateItems(filteredAgencies, pageAgencies).map((agency) => (
+              {agencies.data && agencies.data.length > 0 ? (
+                agencies.data.map((agency) => (
                   <Card
                     key={agency.agency_id}
                     className={`mb-2 item-card ${
@@ -869,11 +821,7 @@ const Sidebar = ({
               ) : (
                 <p className="text-muted text-center">No agencies found.</p>
               )}
-              {renderPagination(
-                filteredAgencies,
-                pageAgencies,
-                setPageAgencies
-              )}
+              {renderPagination(agencies.total, pageAgencies, setPageAgencies)}
             </Accordion.Body>
           </Accordion.Item>
 
@@ -887,20 +835,11 @@ const Sidebar = ({
                   type="text"
                   placeholder="Search routes..."
                   value={searchTerms.routes}
-                  onChange={(e) => {
-                    setSearchTerms({ ...searchTerms, routes: e.target.value });
-                    handleSearch(
-                      "routes",
-                      e.target.value,
-                      routes,
-                      setFilteredRoutes,
-                      setPageRoutes
-                    );
-                  }}
+                  onChange={(e) => handleSearch("routes", e.target.value)}
                 />
               </Form.Group>
-              {filteredRoutes.length > 0 ? (
-                paginateItems(filteredRoutes, pageRoutes).map((route) => (
+              {routes.data && routes.data.length > 0 ? (
+                routes.data.map((route) => (
                   <Card
                     key={route.route_id}
                     className={`mb-2 item-card ${
@@ -932,7 +871,7 @@ const Sidebar = ({
                     : "Select an agency first."}
                 </p>
               )}
-              {renderPagination(filteredRoutes, pageRoutes, setPageRoutes)}
+              {renderPagination(routes.total, pageRoutes, setPageRoutes)}
             </Accordion.Body>
           </Accordion.Item>
 
@@ -946,23 +885,11 @@ const Sidebar = ({
                   type="text"
                   placeholder="Search calendars..."
                   value={searchTerms.calendars}
-                  onChange={(e) => {
-                    setSearchTerms({
-                      ...searchTerms,
-                      calendars: e.target.value,
-                    });
-                    handleSearch(
-                      "calendars",
-                      e.target.value,
-                      calendars,
-                      setFilteredCalendars,
-                      setPageCalendars
-                    );
-                  }}
+                  onChange={(e) => handleSearch("calendars", e.target.value)}
                 />
               </Form.Group>
-              {filteredCalendars.length > 0 ? (
-                paginateItems(filteredCalendars, pageCalendars).map((cal) => (
+              {calendars.length > 0 ? (
+                calendars.map((cal) => (
                   <Card
                     key={cal.service_id}
                     className={`mb-2 item-card ${
@@ -986,7 +913,7 @@ const Sidebar = ({
                 <p className="text-muted text-center">No calendars found.</p>
               )}
               {renderPagination(
-                filteredCalendars,
+                calendars.length,
                 pageCalendars,
                 setPageCalendars
               )}
@@ -1003,32 +930,24 @@ const Sidebar = ({
                   type="text"
                   placeholder="Search trips..."
                   value={searchTerms.trips}
-                  onChange={(e) => {
-                    setSearchTerms({ ...searchTerms, trips: e.target.value });
-                    handleSearch(
-                      "trips",
-                      e.target.value,
-                      trips,
-                      setFilteredTrips,
-                      setPageTrips
-                    );
-                  }}
+                  onChange={(e) => handleSearch("trips", e.target.value)}
                 />
               </Form.Group>
-              {filteredTrips.length > 0 ? (
-                paginateItems(filteredTrips, pageTrips).map((trip, index) => {
-                  const times = getTripTimes(trip.trip_id);
-                  const days = getTripDays(trip.trip_id);
+              {trips.data && trips.data.length > 0 ? (
+                trips.data.map((trip) => {
+                  const times = tripTimes[trip.trip_id] || {
+                    firstArrival: null,
+                    lastDeparture: null,
+                  };
                   return (
                     <Card
-                      key={`${trip.trip_id}-${index}`}
+                      key={trip.trip_id}
                       className={`mb-2 item-card ${
                         selectedEntities.trip?.trip_id === trip.trip_id
                           ? "active"
                           : ""
-                      }`}
+                      } ${isTripInPast(trip.trip_id) ? "past-trip" : ""}`}
                       onClick={() => handleSelectionChange("trip", trip)}
-                      style={getTripStyle(trip.trip_id)}
                     >
                       <Card.Body className="d-flex align-items-center p-2">
                         {trip.direction_id === 0 ? (
@@ -1036,30 +955,23 @@ const Sidebar = ({
                         ) : (
                           <ArrowUpRight className="me-2" />
                         )}
-                        <div className="flex-grow-1">
-                          <OverlayTrigger
-                            placement="top"
-                            overlay={renderTooltip(
-                              trip.trip_headsign || trip.trip_id
-                            )}
-                          >
-                            <span className="item-title d-block">
+                        <OverlayTrigger
+                          placement="top"
+                          overlay={renderTooltip(
+                            trip.trip_headsign || trip.trip_id
+                          )}
+                        >
+                          <div className="d-flex flex-column">
+                            <span className="item-title">
                               {trip.trip_headsign || trip.trip_id}
                             </span>
-                          </OverlayTrigger>
-                          <span style={{ fontSize: "0.8em" }}>
-                            {times.departure !== "N/A" &&
-                            times.arrival !== "N/A"
-                              ? `${times.departure} - ${times.arrival}`
-                              : "N/A"}
-                            {" | "}
-                            <span
-                              style={{ fontSize: "0.7em", color: "#6c757d" }}
-                            >
-                              {days}
+                            <span className="trip-times">
+                              {times.firstArrival && times.lastDeparture
+                                ? `${times.firstArrival} - ${times.lastDeparture}`
+                                : "No times available"}
                             </span>
-                          </span>
-                        </div>
+                          </div>
+                        </OverlayTrigger>
                       </Card.Body>
                     </Card>
                   );
@@ -1071,7 +983,7 @@ const Sidebar = ({
                     : "Select a route first."}
                 </p>
               )}
-              {renderPagination(filteredTrips, pageTrips, setPageTrips)}
+              {renderPagination(trips.total, pageTrips, setPageTrips)}
             </Accordion.Body>
           </Accordion.Item>
 
@@ -1080,25 +992,8 @@ const Sidebar = ({
               <Bezier size={20} className="me-2" /> Shapes
             </Accordion.Header>
             <Accordion.Body>
-              <Form.Group className="mb-3">
-                <Form.Control
-                  type="text"
-                  placeholder="Search shapes..."
-                  value={searchTerms.shapes}
-                  onChange={(e) => {
-                    setSearchTerms({ ...searchTerms, shapes: e.target.value });
-                    handleSearch(
-                      "shapes",
-                      e.target.value,
-                      shapes,
-                      setFilteredShapes,
-                      setPageShapes
-                    );
-                  }}
-                />
-              </Form.Group>
-              {filteredShapes.length > 0 ? (
-                paginateItems(filteredShapes, pageShapes).map((shape) => (
+              {shapesData.data.length > 0 ? (
+                shapesData.data.map((shape) => (
                   <Card
                     key={`${shape.shape_id}-${shape.shape_pt_sequence}`}
                     className={`mb-2 item-card ${
@@ -1130,7 +1025,7 @@ const Sidebar = ({
                     : "Select a trip first."}
                 </p>
               )}
-              {renderPagination(filteredShapes, pageShapes, setPageShapes)}
+              {renderPagination(shapesData.total, pageShapes, setPageShapes)}
             </Accordion.Body>
           </Accordion.Item>
 
@@ -1142,24 +1037,15 @@ const Sidebar = ({
               <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
-                  placeholder="Search stops..."
+                  placeholder="Search stops by name..."
                   value={searchTerms.stops}
-                  onChange={(e) => {
-                    setSearchTerms({ ...searchTerms, stops: e.target.value });
-                    handleSearch(
-                      "stops",
-                      e.target.value,
-                      filteredStops,
-                      setFilteredStops,
-                      setPageStops
-                    );
-                  }}
+                  onChange={(e) => handleSearch("stops", e.target.value)}
                 />
               </Form.Group>
-              {filteredStops.length > 0 && selectedEntities.trip ? (
-                paginateItems(filteredStops, pageStops).map((stop) => (
+              {stopsAndTimes.data && stopsAndTimes.data.length > 0 ? (
+                stopsAndTimes.data.map((stop) => (
                   <Card
-                    key={`${stop.trip_id}-${stop.stop_id}-${stop.stop_sequence}`}
+                    key={`${stop.trip_id}-${stop.stop_id}`}
                     className={`mb-2 item-card ${
                       selectedEntities.stop?.stop_id === stop.stop_id
                         ? "active"
@@ -1173,7 +1059,7 @@ const Sidebar = ({
                         overlay={renderTooltip(stop.stop_name || stop.stop_id)}
                       >
                         <span className="item-title">
-                          {stop.stop_sequence}. {stop.stop_name || stop.stop_id}
+                          {stop.stop_name || stop.stop_id}
                         </span>
                       </OverlayTrigger>
                     </Card.Body>
@@ -1186,7 +1072,7 @@ const Sidebar = ({
                     : "Select a trip first."}
                 </p>
               )}
-              {renderPagination(filteredStops, pageStops, setPageStops)}
+              {renderPagination(stopsAndTimes.total, pageStops, setPageStops)}
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
@@ -1215,15 +1101,15 @@ const Sidebar = ({
 Sidebar.propTypes = {
   token: PropTypes.string.isRequired,
   project_id: PropTypes.string.isRequired,
-  routes: PropTypes.array.isRequired,
+  routes: PropTypes.object.isRequired,
   setRoutes: PropTypes.func.isRequired,
-  trips: PropTypes.array.isRequired,
+  trips: PropTypes.object.isRequired,
   setTrips: PropTypes.func.isRequired,
-  stopsAndTimes: PropTypes.array.isRequired,
+  stopsAndTimes: PropTypes.object.isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
   calendars: PropTypes.array.isRequired,
   setCalendars: PropTypes.func.isRequired,
-  agencies: PropTypes.array.isRequired,
+  agencies: PropTypes.object.isRequired,
   setAgencies: PropTypes.func.isRequired,
   setMapCenter: PropTypes.func.isRequired,
   setZoom: PropTypes.func.isRequired,

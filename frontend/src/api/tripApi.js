@@ -1,21 +1,35 @@
 const API_BASE_URL = "http://localhost:5000/api/trips";
 
-export const fetchTripsByRouteId = async (routeId, token) => {
-  const response = await fetch(`${API_BASE_URL}?route_id=${routeId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export const fetchTripsByRouteId = async (
+  routeId,
+  projectId,
+  token,
+  page = 1,
+  limit = 8,
+  searchTerm = ""
+) => {
+  const url = new URL(`${API_BASE_URL}`);
+  url.searchParams.append("project_id", projectId);
+  url.searchParams.append("route_id", routeId);
+  url.searchParams.append("page", page);
+  url.searchParams.append("limit", limit);
+  if (searchTerm) url.searchParams.append("trip_short_name", searchTerm);
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
     const errorText = await response.text();
     console.error(
-      "HTTP error in fetchTripsByRouteId!",
+      "Failed to fetch trips by routes:",
       response.status,
       errorText
     );
-    throw new Error(`Fetch trips failed: ${errorText}`);
+    throw new Error(`Failed to fetch trips by routes: ${errorText}`);
   }
-  return response.json();
+  const data = await response.json();
+  console.log("fetchTripsByRouteId response:", data);
+  return data;
 };
 
 export const fetchTripsByProjectId = async (projectId, token) => {
