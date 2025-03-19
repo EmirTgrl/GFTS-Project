@@ -300,8 +300,9 @@ function PolylineWithDirectionalArrows({ positions, color, weight }) {
       <MapClickHandler onMapClick={onMapClick} />
       <MapUpdater mapCenter={mapCenter} zoom={zoom} />
       {console.log("TEMPSTOPSANDTIMES", tempStopsAndTimes)}
-      {tempStopsAndTimes.data.length > 0 &&
-        tempStopsAndTimes.data
+      {tempStopsAndTimes.data &&
+        tempStopsAndTimes.data .length > 0
+        && tempStopsAndTimes.data
           .sort((a, b) => a.stop_sequence - b.stop_sequence)
           .map((stopTime, stop_sequence) => {
             if (stopTime && stopTime.stop_lat && stopTime.stop_lon) {
