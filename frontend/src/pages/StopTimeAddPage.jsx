@@ -243,9 +243,9 @@ const StopTimeAddPage = ({
 
   return (
     <div className="form-container">
-      <h5>Yeni Durak Zamanı oluştur</h5>
       <form onSubmit={handleSubmit}>
-        {/* Stop selection dropdown */}
+        
+      <h5>Stop</h5>
         <div className="mb-2">
           <label htmlFor="stop_select" className="form-label">
             Durak Seçimi
