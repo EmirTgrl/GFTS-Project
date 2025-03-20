@@ -9,8 +9,6 @@ const TripFilterPanel = ({
   setTrips,
   setIsFiltered,
   fullTrips,
-  pageTrips,
-  itemsPerPage,
   onClose,
 }) => {
   const [filters, setFilters] = useState({
@@ -32,11 +30,10 @@ const TripFilterPanel = ({
     return days.length > 0 ? days.join(",") : "N/A";
   };
 
-  const compareTimes = (time1, time2) => {
-    if (!time1 || !time2) return 0;
-    const [h1, m1] = time1.split(":").map(Number);
-    const [h2, m2] = time2.split(":").map(Number);
-    return h1 * 60 + m1 - (h2 * 60 + m2);
+  const timeToSeconds = (time) => {
+    if (!time) return null;
+    const [hours, minutes, seconds] = time.split(":").map(Number);
+    return hours * 3600 + minutes * 60 + (seconds || 0);
   };
 
   const filterTrips = (tripsData) => {
@@ -51,21 +48,46 @@ const TripFilterPanel = ({
         lastDeparture: null,
       };
 
+      // Service ID filtresi
       const matchesService =
-        !filters.service_id ||
-        trip.service_id.toString() === filters.service_id;
+        !filters.service_id || trip.service_id === filters.service_id;
 
+      // Direction ID filtresi
       const matchesDirection =
         !filters.direction_id ||
         trip.direction_id.toString() === filters.direction_id;
 
+      // Zaman filtresi
+      const startTime = filters.timeRange.start
+        ? timeToSeconds(filters.timeRange.start)
+        : null;
+      const endTime = filters.timeRange.end
+        ? timeToSeconds(filters.timeRange.end)
+        : null;
+      const tripStart = times.firstArrival
+        ? timeToSeconds(times.firstArrival)
+        : null;
+      const tripEnd = times.lastDeparture
+        ? timeToSeconds(times.lastDeparture)
+        : null;
+
       const matchesTime =
-        (!filters.timeRange.start ||
-          (times.firstArrival &&
-            compareTimes(times.firstArrival, filters.timeRange.start) >= 0)) &&
-        (!filters.timeRange.end ||
-          (times.lastDeparture &&
-            compareTimes(times.lastDeparture, filters.timeRange.end) <= 0));
+        (!startTime || (tripStart && tripStart >= startTime)) &&
+        (!endTime || (tripEnd && tripEnd <= endTime));
+
+      // Debugging
+      console.log({
+        tripId: trip.trip_id,
+        firstArrival: times.firstArrival,
+        lastDeparture: times.lastDeparture,
+        tripStartSeconds: tripStart,
+        tripEndSeconds: tripEnd,
+        filterStartSeconds: startTime,
+        filterEndSeconds: endTime,
+        matchesService,
+        matchesDirection,
+        matchesTime,
+      });
 
       return matchesService && matchesDirection && matchesTime;
     });
@@ -75,12 +97,9 @@ const TripFilterPanel = ({
 
   const handleApplyFilters = () => {
     const filtered = filterTrips(fullTrips);
-    const paginatedFiltered = filtered.slice(
-      (pageTrips - 1) * itemsPerPage,
-      pageTrips * itemsPerPage
-    );
+    console.log("Filtrelenmiş Trip'ler:", filtered);
     setTrips({
-      data: paginatedFiltered,
+      data: filtered, // Tüm filtrelenmiş veriler
       total: filtered.length,
     });
     setIsFiltered(true);
@@ -92,11 +111,7 @@ const TripFilterPanel = ({
       direction_id: "",
       timeRange: { start: "", end: "" },
     });
-    const paginatedTrips = fullTrips.slice(
-      (pageTrips - 1) * itemsPerPage,
-      pageTrips * itemsPerPage
-    );
-    setTrips({ data: paginatedTrips, total: fullTrips.length });
+    setTrips({ data: fullTrips, total: fullTrips.length });
     setIsFiltered(false);
   };
 
@@ -189,8 +204,6 @@ TripFilterPanel.propTypes = {
   setTrips: PropTypes.func.isRequired,
   setIsFiltered: PropTypes.func.isRequired,
   fullTrips: PropTypes.array.isRequired,
-  pageTrips: PropTypes.number.isRequired,
-  itemsPerPage: PropTypes.number.isRequired,
   onClose: PropTypes.func.isRequired,
 };
 

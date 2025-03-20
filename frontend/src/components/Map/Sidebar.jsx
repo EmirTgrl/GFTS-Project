@@ -272,7 +272,7 @@ const Sidebar = ({
     selectedEntities.trip,
     selectedEntities.calendar,
     isFiltered,
-    sortDirection, // Sıralama yönü değiştiğinde yeniden çalışır
+    sortDirection,
   ]);
 
   useEffect(() => {
@@ -801,104 +801,111 @@ const Sidebar = ({
   const toggleSortDirection = (e) => {
     e.stopPropagation();
     setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    const sortedTrips = sortTripsByDeparture(trips.data);
+    setTrips({ data: sortedTrips, total: sortedTrips.length });
   };
 
-  const renderTripsAccordion = () => (
-    <Accordion.Item eventKey="3">
-      <Accordion.Header>
-        <BusFront size={20} className="me-2" /> Trips
-        {selectedEntities.route && (
-          <>
-            <span
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsFilterOpen((prev) => !prev);
-              }}
-              className="ms-2 p-0"
-              style={{ cursor: "pointer" }}
-            >
-              <Funnel size={20} />
-            </span>
-            <span
-              onClick={toggleSortDirection}
-              className="ms-2 p-0"
-              style={{ cursor: "pointer" }}
-            >
-              {sortDirection === "asc" ? (
-                <SortUp size={20} />
-              ) : (
-                <SortDown size={20} />
-              )}
-            </span>
-          </>
-        )}
-      </Accordion.Header>
-      <Accordion.Body>
-        <Form.Group className="mb-3">
-          <Form.Control
-            type="text"
-            placeholder="Search trips..."
-            value={searchTerms.trips}
-            onChange={(e) => handleSearch("trips", e.target.value)}
-          />
-        </Form.Group>
-        {trips.data && trips.data.length > 0 ? (
-          trips.data.map((trip) => {
-            const times = tripTimes[trip.trip_id] || {
-              firstArrival: null,
-              lastDeparture: null,
-            };
-            const calendar = calendars.find(
-              (cal) => cal.service_id === trip.service_id
-            );
-            const activeDays = getActiveDays(calendar);
-            return (
-              <Card
-                key={trip.trip_id}
-                className={`mb-2 item-card ${
-                  selectedEntities.trip?.trip_id === trip.trip_id
-                    ? "active"
-                    : ""
-                } ${isTripInPast(trip.trip_id) ? "past-trip" : ""}`}
-                onClick={() => handleSelectionChange("trip", trip)}
+  const renderTripsAccordion = () => {
+    const paginatedTrips = paginateItems(trips.data, pageTrips);
+    return (
+      <Accordion.Item eventKey="3">
+        <Accordion.Header>
+          <BusFront size={20} className="me-2" /> Trips
+          {selectedEntities.route && (
+            <>
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsFilterOpen((prev) => !prev);
+                }}
+                className="ms-2 p-0"
+                style={{ cursor: "pointer" }}
               >
-                <Card.Body className="d-flex align-items-center p-2">
-                  {trip.direction_id === 0 ? (
-                    <ArrowDownLeft className="me-2" />
-                  ) : (
-                    <ArrowUpRight className="me-2" />
-                  )}
-                  <OverlayTrigger
-                    placement="top"
-                    overlay={renderTooltip(trip.trip_headsign || trip.trip_id)}
-                  >
-                    <div className="d-flex flex-column">
-                      <span className="item-title">
-                        {trip.trip_headsign || trip.trip_id}
-                      </span>
-                      <span className="trip-times">
-                        {times.firstArrival && times.lastDeparture
-                          ? `${times.firstArrival} - ${times.lastDeparture}`
-                          : "No times available"}{" "}
-                        {activeDays !== "N/A" && `(${activeDays})`}
-                      </span>
-                    </div>
-                  </OverlayTrigger>
-                </Card.Body>
-              </Card>
-            );
-          })
-        ) : (
-          <p className="text-muted text-center">
-            {selectedEntities.route
-              ? "No trips found."
-              : "Select a route first."}
-          </p>
-        )}
-        {renderPagination(trips.total, pageTrips, setPageTrips)}
-      </Accordion.Body>
-    </Accordion.Item>
-  );
+                <Funnel size={20} />
+              </span>
+              <span
+                onClick={toggleSortDirection}
+                className="ms-2 p-0"
+                style={{ cursor: "pointer" }}
+              >
+                {sortDirection === "asc" ? (
+                  <SortUp size={20} />
+                ) : (
+                  <SortDown size={20} />
+                )}
+              </span>
+            </>
+          )}
+        </Accordion.Header>
+        <Accordion.Body>
+          <Form.Group className="mb-3">
+            <Form.Control
+              type="text"
+              placeholder="Search trips..."
+              value={searchTerms.trips}
+              onChange={(e) => handleSearch("trips", e.target.value)}
+            />
+          </Form.Group>
+          {paginatedTrips.length > 0 ? (
+            paginatedTrips.map((trip) => {
+              const times = tripTimes[trip.trip_id] || {
+                firstArrival: null,
+                lastDeparture: null,
+              };
+              const calendar = calendars.find(
+                (cal) => cal.service_id === trip.service_id
+              );
+              const activeDays = getActiveDays(calendar);
+              return (
+                <Card
+                  key={trip.trip_id}
+                  className={`mb-2 item-card ${
+                    selectedEntities.trip?.trip_id === trip.trip_id
+                      ? "active"
+                      : ""
+                  } ${isTripInPast(trip.trip_id) ? "past-trip" : ""}`}
+                  onClick={() => handleSelectionChange("trip", trip)}
+                >
+                  <Card.Body className="d-flex align-items-center p-2">
+                    {trip.direction_id === 0 ? (
+                      <ArrowDownLeft className="me-2" />
+                    ) : (
+                      <ArrowUpRight className="me-2" />
+                    )}
+                    <OverlayTrigger
+                      placement="top"
+                      overlay={renderTooltip(
+                        trip.trip_headsign || trip.trip_id
+                      )}
+                    >
+                      <div className="d-flex flex-column">
+                        <span className="item-title">
+                          {trip.trip_headsign || trip.trip_id}
+                        </span>
+                        <span className="trip-times">
+                          {times.firstArrival && times.lastDeparture
+                            ? `${times.firstArrival} - ${times.lastDeparture}`
+                            : "No times available"}{" "}
+                          {activeDays !== "N/A" && `(${activeDays})`}
+                        </span>
+                      </div>
+                    </OverlayTrigger>
+                  </Card.Body>
+                </Card>
+              );
+            })
+          ) : (
+            <p className="text-muted text-center">
+              {selectedEntities.route
+                ? "No trips found."
+                : "Select a route first."}
+            </p>
+          )}
+          {renderPagination(trips.total, pageTrips, setPageTrips)}
+        </Accordion.Body>
+      </Accordion.Item>
+    );
+  };
 
   return (
     <div className="sidebar-container d-flex">
@@ -906,8 +913,8 @@ const Sidebar = ({
         <Accordion
           activeKey={activeKey}
           onSelect={(key) => {
-            setActiveKey(key)
-            setSelectedCategory(categoryMap[key])
+            setActiveKey(key);
+            setSelectedCategory(categoryMap[key]);
           }}
           className="sidebar-accordion"
         >
@@ -1160,16 +1167,18 @@ const Sidebar = ({
         <TripFilterPanel
           calendars={calendars}
           tripTimes={tripTimes}
-          setTrips={setTrips}
+          setTrips={(newTrips) => {
+            setTrips(newTrips);
+            setPageTrips(1); // Filtreleme sonrası ilk sayfaya dön
+          }}
           setIsFiltered={setIsFiltered}
           fullTrips={fullTrips}
-          pageTrips={pageTrips}
-          itemsPerPage={itemsPerPage}
           onClose={() => {
             setIsFilterOpen(false);
             setIsFiltered(false);
             const updatedTrips = applyTripFiltersAndSort(fullTrips);
             setTrips(updatedTrips);
+            setPageTrips(1); // Kapatıldığında da ilk sayfaya dön
           }}
         />
       )}
