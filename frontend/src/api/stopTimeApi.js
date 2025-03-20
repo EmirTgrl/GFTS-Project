@@ -1,5 +1,17 @@
 const API_BASE_URL = "http://localhost:5000/api/stop-times";
 
+
+export const fetchStopsByRoute = async (route_id, token) => {
+  const response = await fetch(
+    `${API_BASE_URL}/route/${route_id}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  if (!response.ok) throw new Error("Failed to fetch stops and stop times");
+  return response.json();
+}
+
 export const fetchStopsAndStopTimesByTripId = async (
   tripId,
   projectId,
