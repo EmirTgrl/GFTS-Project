@@ -75,12 +75,10 @@ const TripFilterPanel = ({
 
   const handleApplyFilters = () => {
     const filtered = filterTrips(fullTrips);
-
     const paginatedFiltered = filtered.slice(
       (pageTrips - 1) * itemsPerPage,
       pageTrips * itemsPerPage
     );
-
     setTrips({
       data: paginatedFiltered,
       total: filtered.length,
@@ -104,9 +102,9 @@ const TripFilterPanel = ({
 
   return (
     <div className="trip-filter-panel">
-      <div className="filter-header">
-        <h5>Filtrele</h5>
-        <X size={24} onClick={onClose} style={{ cursor: "pointer" }} />
+      <div className="filter-header d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">Filtrele</h5>
+        <X size={24} onClick={onClose} className="close-icon" />
       </div>
       <Form>
         <Form.Group className="mb-2">

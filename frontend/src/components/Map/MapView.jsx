@@ -6,7 +6,6 @@ import {
   Popup,
   useMapEvents,
   useMap,
-  CircleMarker,
 } from "react-leaflet";
 import { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
@@ -17,8 +16,6 @@ import { saveMultipleStopsAndTimes } from "../../api/stopTimeApi.js";
 import { saveMultipleShapes } from "../../api/shapeApi.js";
 import { CaretUpFill } from "react-bootstrap-icons";
 import { renderToString } from "react-dom/server";
-
-// Import the plugin
 import "leaflet-polylinedecorator";
 
 const stopIcon = new L.Icon({
@@ -53,7 +50,6 @@ const MapView = ({
   onMapClick,
   shapes,
   clickedCoords,
-  isStopTimeAddOpen,
   editorMode,
   setEditorMode,
   selectedEntities,
@@ -86,7 +82,6 @@ const MapView = ({
   useEffect(() => {
     if (editorMode === "add-shape") {
       if (tempShapes.length === 0) {
-        // Prompt the user to enter a shape ID using SweetAlert2.
         Swal.fire({
           title: "Enter Shape ID",
           input: "text",
@@ -110,7 +105,7 @@ const MapView = ({
             setTempShapes((prev) => [
               ...prev,
               {
-                shape_id: shapeId, // Use the provided shape ID
+                shape_id: shapeId,
                 shape_pt_lat: clickedCoords.lat,
                 shape_pt_lon: clickedCoords.lng,
                 shape_pt_sequence:
@@ -124,7 +119,6 @@ const MapView = ({
               },
             ]);
           } else {
-            // User cancelled, so exit add-shape mode.
             setEditorMode("open");
           }
         });
@@ -268,6 +262,13 @@ const MapView = ({
     const map = useMap();
     const decoratorRef = useRef(null);
 
+    PolylineWithDirectionalArrows.propTypes = {
+      positions: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number))
+        .isRequired,
+      color: PropTypes.string.isRequired,
+      weight: PropTypes.number.isRequired,
+    };
+
     useEffect(() => {
       if (!map || !positions || positions.length < 2) {
         return;
@@ -314,8 +315,8 @@ const MapView = ({
       <MapClickHandler onMapClick={onMapClick} />
       <MapUpdater mapCenter={mapCenter} zoom={zoom} />
       {tempStopsAndTimes &&
-        tempStopsAndTimes.length > 0
-        && tempStopsAndTimes
+        tempStopsAndTimes.length > 0 &&
+        tempStopsAndTimes
           .sort((a, b) => a.stop_sequence - b.stop_sequence)
           .map((stopTime, stop_sequence) => {
             if (stopTime && stopTime.stop_lat && stopTime.stop_lon) {
@@ -354,7 +355,7 @@ const MapView = ({
                 parseFloat(shape.shape_pt_lat),
                 parseFloat(shape.shape_pt_lon),
               ])}
-            color={editorMode !== "close" ? "red" : "#FF0000"} // Conditional color
+            color={editorMode !== "close" ? "red" : "#FF0000"}
             weight={8}
           />
           {editorMode !== "close" &&
@@ -372,15 +373,15 @@ const MapView = ({
                   position={position}
                   draggable={editorMode !== "close"}
                   icon={L.divIcon({
-                    className: "custom-circle-marker", // Important for styling!
+                    className: "custom-circle-marker",
                     iconSize: [
                       isHighlighted ? 20 : 12,
                       isHighlighted ? 20 : 12,
-                    ], // Double the radius for diameter
+                    ],
                     iconAnchor: [
                       isHighlighted ? 10 : 6,
                       isHighlighted ? 10 : 6,
-                    ], // Anchor in the center
+                    ],
                     html: `<div style="${
                       isHighlighted
                         ? "background-color: yellow; border: 2px solid yellow;"
@@ -417,6 +418,10 @@ MapView.propTypes = {
   isStopTimeAddOpen: PropTypes.bool.isRequired,
   editorMode: PropTypes.string.isRequired,
   setEditorMode: PropTypes.func.isRequired,
+  selectedEntities: PropTypes.object.isRequired,
+  setSelectedEntities: PropTypes.func.isRequired,
+  setSelectedCategory: PropTypes.func.isRequired,
+  token: PropTypes.string.isRequired,
 };
 
 export default MapView;

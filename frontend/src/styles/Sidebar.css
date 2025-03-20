@@ -204,6 +204,13 @@
   text-align: center;
 }
 
+.close-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+}
+
 .trip-filter-panel {
   position: fixed;
   top: 50px;
@@ -218,6 +225,10 @@
   transition: transform 0.3s ease;
   overflow-y: auto;
   z-index: 999;
+}
+
+.filter-header {
+  margin-bottom: 10px;
 }
 
 .new-sidebar.closed + .trip-filter-panel {
