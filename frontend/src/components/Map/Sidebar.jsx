@@ -872,7 +872,10 @@ const Sidebar = ({
       <div className={`new-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
         <Accordion
           activeKey={activeKey}
-          onSelect={(key) => setActiveKey(key)}
+          onSelect={(key) => {
+            setActiveKey(key)
+            setSelectedCategory(categoryMap[key])
+          }}
           className="sidebar-accordion"
         >
           <Accordion.Item eventKey="0">
