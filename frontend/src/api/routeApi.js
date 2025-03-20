@@ -46,8 +46,7 @@ export const fetchRoutesByAgencyId = async (
     throw new Error(`Failed to fetch routes by agency: ${errorText}`);
   }
   const data = await response.json();
-  console.log("fetchRoutesByAgencyId response:", data); // Debug için
-  return data; // { data: [], total: X } bekleniyor
+  return data; 
 };
 
 export const fetchRouteById = async (routeId, projectId, token) => {

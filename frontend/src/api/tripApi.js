@@ -28,7 +28,6 @@ export const fetchTripsByRouteId = async (
     throw new Error(`Failed to fetch trips by routes: ${errorText}`);
   }
   const data = await response.json();
-  console.log("fetchTripsByRouteId response:", data);
   return data;
 };
 

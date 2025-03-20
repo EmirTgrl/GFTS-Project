@@ -12,14 +12,14 @@ import { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import L from "leaflet";
 import MapUpdater from "./MapUpdater.jsx";
-import Swal from 'sweetalert2';
-import {saveMultipleStopsAndTimes} from "../../api/stopTimeApi.js"
-import {saveMultipleShapes} from "../../api/shapeApi.js"
-import { CaretUpFill } from 'react-bootstrap-icons';
-import { renderToString } from 'react-dom/server';
+import Swal from "sweetalert2";
+import { saveMultipleStopsAndTimes } from "../../api/stopTimeApi.js";
+import { saveMultipleShapes } from "../../api/shapeApi.js";
+import { CaretUpFill } from "react-bootstrap-icons";
+import { renderToString } from "react-dom/server";
 
 // Import the plugin
-import 'leaflet-polylinedecorator';
+import "leaflet-polylinedecorator";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -44,7 +44,6 @@ MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
 };
 
-
 const MapView = ({
   mapCenter,
   zoom,
@@ -60,45 +59,43 @@ const MapView = ({
   selectedEntities,
   setSelectedEntities,
   token,
-  setSelectedCategory
+  setSelectedCategory,
 }) => {
   const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
   const [tempShapes, setTempShapes] = useState([]);
-  
-  useEffect(()=>{
-    setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes)));
-    setTempShapes(JSON.parse(JSON.stringify(shapes)));
-  },[stopsAndTimes, shapes])
 
   useEffect(() => {
+    setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes)));
+    setTempShapes(JSON.parse(JSON.stringify(shapes)));
+  }, [stopsAndTimes, shapes]);
 
+  useEffect(() => {
     if (editorMode === "save") {
-      setStopsAndTimes(tempStopsAndTimes)
-      setShapes(tempShapes)
-      saveMultipleShapes(tempShapes, selectedEntities.trip.trip_id ,token)
-      saveMultipleStopsAndTimes(tempStopsAndTimes,token)
-      setEditorMode("close")
+      setStopsAndTimes(tempStopsAndTimes);
+      setShapes(tempShapes);
+      saveMultipleShapes(tempShapes, selectedEntities.trip.trip_id, token);
+      saveMultipleStopsAndTimes(tempStopsAndTimes, token);
+      setEditorMode("close");
     }
     if (editorMode === "close") {
       setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes)));
       setTempShapes(JSON.parse(JSON.stringify(shapes)));
     }
-  }, [editorMode,]);
+  }, [editorMode]);
 
-  useEffect(()=>{
-    
-    if(editorMode === "add-shape"){
+  useEffect(() => {
+    if (editorMode === "add-shape") {
       if (tempShapes.length === 0) {
         // Prompt the user to enter a shape ID using SweetAlert2.
         Swal.fire({
-          title: 'Enter Shape ID',
-          input: 'text',
+          title: "Enter Shape ID",
+          input: "text",
           inputAttributes: {
-            autocapitalize: 'off'
+            autocapitalize: "off",
           },
           showCancelButton: true,
-          confirmButtonText: 'Save',
-          cancelButtonText: 'Cancel',
+          confirmButtonText: "Save",
+          cancelButtonText: "Cancel",
           showLoaderOnConfirm: true,
           preConfirm: (shapeId) => {
             if (!shapeId) {
@@ -106,104 +103,129 @@ const MapView = ({
             }
             return shapeId;
           },
-          allowOutsideClick: () => !Swal.isLoading()
+          allowOutsideClick: () => !Swal.isLoading(),
         }).then((result) => {
           if (result.isConfirmed) {
             const shapeId = result.value;
-            setTempShapes(prev => [...prev,{
-              shape_id: shapeId, // Use the provided shape ID
-              shape_pt_lat:clickedCoords.lat,
-              shape_pt_lon:clickedCoords.lng,
-              shape_pt_sequence: tempShapes.length>0? Math.max(...tempShapes.map(shape=> shape.shape_pt_sequence)) + 1 : 1,
-              project_id:selectedEntities.trip.project_id,
-              shape_dist_traveled:null,
-            }]);
+            setTempShapes((prev) => [
+              ...prev,
+              {
+                shape_id: shapeId, // Use the provided shape ID
+                shape_pt_lat: clickedCoords.lat,
+                shape_pt_lon: clickedCoords.lng,
+                shape_pt_sequence:
+                  tempShapes.length > 0
+                    ? Math.max(
+                        ...tempShapes.map((shape) => shape.shape_pt_sequence)
+                      ) + 1
+                    : 1,
+                project_id: selectedEntities.trip.project_id,
+                shape_dist_traveled: null,
+              },
+            ]);
           } else {
             // User cancelled, so exit add-shape mode.
             setEditorMode("open");
           }
         });
+      } else {
+        setTempShapes((prev) => [
+          ...prev,
+          {
+            shape_id: tempShapes[0].shape_id,
+            shape_pt_lat: clickedCoords.lat,
+            shape_pt_lon: clickedCoords.lng,
+            shape_pt_sequence:
+              tempShapes.length > 0
+                ? Math.max(
+                    ...tempShapes.map((shape) => shape.shape_pt_sequence)
+                  ) + 1
+                : 1,
+            project_id: selectedEntities.trip.project_id,
+            shape_dist_traveled: null,
+          },
+        ]);
       }
-      else {
-        setTempShapes(prev => [...prev,{
-          shape_id: tempShapes[0].shape_id,
-          shape_pt_lat:clickedCoords.lat,
-          shape_pt_lon:clickedCoords.lng,
-          shape_pt_sequence: tempShapes.length>0? Math.max(...tempShapes.map(shape=> shape.shape_pt_sequence)) + 1 : 1,
-          project_id:selectedEntities.trip.project_id,
-          shape_dist_traveled:null,
-        }])
-      }}
-      if(editorMode === "add-stop"){
-        Swal.fire({
-            title: 'Enter Stop Name',
-            input: 'text',
-            inputAttributes: {
-                autocapitalize: 'off'
-            },
-            showCancelButton: true,
-            confirmButtonText: 'Save',
-            cancelButtonText: 'Cancel',
-            showLoaderOnConfirm: true,
-            preConfirm: (stopName) => {
-                if (!stopName) {
-                    Swal.showValidationMessage(`Stop Name is required`);
-                }
-                return stopName;
-            },
-            allowOutsideClick: () => !Swal.isLoading()
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const stopName = result.value;
-                setTempStopsAndTimes(prev => [...prev, {
-                    trip_id: selectedEntities.trip.trip_id,
-                    stop_name: stopName,
-                    stop_lat: clickedCoords.lat,
-                    stop_lon: clickedCoords.lng,
-                    arrival_time: "00:00:00",
-                    departure_time: "00:00:00",
-                    stop_sequence: tempStopsAndTimes.length > 0 ? Math.max(...tempStopsAndTimes.map(stop => stop.stop_sequence)) + 1 : 1,
-                    project_id: selectedEntities.trip.project_id,
-                }]);
-            } else {
-                setEditorMode("open");
-            }
-        });
     }
-  },[clickedCoords,])
+    if (editorMode === "add-stop") {
+      Swal.fire({
+        title: "Enter Stop Name",
+        input: "text",
+        inputAttributes: {
+          autocapitalize: "off",
+        },
+        showCancelButton: true,
+        confirmButtonText: "Save",
+        cancelButtonText: "Cancel",
+        showLoaderOnConfirm: true,
+        preConfirm: (stopName) => {
+          if (!stopName) {
+            Swal.showValidationMessage(`Stop Name is required`);
+          }
+          return stopName;
+        },
+        allowOutsideClick: () => !Swal.isLoading(),
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const stopName = result.value;
+          setTempStopsAndTimes((prev) => [
+            ...prev,
+            {
+              trip_id: selectedEntities.trip.trip_id,
+              stop_name: stopName,
+              stop_lat: clickedCoords.lat,
+              stop_lon: clickedCoords.lng,
+              arrival_time: "00:00:00",
+              departure_time: "00:00:00",
+              stop_sequence:
+                tempStopsAndTimes.length > 0
+                  ? Math.max(
+                      ...tempStopsAndTimes.map((stop) => stop.stop_sequence)
+                    ) + 1
+                  : 1,
+              project_id: selectedEntities.trip.project_id,
+            },
+          ]);
+        } else {
+          setEditorMode("open");
+        }
+      });
+    }
+  }, [clickedCoords]);
 
   useEffect(() => {
     if (editorMode === "add-stop") {
-      Swal.fire({ // Use Swal.fire
-        icon: 'info',
-        title: 'Add Stop',
-        text: 'Click on the map to add a new stop.',
+      Swal.fire({
+        // Use Swal.fire
+        icon: "info",
+        title: "Add Stop",
+        text: "Click on the map to add a new stop.",
         toast: true,
-        position: 'top',
+        position: "top",
         showConfirmButton: false,
       });
     }
     if (editorMode === "add-shape") {
-      Swal.fire({ // Use Swal.fire
-        icon: 'info',
-        title: 'Add Shape Point',
-        text: 'Click on the map to add a shape point.',
+      Swal.fire({
+        // Use Swal.fire
+        icon: "info",
+        title: "Add Shape Point",
+        text: "Click on the map to add a shape point.",
         toast: true,
-        position: 'top',
+        position: "top",
         showConfirmButton: false,
       });
     }
-
   }, [editorMode]);
 
   const handleStopClick = (stopTime) => {
     setSelectedCategory("stop");
-    setSelectedEntities({...selectedEntities, stop: stopTime});
+    setSelectedEntities({ ...selectedEntities, stop: stopTime });
   };
 
   const handleShapeClick = (shape) => {
     setSelectedCategory("shape");
-    setSelectedEntities({...selectedEntities, shape: shape});
+    setSelectedEntities({ ...selectedEntities, shape: shape });
   };
 
   const handleStopDrag = (e, stopSequence) => {
@@ -228,71 +250,63 @@ const MapView = ({
     if (editorMode === "close") return;
 
     const newLatLng = e.target.getLatLng();
-      setTempShapes(prevShapes =>
-          prevShapes.map(shape => {
-              if(shape.shape_pt_sequence === shapePtSequence){
-                  return {
-                      ...shape,
-                      shape_pt_lat : newLatLng.lat,
-                      shape_pt_lon : newLatLng.lng
-                  }
-              }
-              return shape;
-          })
-      );
+    setTempShapes((prevShapes) =>
+      prevShapes.map((shape) => {
+        if (shape.shape_pt_sequence === shapePtSequence) {
+          return {
+            ...shape,
+            shape_pt_lat: newLatLng.lat,
+            shape_pt_lon: newLatLng.lng,
+          };
+        }
+        return shape;
+      })
+    );
   };
 
+  function PolylineWithDirectionalArrows({ positions, color, weight }) {
+    const map = useMap();
+    const decoratorRef = useRef(null);
 
-function PolylineWithDirectionalArrows({ positions, color, weight }) {
-  const map = useMap();
-  const decoratorRef = useRef(null);
-
-  useEffect(() => {
-    if (!map || !positions || positions.length < 2) {
-      return;
-    }
-
-    // Remove previous decorator if it exists
-    if (decoratorRef.current) {
-      map.removeLayer(decoratorRef.current);
-    }
-
-    const decorator = L.polylineDecorator(positions, {
-      patterns: [
-        {
-          offset: 20, // Adjust starting position
-          repeat: 50, // Adjust spacing of the arrows
-          symbol: L.Symbol.marker({
-            rotate: true,
-            markerOptions: {
-              icon: L.divIcon({
-                className: 'arrow-icon',
-                html: renderToString(<CaretUpFill color="white" />),
-                iconSize: [12, 12], // Size of the icon
-                iconAnchor: [6, 6], // Anchor point
-              }),
-            },
-          }),
-        },
-      ],
-    }).addTo(map);
-
-    decoratorRef.current = decorator; // Store the decorator for cleanup
-
-    return () => {
-      if (decorator) {
-        map.removeLayer(decorator);
+    useEffect(() => {
+      if (!map || !positions || positions.length < 2) {
+        return;
       }
-    };
-  }, [map, positions]);
-  return (
-    <Polyline
-      positions={positions}
-      color={color}
-      weight={weight}
-    />
-  );
-}
+
+      if (decoratorRef.current) {
+        map.removeLayer(decoratorRef.current);
+      }
+
+      const decorator = L.polylineDecorator(positions, {
+        patterns: [
+          {
+            offset: 20,
+            repeat: 50,
+            symbol: L.Symbol.marker({
+              rotate: true,
+              markerOptions: {
+                icon: L.divIcon({
+                  className: "arrow-icon",
+                  html: renderToString(<CaretUpFill color="white" />),
+                  iconSize: [12, 12],
+                  iconAnchor: [6, 6],
+                }),
+              },
+            }),
+          },
+        ],
+      }).addTo(map);
+
+      decoratorRef.current = decorator;
+
+      return () => {
+        if (decorator) {
+          map.removeLayer(decorator);
+        }
+      };
+    }, [map, positions]);
+    return <Polyline positions={positions} color={color} weight={weight} />;
+  }
 
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
@@ -316,7 +330,7 @@ function PolylineWithDirectionalArrows({ positions, color, weight }) {
                   icon={stopIcon}
                   eventHandlers={{
                     dragend: (e) => handleStopDrag(e, stopTime.stop_sequence),
-                    click: () => handleStopClick(stopTime)
+                    click: () => handleStopClick(stopTime),
                   }}
                 >
                   <Popup>
@@ -342,7 +356,6 @@ function PolylineWithDirectionalArrows({ positions, color, weight }) {
               ])}
             color={editorMode !== "close" ? "red" : "#FF0000"} // Conditional color
             weight={8}
-            
           />
           {editorMode !== "close" &&
             tempShapes.map((shape) => {
@@ -350,24 +363,33 @@ function PolylineWithDirectionalArrows({ positions, color, weight }) {
                 parseFloat(shape.shape_pt_lat),
                 parseFloat(shape.shape_pt_lon),
               ];
-              const isHighlighted = shape.shape_pt_sequence === selectedEntities.shape?.shape_pt_sequence;
+              const isHighlighted =
+                shape.shape_pt_sequence ===
+                selectedEntities.shape?.shape_pt_sequence;
               return (
                 <Marker
                   key={shape.shape_pt_sequence}
                   position={position}
                   draggable={editorMode !== "close"}
                   icon={L.divIcon({
-                    className: 'custom-circle-marker', // Important for styling!
-                    iconSize: [isHighlighted ? 20 : 12, isHighlighted ? 20 : 12], // Double the radius for diameter
-                    iconAnchor: [isHighlighted ? 10 : 6, isHighlighted ? 10 : 6], // Anchor in the center
-                    html: `<div style="${isHighlighted
-                        ? 'background-color: yellow; border: 2px solid yellow;'
-                        : 'background-color: white; border: 1px solid red;'
-                      } width: 100%; height: 100%; border-radius: 50%;"></div>`,
+                    className: "custom-circle-marker", // Important for styling!
+                    iconSize: [
+                      isHighlighted ? 20 : 12,
+                      isHighlighted ? 20 : 12,
+                    ], // Double the radius for diameter
+                    iconAnchor: [
+                      isHighlighted ? 10 : 6,
+                      isHighlighted ? 10 : 6,
+                    ], // Anchor in the center
+                    html: `<div style="${
+                      isHighlighted
+                        ? "background-color: yellow; border: 2px solid yellow;"
+                        : "background-color: white; border: 1px solid red;"
+                    } width: 100%; height: 100%; border-radius: 50%;"></div>`,
                   })}
                   eventHandlers={{
                     dragend: (e) => handleShapeDrag(e, shape.shape_pt_sequence),
-                    click: ()=> handleShapeClick(shape)
+                    click: () => handleShapeClick(shape),
                   }}
                 >
                   <Popup>Shape Point {shape.shape_pt_sequence}</Popup>
@@ -376,8 +398,6 @@ function PolylineWithDirectionalArrows({ positions, color, weight }) {
             })}
         </>
       )}
-
-
     </MapContainer>
   );
 };
@@ -397,7 +417,6 @@ MapView.propTypes = {
   isStopTimeAddOpen: PropTypes.bool.isRequired,
   editorMode: PropTypes.string.isRequired,
   setEditorMode: PropTypes.func.isRequired,
-
 };
 
 export default MapView;
