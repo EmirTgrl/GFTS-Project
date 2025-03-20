@@ -599,6 +599,7 @@ const Sidebar = ({
               initialLat={clickedCoords?.lat}
               initialLon={clickedCoords?.lng}
               resetClickedCoords={resetClickedCoords}
+              route_id={selectedEntities.route.route_id}
             />
           );
         case "calendar":
@@ -667,6 +668,7 @@ const Sidebar = ({
               onClose={() => setFormConfig(null)}
               setStopsAndTimes={setStopsAndTimes}
               stopsAndTimes={stopsAndTimes}
+              route_id={selectedEntities.route.route_id}
             />
           );
         case "calendar":
