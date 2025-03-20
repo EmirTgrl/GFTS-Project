@@ -98,7 +98,6 @@ const Sidebar = ({
     calendars: "",
   });
   const [tripTimes, setTripTimes] = useState({});
-  const [shapesData, setShapesData] = useState({ data: [], total: 0 });
   const itemsPerPage = 8;
 
   const categoryMap = {
@@ -196,7 +195,6 @@ const Sidebar = ({
             selectedEntities.trip.shape_id,
             token,
           );
-          setShapesData(shapesResponse);
           setShapes(shapesResponse);
 
           const stopsResponse = await fetchStopsAndStopTimesByTripId(
@@ -213,7 +211,6 @@ const Sidebar = ({
           }
         } else {
           setShapes([]);
-          setShapesData({ data: [], total: 0 });
           setStopsAndTimes({ data: [], total: 0 });
         }
       } catch (error) {
@@ -222,7 +219,6 @@ const Sidebar = ({
         setRoutes({ data: [], total: 0 });
         setTrips({ data: [], total: 0 });
         setShapes([]);
-        setShapesData({ data: [], total: 0 });
         setStopsAndTimes({ data: [], total: 0 });
         setTripTimes({});
       }
@@ -519,11 +515,7 @@ const Sidebar = ({
         setShapes((prev) =>
           prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
         );
-        setShapesData((prev) => (
-          prev ? prev.filter(
-            (s) => s.shape_pt_sequence !== entity.shape_pt_sequence
-          ) : []
-        ));
+
         setSelectedEntities((prev) => ({ ...prev, shape: null }));
       }else if(category === "calendar"){
         await deleteCalendarById(entity.service_id,token)
@@ -644,7 +636,7 @@ const Sidebar = ({
               stop_id={selectedEntities.stop.stop_id}
               onClose={() => setFormConfig(null)}
               setStopsAndTimes={setStopsAndTimes}
-              stopsAndTimes={stopsAndTimes.data}
+              stopsAndTimes={stopsAndTimes}
             />
           );
         case "calendar":
@@ -974,8 +966,8 @@ const Sidebar = ({
               <BoundingBoxCircles size={20} className="me-2" /> Shapes
             </Accordion.Header>
             <Accordion.Body>
-              {shapesData.length > 0 ? (
-                paginateItems(shapesData, pageShapes).map((shape) => (
+              {shapes.length > 0 ? (
+                paginateItems(shapes, pageShapes).map((shape) => (
                   <Card
                     key={`${shape.shape_id}-${shape.shape_pt_sequence}`}
                     className={`mb-2 item-card ${selectedEntities.shape?.shape_pt_sequence ===
@@ -1006,7 +998,7 @@ const Sidebar = ({
                     : "Select a trip first."}
                 </p>
               )}
-              {renderPagination(shapesData.length, pageShapes, setPageShapes)}
+              {renderPagination(shapes.length, pageShapes, setPageShapes)}
             </Accordion.Body>
           </Accordion.Item>
 
@@ -1024,10 +1016,9 @@ const Sidebar = ({
                 />
               </Form.Group>
               {stopsAndTimes && stopsAndTimes.length > 0 ? (
-
-                paginateItems(stopsAndTimes, pageStops).map((stop) => (
+                paginateItems(stopsAndTimes.sort((a, b) => a.stop_sequence - b.stop_sequence), pageStops).map((stop) => (
                   <Card
-                    key={`${stop.trip_id}-${stop.stop_id}`}
+                    key={`${stop.trip_id}-${stop.stop_sequence}`}
                     className={`mb-2 item-card ${selectedEntities.stop?.stop_id === stop.stop_id
                         ? "active"
                         : ""
