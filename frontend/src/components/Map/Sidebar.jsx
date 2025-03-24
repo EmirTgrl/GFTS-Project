@@ -38,7 +38,7 @@ import {
   fetchAgenciesByProjectId,
   deleteAgencyById,
 } from "../../api/agencyApi";
-import { deleteTripById, fetchTripsByRouteId } from "../../api/tripApi";
+import { deleteTripById, fetchTripsByRouteId, copyTripWithOffset } from "../../api/tripApi";
 import {
   fetchStopsAndStopTimesByTripId,
   deleteStopTimeById,
@@ -323,9 +323,49 @@ const Sidebar = ({
       } else {
         Swal.fire("Error", "Please select an entity to delete.", "error");
       }
+    } else if (actionType === "copy"){
+      if(selectedEntities.trip){
+        handleCopy(selectedEntities.trip)
+      }
     }
   };
 
+  const handleCopy = async (trip) => {
+    Swal.fire({
+      title: 'Copy Trip',
+      text: 'Enter the offset (in minutes) to be applied to all stop times:',
+      input: 'number',
+      showCancelButton: true,
+      confirmButtonText: 'Copy',
+      cancelButtonText: 'Cancel',
+      showLoaderOnConfirm: true,
+      preConfirm: (offset) => {
+        if (offset === '' || isNaN(offset)) {
+          Swal.showValidationMessage('Please enter a valid number.');
+          return false; 
+        }
+         return Number(offset); 
+  
+      },
+      allowOutsideClick: () => !Swal.isLoading()
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const offsetMinutes = result.value;
+        Swal.fire('Copied!', `Trip copied with an offset of ${offsetMinutes} minutes.`, 'success');
+  
+        try {
+            const newTripId =  await copyTripWithOffset(trip, offsetMinutes, token);
+            
+             Swal.fire('Copied!', `Trip copied with an offset of ${offsetMinutes} minutes.`, 'success');
+        } catch (error) {
+            console.error("Error copying trip:", error);
+            Swal.fire('Error!', 'Failed to copy trip.', 'error');
+        }
+        
+      }
+    });
+  };
+  
   const calculateCenter = (shapes, stops) => {
     let latSum = 0;
     let lonSum = 0;

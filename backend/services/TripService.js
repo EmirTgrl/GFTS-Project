@@ -1,6 +1,84 @@
 const { pool } = require("../db.js");
 
 const tripService = {
+  copyTrip: async (req, res) => {
+    const user_id = req.user.id;
+    const { offsetMinutes, trip } = req.body; 
+
+    if (!offsetMinutes || !trip) {
+      return res.status(400).json({ error: "offsetMinutes and trip_id are required" });
+    }
+    const offset = parseInt(offsetMinutes);
+    if (isNaN(offset))
+    {
+        return res.status(400).json({ error: "offsetMinutes should be integer" });
+    }
+
+    const connection = await pool.getConnection(); 
+
+    try {
+      await connection.beginTransaction();
+
+      const [newTripResult] = await connection.execute(
+        `INSERT INTO trips (route_id, service_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id, wheelchair_accessible, bikes_allowed, user_id, project_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          trip.route_id,
+          trip.service_id,
+          trip.trip_headsign,
+          trip.trip_short_name,
+          trip.direction_id,
+          trip.block_id,
+          trip.shape_id,
+          trip.wheelchair_accessible,
+          trip.bikes_allowed,
+          user_id, 
+          trip.project_id,
+        ]
+      );
+
+      const newTripId = newTripResult.insertId;
+
+      const [originalStopTimes] = await connection.execute(
+        `SELECT * FROM stop_times WHERE trip_id = ? ORDER BY stop_sequence`,
+        [trip.trip_id]
+      );
+
+      for (const stopTime of originalStopTimes) {
+        await connection.execute(
+          `INSERT INTO stop_times (trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_headsign, pickup_type, drop_off_type, shape_dist_traveled, timepoint, user_id, project_id)
+           VALUES (?, ADDTIME(?, SEC_TO_TIME(? * 60)), ADDTIME(?, SEC_TO_TIME(? * 60)), ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            newTripId,
+            stopTime.arrival_time,
+            offset, // offset in seconds
+            stopTime.departure_time,
+            offset,  // offset in seconds
+            stopTime.stop_id,
+            stopTime.stop_sequence,
+            stopTime.stop_headsign,
+            stopTime.pickup_type,
+            stopTime.drop_off_type,
+            stopTime.shape_dist_traveled,
+            stopTime.timepoint,
+            user_id, // Use the requesting user's ID
+            stopTime.project_id
+          ]
+        );
+      }
+
+      await connection.commit();
+      res.status(201).json({ message: "Trip copied successfully", trip_id: newTripId });
+
+    } catch (error) {
+      await connection.rollback();
+      console.error("Error copying trip:", error);
+      res.status(500).json({ error: "Server error", details: error.message });
+    } finally {
+      connection.release(); // Always release the connection
+    }
+  }
+  ,
   getTripsByQuery: async (req, res) => {
     const user_id = req.user.id;
     const validFields = [
