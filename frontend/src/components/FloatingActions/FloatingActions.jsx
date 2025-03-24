@@ -1,9 +1,25 @@
-import { PlusLg, Pencil, List, Trash, Map, Floppy, Arrow90degLeft, BoundingBoxCircles, GeoAlt } from "react-bootstrap-icons";
+import {
+  PlusLg,
+  Pencil,
+  List,
+  Trash,
+  Map,
+  Floppy,
+  Arrow90degLeft,
+  BoundingBoxCircles,
+  GeoAlt,
+} from "react-bootstrap-icons";
 import PropTypes from "prop-types";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import "../../styles/FloatingActions.css";
 
-const FloatingActions = ({ setAction, editorMode, setEditorMode, selectedCategory, selectedEntities}) => {
+const FloatingActions = ({
+  setAction,
+  editorMode,
+  setEditorMode,
+  selectedCategory,
+  selectedEntities,
+}) => {
   const renderTooltip = (text) => (
     <Tooltip id={`tooltip-${text.toLowerCase()}`}>{text}</Tooltip>
   );
@@ -15,18 +31,18 @@ const FloatingActions = ({ setAction, editorMode, setEditorMode, selectedCategor
           <>
             {selectedEntities.trip !== null && (
               <>
-              <OverlayTrigger
-              placement="left"
-              overlay={renderTooltip("Edit Mode")}
-              trigger={["hover", "focus"]}
-            >
-              <button
-                className="fab-secondary"
-                onClick={() => setEditorMode("open")}
-              >
-                <Map size={20} />
-              </button>
-            </OverlayTrigger>
+                <OverlayTrigger
+                  placement="left"
+                  overlay={renderTooltip("Edit Mode")}
+                  trigger={["hover", "focus"]}
+                >
+                  <button
+                    className="fab-secondary"
+                    onClick={() => setEditorMode("open")}
+                  >
+                    <Map size={20} />
+                  </button>
+                </OverlayTrigger>
               </>
             )}
             {selectedCategory && selectedCategory !== "" && (
@@ -72,43 +88,65 @@ const FloatingActions = ({ setAction, editorMode, setEditorMode, selectedCategor
           </>
         ) : (
           <>
-          <OverlayTrigger
-            placement="left"
-            overlay={renderTooltip("Add Stop")}
-            trigger={["hover", "focus"]}
-          >
-            <button className={`fab-secondary ${editorMode === "add-stop" ? "active":""}`} onClick={() => setEditorMode(editorMode==="add-stop" ? "open":"add-stop")}>
-              <GeoAlt size={20} />
-            </button>
-          </OverlayTrigger>
-          <OverlayTrigger
-            placement="left"
-            overlay={renderTooltip("Add Shape")}
-            trigger={["hover", "focus"]}
-          >
-            <button className={`fab-secondary ${editorMode === "add-shape" ? "active":""}`} onClick={() => setEditorMode(editorMode==="add-shape" ? "open":"add-shape")}>
-              <BoundingBoxCircles size={20} />
-            </button>
-          </OverlayTrigger> 
-          <OverlayTrigger
-            placement="left"
-            overlay={renderTooltip("Save Changes")}
-            trigger={["hover", "focus"]}
-          >
-            <button className="fab-secondary" onClick={() => setEditorMode("save")}>
-              <Floppy size={20} />
-            </button>
-          </OverlayTrigger>
-          <OverlayTrigger
-            placement="left"
-            overlay={renderTooltip("Close Editor")}
-            trigger={["hover", "focus"]}
-          >
-            <button className="fab-secondary" onClick={() => setEditorMode("close")}>
-              <Arrow90degLeft size={20} />
-            </button>
-          </OverlayTrigger>
-        </>
+            <OverlayTrigger
+              placement="left"
+              overlay={renderTooltip("Add Stop")}
+              trigger={["hover", "focus"]}
+            >
+              <button
+                className={`fab-secondary ${
+                  editorMode === "add-stop" ? "active" : ""
+                }`}
+                onClick={() =>
+                  setEditorMode(editorMode === "add-stop" ? "open" : "add-stop")
+                }
+              >
+                <GeoAlt size={20} />
+              </button>
+            </OverlayTrigger>
+            <OverlayTrigger
+              placement="left"
+              overlay={renderTooltip("Add Shape")}
+              trigger={["hover", "focus"]}
+            >
+              <button
+                className={`fab-secondary ${
+                  editorMode === "add-shape" ? "active" : ""
+                }`}
+                onClick={() =>
+                  setEditorMode(
+                    editorMode === "add-shape" ? "open" : "add-shape"
+                  )
+                }
+              >
+                <BoundingBoxCircles size={20} />
+              </button>
+            </OverlayTrigger>
+            <OverlayTrigger
+              placement="left"
+              overlay={renderTooltip("Save Changes")}
+              trigger={["hover", "focus"]}
+            >
+              <button
+                className="fab-secondary"
+                onClick={() => setEditorMode("save")}
+              >
+                <Floppy size={20} />
+              </button>
+            </OverlayTrigger>
+            <OverlayTrigger
+              placement="left"
+              overlay={renderTooltip("Close Editor")}
+              trigger={["hover", "focus"]}
+            >
+              <button
+                className="fab-secondary"
+                onClick={() => setEditorMode("close")}
+              >
+                <Arrow90degLeft size={20} />
+              </button>
+            </OverlayTrigger>
+          </>
         )}
       </div>
       <div className="main-action">
@@ -130,7 +168,10 @@ FloatingActions.propTypes = {
   setAction: PropTypes.func.isRequired,
   editorMode: PropTypes.string.isRequired,
   setEditorMode: PropTypes.func.isRequired,
-  selectedCategory: PropTypes.string
+  selectedCategory: PropTypes.string,
+  selectedEntities: PropTypes.shape({
+    trip: PropTypes.any,
+  }).isRequired,
 };
 
 export default FloatingActions;

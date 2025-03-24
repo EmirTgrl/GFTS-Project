@@ -66,7 +66,6 @@ export const saveShape = async (shapeData, token) => {
 };
 
 export const saveMultipleShapes = async (shapesData, trip_id, token) => {
-  console.log(shapesData)
   const response = await fetch(`${API_BASE_URL}/create-multiple/${trip_id}`, {
     method: "POST",
     headers: {

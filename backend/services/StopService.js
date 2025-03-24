@@ -26,10 +26,15 @@ const stopService = {
   
     for (const param in req.query) {
       if (validFields.includes(param)) {
-        fields.push(`${param} = ?`); 
-        values.push(req.query[param]); 
-      } else {
-        console.warn(`Unexpected query parameter: ${param}`); // Log unexpected parameter
+        if (param === "stop_name") {
+          fields.push(`${param} LIKE ?`);
+          values.push(`%${req.query[param]}%`);
+        } else {
+          fields.push(`${param} = ?`);
+          values.push(req.query[param]);
+        }
+      } else if (param !== "page" && param !== "limit") {
+        console.warn(`Unexpected query parameter: ${param}`);
       }
     }
   
