@@ -45,7 +45,7 @@ const TripFilterPanel = ({
       return [];
     }
 
-    const filtered = tripsData.filter((trip) => {
+    return tripsData.filter((trip) => {
       const times = tripTimes[trip.trip_id] || {
         firstArrival: null,
         lastDeparture: null,
@@ -69,8 +69,6 @@ const TripFilterPanel = ({
 
       return matchesService && matchesDirection && matchesTime;
     });
-
-    return filtered;
   };
 
   const handleApplyFilters = () => {

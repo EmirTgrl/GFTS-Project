@@ -1,10 +1,9 @@
 import { useState, useEffect, useContext } from "react";
-import { updateStopTime ,fetchStopsByRoute} from "../api/stopTimeApi";
-import { updateStop, saveStop  } from "../api/stopApi"; // Import saveStop
+import { updateStopTime, fetchStopsByRoute } from "../api/stopTimeApi";
+import { updateStop, saveStop } from "../api/stopApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
-
 
 const StopTimeEditPage = ({
   project_id,
@@ -13,14 +12,14 @@ const StopTimeEditPage = ({
   onClose,
   setStopsAndTimes,
   stopsAndTimes,
-  route_id
+  route_id,
 }) => {
   const { token } = useContext(AuthContext);
   const [stopTimeData, setStopTimeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [allStops, setAllStops] = useState([]); 
-  const [isNewStop, setIsNewStop] = useState(false); 
+  const [allStops, setAllStops] = useState([]);
+  const [isNewStop, setIsNewStop] = useState(false);
   const [selectedStopId, setSelectedStopId] = useState(stop_id);
 
   useEffect(() => {
@@ -35,7 +34,6 @@ const StopTimeEditPage = ({
             parseInt(st.trip_id, 10) === parseInt(trip_id, 10)
         );
 
-
         if (!stopTimeResponse) {
           throw new Error("Stop time data not found.");
         }
@@ -47,22 +45,40 @@ const StopTimeEditPage = ({
           stop_lat: stopTimeResponse.stop_lat || null,
           stop_lon: stopTimeResponse.stop_lon || null,
           stop_url: stopTimeResponse.stop_url || null,
-          location_type: stopTimeResponse.location_type !== undefined ? stopTimeResponse.location_type : null,
+          location_type:
+            stopTimeResponse.location_type !== undefined
+              ? stopTimeResponse.location_type
+              : null,
           stop_timezone: stopTimeResponse.stop_timezone || null,
-          wheelchair_boarding: stopTimeResponse.wheelchair_boarding !== undefined ? stopTimeResponse.wheelchair_boarding : null,
+          wheelchair_boarding:
+            stopTimeResponse.wheelchair_boarding !== undefined
+              ? stopTimeResponse.wheelchair_boarding
+              : null,
           arrival_time: stopTimeResponse.arrival_time || "",
           departure_time: stopTimeResponse.departure_time || "",
           stop_sequence: stopTimeResponse.stop_sequence || null,
           stop_headsign: stopTimeResponse.stop_headsign || "",
-          pickup_type: stopTimeResponse.pickup_type !== undefined ? stopTimeResponse.pickup_type : null,
-          drop_off_type: stopTimeResponse.drop_off_type !== undefined ? stopTimeResponse.drop_off_type : null,
+          pickup_type:
+            stopTimeResponse.pickup_type !== undefined
+              ? stopTimeResponse.pickup_type
+              : null,
+          drop_off_type:
+            stopTimeResponse.drop_off_type !== undefined
+              ? stopTimeResponse.drop_off_type
+              : null,
           shape_dist_traveled: stopTimeResponse.shape_dist_traveled || null,
-          timepoint: stopTimeResponse.timepoint !== undefined ? stopTimeResponse.timepoint : null,
-          trip_id: parseInt(stopTimeResponse.trip_id, 10) || parseInt(trip_id, 10),
-          project_id: parseInt(stopTimeResponse.project_id, 10) || parseInt(project_id, 10),
-          stop_id: parseInt(stopTimeResponse.stop_id, 10) || parseInt(stop_id, 10),
+          timepoint:
+            stopTimeResponse.timepoint !== undefined
+              ? stopTimeResponse.timepoint
+              : null,
+          trip_id:
+            parseInt(stopTimeResponse.trip_id, 10) || parseInt(trip_id, 10),
+          project_id:
+            parseInt(stopTimeResponse.project_id, 10) ||
+            parseInt(project_id, 10),
+          stop_id:
+            parseInt(stopTimeResponse.stop_id, 10) || parseInt(stop_id, 10),
         });
-
       } catch (err) {
         console.error("Error fetching/parsing stop time data:", err);
         setError(err.message || "Failed to load stop time data.");
@@ -72,8 +88,7 @@ const StopTimeEditPage = ({
     };
 
     loadData();
-  }, [trip_id, stop_id, project_id, stopsAndTimes, token]);
-
+  }, [trip_id, stop_id, project_id, stopsAndTimes, token, route_id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -105,37 +120,38 @@ const StopTimeEditPage = ({
     setSelectedStopId(newSelectedStopId);
 
     if (newSelectedStopId === "new") {
-        setIsNewStop(true);
-        setStopTimeData(prev => ({
-            ...prev,
-            stop_code: null,
-            stop_name: "",
-            stop_desc: null,
-            stop_lat: null,
-            stop_lon: null,
-            stop_url: null,
-            location_type: null,
-            stop_timezone: null,
-            wheelchair_boarding: null,
-        }));
+      setIsNewStop(true);
+      setStopTimeData((prev) => ({
+        ...prev,
+        stop_code: null,
+        stop_name: "",
+        stop_desc: null,
+        stop_lat: null,
+        stop_lon: null,
+        stop_url: null,
+        location_type: null,
+        stop_timezone: null,
+        wheelchair_boarding: null,
+      }));
     } else {
       setIsNewStop(false);
-      const selectedStop = allStops.find((stop) => stop.stop_id === parseInt(newSelectedStopId));
-
-        if (selectedStop) {
-          setStopTimeData((prev) => ({
-            ...prev,
-            stop_code: selectedStop.stop_code,
-            stop_name: selectedStop.stop_name,
-            stop_desc: selectedStop.stop_desc,
-            stop_lat: selectedStop.stop_lat,
-            stop_lon: selectedStop.stop_lon,
-            stop_url: selectedStop.stop_url,
-            location_type: selectedStop.location_type,
-            stop_timezone: selectedStop.stop_timezone,
-            wheelchair_boarding: selectedStop.wheelchair_boarding,
-          }));
-        }
+      const selectedStop = allStops.find(
+        (stop) => stop.stop_id === parseInt(newSelectedStopId)
+      );
+      if (selectedStop) {
+        setStopTimeData((prev) => ({
+          ...prev,
+          stop_code: selectedStop.stop_code,
+          stop_name: selectedStop.stop_name,
+          stop_desc: selectedStop.stop_desc,
+          stop_lat: selectedStop.stop_lat,
+          stop_lon: selectedStop.stop_lon,
+          stop_url: selectedStop.stop_url,
+          location_type: selectedStop.location_type,
+          stop_timezone: selectedStop.stop_timezone,
+          wheelchair_boarding: selectedStop.wheelchair_boarding,
+        }));
+      }
     }
   };
 
@@ -152,7 +168,6 @@ const StopTimeEditPage = ({
       confirmButtonText: "Evet, güncelle!",
       cancelButtonText: "Hayır",
     });
-
 
     if (result.isConfirmed) {
       try {
@@ -182,31 +197,102 @@ const StopTimeEditPage = ({
         let updatedStopId = selectedStopId;
 
         if (isNewStop) {
-          const newStopResponse = await saveStop({ ...stopData, project_id }, token);
+          const newStopResponse = await saveStop(
+            { ...stopData, project_id },
+            token
+          );
           updatedStopId = newStopResponse.stop_id;
         } else {
-          await updateStop({ ...stopData, stop_id: selectedStopId, project_id: project_id }, selectedStopId, token);
+          await updateStop(
+            { ...stopData, stop_id: selectedStopId, project_id },
+            selectedStopId,
+            token
+          );
         }
 
-        await updateStopTime({ ...stopTime, stop_id: updatedStopId }, trip_id, isNewStop ? updatedStopId: stop_id, token);
+        const originalSequence = stopsAndTimes.find(
+          (st) =>
+            parseInt(st.stop_id, 10) === parseInt(stop_id, 10) &&
+            parseInt(st.trip_id, 10) === parseInt(trip_id, 10)
+        ).stop_sequence;
+        const newSequence = parseInt(stopTimeData.stop_sequence);
 
-        setStopsAndTimes((prevStopsAndTimes) => {
-          return prevStopsAndTimes.map((st) => {
-              if (parseInt(st.trip_id, 10) === parseInt(trip_id, 10) && parseInt(st.stop_id, 10) === parseInt(isNewStop ? updatedStopId : stop_id, 10))
-              {
-                return {
-                  ...st,
-                    ...stopTimeData,
-                  stop_id: updatedStopId,
-                };
-              }
-              return st;
-            });
-        });
+        let updatedStopsAndTimes = [...stopsAndTimes];
+
+        if (originalSequence !== newSequence) {
+          const tripStops = updatedStopsAndTimes
+            .filter((st) => parseInt(st.trip_id, 10) === parseInt(trip_id, 10))
+            .sort((a, b) => a.stop_sequence - b.stop_sequence);
+
+          const currentStop = tripStops.find(
+            (st) => parseInt(st.stop_id, 10) === parseInt(stop_id, 10)
+          );
+          const currentIndex = tripStops.indexOf(currentStop);
+
+          const newTripStops = [...tripStops];
+          newTripStops.splice(currentIndex, 1);
+          newTripStops.splice(newSequence - 1, 0, {
+            ...currentStop,
+            ...stopTime,
+            stop_id: updatedStopId,
+            stop_sequence: newSequence,
+          });
+
+          const resequencedStops = newTripStops.map((stop, index) => ({
+            ...stop,
+            stop_sequence: index + 1,
+          }));
+
+          updatedStopsAndTimes = updatedStopsAndTimes.map((st) =>
+            parseInt(st.trip_id, 10) === parseInt(trip_id, 10)
+              ? resequencedStops.find(
+                  (rs) => parseInt(rs.stop_id, 10) === parseInt(st.stop_id, 10)
+                ) || st
+              : st
+          );
+
+          await Promise.all(
+            resequencedStops.map((st) =>
+              updateStopTime(
+                { ...st, stop_id: st.stop_id },
+                trip_id,
+                st.stop_id,
+                token
+              )
+            )
+          );
+
+          setStopsAndTimes(updatedStopsAndTimes);
+          console.log(
+            "StopTimeEditPage - Sıralı kaydırma yapıldı, güncellenmiş stopsAndTimes:",
+            updatedStopsAndTimes
+          );
+        } else {
+          await updateStopTime(
+            { ...stopTime, stop_id: updatedStopId },
+            trip_id,
+            isNewStop ? updatedStopId : stop_id,
+            token
+          );
+          updatedStopsAndTimes = updatedStopsAndTimes.map((st) =>
+            parseInt(st.stop_id, 10) === parseInt(stop_id, 10) &&
+            parseInt(st.trip_id, 10) === parseInt(trip_id, 10)
+              ? { ...st, ...stopTimeData, stop_id: updatedStopId }
+              : st
+          );
+          setStopsAndTimes(updatedStopsAndTimes);
+          console.log(
+            "StopTimeEditPage - Sequence değişmedi, güncellenmiş stopsAndTimes:",
+            updatedStopsAndTimes
+          );
+        }
+
         if (isNewStop) {
-            setStopsAndTimes(prev => [...prev, { ...stopTimeData, trip_id, stop_id: updatedStopId, project_id }]);
+          setStopsAndTimes((prev) => [
+            ...prev,
+            { ...stopTimeData, trip_id, stop_id: updatedStopId, project_id },
+          ]);
         }
-
 
         Swal.fire(
           "Güncellendi!",
@@ -224,7 +310,6 @@ const StopTimeEditPage = ({
       }
     }
   };
-
 
   if (loading) return <p>Yükleniyor...</p>;
   if (error) return <p>Hata: {error}</p>;
@@ -255,139 +340,134 @@ const StopTimeEditPage = ({
           </select>
         </div>
 
-
-   
-
-            <div className="mb-2">
-              <label htmlFor="stop_code" className="form-label">
-                Durak Kodu
-              </label>
-              <input
-                type="text"
-                id="stop_code"
-                name="stop_code"
-                className="form-control"
-                value={stopTimeData.stop_code || ""}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-2">
-              <label htmlFor="stop_name" className="form-label">
-                Durak Adı
-              </label>
-              <input
-                type="text"
-                id="stop_name"
-                name="stop_name"
-                className="form-control"
-                value={stopTimeData.stop_name || ""}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-2">
-              <label htmlFor="stop_desc" className="form-label">
-                Durak Açıklaması
-              </label>
-              <input
-                type="text"
-                id="stop_desc"
-                name="stop_desc"
-                className="form-control"
-                value={stopTimeData.stop_desc || ""}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="row">
-              <div className="col-6 mb-2">
-                <label htmlFor="stop_lat" className="form-label">
-                  Durak Enlemi
-                </label>
-                <input
-                  type="number"
-                  id="stop_lat"
-                  name="stop_lat"
-                  className="form-control"
-                  value={stopTimeData.stop_lat || ""}
-                  onChange={handleChange}
-                  step="0.000001"
-                />
-              </div>
-              <div className="col-6 mb-2">
-                <label htmlFor="stop_lon" className="form-label">
-                  Durak Boylamı
-                </label>
-                <input
-                  type="number"
-                  id="stop_lon"
-                  name="stop_lon"
-                  className="form-control"
-                  value={stopTimeData.stop_lon || ""}
-                  onChange={handleChange}
-                  step="0.000001"
-                />
-              </div>
-            </div>
-            <div className="mb-2">
-              <label htmlFor="stop_url" className="form-label">
-                Durak URL si
-              </label>
-              <input
-                type="text"
-                id="stop_url"
-                name="stop_url"
-                className="form-control"
-                value={stopTimeData.stop_url || ""}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-2">
-              <label htmlFor="location_type" className="form-label">
-                Konum Türü
-              </label>
-              <select
-                id="location_type"
-                name="location_type"
-                className="form-control"
-                value={stopTimeData.location_type ?? ""}
-                onChange={handleChange}
-              >
-                <option value="">Seçiniz</option>
-                <option value="0">0 - Durak/Platform</option>
-                <option value="1">1 - İstasyon</option>
-              </select>
-            </div>
-            <div className="mb-2">
-              <label htmlFor="stop_timezone" className="form-label">
-                Durak Saat Dilimi
-              </label>
-              <input
-                type="text"
-                id="stop_timezone"
-                name="stop_timezone"
-                className="form-control"
-                value={stopTimeData.stop_timezone || ""}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-2">
-              <label htmlFor="wheelchair_boarding" className="form-label">
-                Tekerlekli Sandalye Erişimi
-              </label>
-              <select
-                id="wheelchair_boarding"
-                name="wheelchair_boarding"
-                className="form-control"
-                value={stopTimeData.wheelchair_boarding ?? ""}
-                onChange={handleChange}
-              >
-                <option value="">Seçiniz</option>
-                <option value="0">0 - Bilgi Yok</option>
-                <option value="1">1 - Mümkün</option>
-                <option value="2">2 - Mümkün Değil</option>
-              </select>
-            </div>
-       
-        
+        <div className="mb-2">
+          <label htmlFor="stop_code" className="form-label">
+            Durak Kodu
+          </label>
+          <input
+            type="text"
+            id="stop_code"
+            name="stop_code"
+            className="form-control"
+            value={stopTimeData.stop_code || ""}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="stop_name" className="form-label">
+            Durak Adı
+          </label>
+          <input
+            type="text"
+            id="stop_name"
+            name="stop_name"
+            className="form-control"
+            value={stopTimeData.stop_name || ""}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="stop_desc" className="form-label">
+            Durak Açıklaması
+          </label>
+          <input
+            type="text"
+            id="stop_desc"
+            name="stop_desc"
+            className="form-control"
+            value={stopTimeData.stop_desc || ""}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="row">
+          <div className="col-6 mb-2">
+            <label htmlFor="stop_lat" className="form-label">
+              Durak Enlemi
+            </label>
+            <input
+              type="number"
+              id="stop_lat"
+              name="stop_lat"
+              className="form-control"
+              value={stopTimeData.stop_lat || ""}
+              onChange={handleChange}
+              step="0.000001"
+            />
+          </div>
+          <div className="col-6 mb-2">
+            <label htmlFor="stop_lon" className="form-label">
+              Durak Boylamı
+            </label>
+            <input
+              type="number"
+              id="stop_lon"
+              name="stop_lon"
+              className="form-control"
+              value={stopTimeData.stop_lon || ""}
+              onChange={handleChange}
+              step="0.000001"
+            />
+          </div>
+        </div>
+        <div className="mb-2">
+          <label htmlFor="stop_url" className="form-label">
+            Durak URL si
+          </label>
+          <input
+            type="text"
+            id="stop_url"
+            name="stop_url"
+            className="form-control"
+            value={stopTimeData.stop_url || ""}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="location_type" className="form-label">
+            Konum Türü
+          </label>
+          <select
+            id="location_type"
+            name="location_type"
+            className="form-control"
+            value={stopTimeData.location_type ?? ""}
+            onChange={handleChange}
+          >
+            <option value="">Seçiniz</option>
+            <option value="0">0 - Durak/Platform</option>
+            <option value="1">1 - İstasyon</option>
+          </select>
+        </div>
+        <div className="mb-2">
+          <label htmlFor="stop_timezone" className="form-label">
+            Durak Saat Dilimi
+          </label>
+          <input
+            type="text"
+            id="stop_timezone"
+            name="stop_timezone"
+            className="form-control"
+            value={stopTimeData.stop_timezone || ""}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="mb-2">
+          <label htmlFor="wheelchair_boarding" className="form-label">
+            Tekerlekli Sandalye Erişimi
+          </label>
+          <select
+            id="wheelchair_boarding"
+            name="wheelchair_boarding"
+            className="form-control"
+            value={stopTimeData.wheelchair_boarding ?? ""}
+            onChange={handleChange}
+          >
+            <option value="">Seçiniz</option>
+            <option value="0">0 - Bilgi Yok</option>
+            <option value="1">1 - Mümkün</option>
+            <option value="2">2 - Mümkün Değil</option>
+          </select>
+        </div>
 
         <hr />
         <h5 className="my-3">Stop Time</h5>
@@ -532,6 +612,7 @@ StopTimeEditPage.propTypes = {
   onClose: PropTypes.func.isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
   stopsAndTimes: PropTypes.array.isRequired,
+  route_id: PropTypes.string.isRequired,
 };
 
 export default StopTimeEditPage;

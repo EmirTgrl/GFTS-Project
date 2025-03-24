@@ -1,7 +1,19 @@
 const API_BASE_URL = "http://localhost:5000/api/routes";
 
-export const fetchRoutesByProjectId = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}?project_id=${projectId}`, {
+export const fetchRoutesByProjectId = async (
+  projectId,
+  token,
+  page = 1,
+  limit = 8,
+  searchTerm = ""
+) => {
+  const url = new URL(`${API_BASE_URL}`);
+  url.searchParams.append("project_id", projectId);
+  url.searchParams.append("page", page);
+  url.searchParams.append("limit", limit);
+  if (searchTerm) url.searchParams.append("route_long_name", searchTerm);
+
+  const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -15,7 +27,8 @@ export const fetchRoutesByProjectId = async (projectId, token) => {
     );
     throw new Error(`Fetch routes failed: ${errorText}`);
   }
-  return response.json();
+  const data = await response.json();
+  return data;
 };
 
 export const fetchRoutesByAgencyId = async (
@@ -46,7 +59,7 @@ export const fetchRoutesByAgencyId = async (
     throw new Error(`Failed to fetch routes by agency: ${errorText}`);
   }
   const data = await response.json();
-  return data; 
+  return data;
 };
 
 export const fetchRouteById = async (routeId, projectId, token) => {

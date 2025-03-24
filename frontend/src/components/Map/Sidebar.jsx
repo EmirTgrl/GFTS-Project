@@ -29,7 +29,11 @@ import {
   SortDown,
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
-import { deleteRouteById, fetchRoutesByAgencyId } from "../../api/routeApi";
+import {
+  deleteRouteById,
+  fetchRoutesByAgencyId,
+  fetchRoutesByProjectId,
+} from "../../api/routeApi";
 import {
   deleteCalendarById,
   fetchCalendarsByProjectId,
@@ -38,12 +42,17 @@ import {
   fetchAgenciesByProjectId,
   deleteAgencyById,
 } from "../../api/agencyApi";
-import { deleteTripById, fetchTripsByRouteId, copyTripWithOffset } from "../../api/tripApi";
+import {
+  deleteTripById,
+  fetchTripsByProjectId,
+  fetchTripsByRouteId,
+  copyTripWithOffset
+} from "../../api/tripApi";
 import {
   fetchStopsAndStopTimesByTripId,
   deleteStopTimeById,
 } from "../../api/stopTimeApi";
-import { deleteStopById } from "../../api/stopApi";
+import { deleteStopById, fetchStopsByProjectId } from "../../api/stopApi";
 import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
@@ -151,19 +160,22 @@ const Sidebar = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (token && project_id) {
-          const agencyData = await fetchAgenciesByProjectId(
-            project_id,
-            token,
-            pageAgencies,
-            itemsPerPage,
-            searchTerms.agencies
-          );
-          setAgencies(agencyData);
-        }
+        if (!token || !project_id) return;
 
+        // Agencies
+        const agencyData = await fetchAgenciesByProjectId(
+          project_id,
+          token,
+          pageAgencies,
+          itemsPerPage,
+          searchTerms.agencies
+        );
+        setAgencies(agencyData);
+
+        // Routes
+        let routeData;
         if (selectedEntities.agency) {
-          const routeData = await fetchRoutesByAgencyId(
+          routeData = await fetchRoutesByAgencyId(
             selectedEntities.agency.agency_id,
             project_id,
             token,
@@ -171,58 +183,110 @@ const Sidebar = ({
             itemsPerPage,
             searchTerms.routes
           );
-          setRoutes(routeData);
+        } else {
+          routeData = await fetchRoutesByProjectId(
+            project_id,
+            token,
+            pageRoutes,
+            itemsPerPage,
+            searchTerms.routes
+          );
         }
+        setRoutes(routeData);
 
-        if (selectedEntities.route) {
-          const [calendarData, routeTrips] = await Promise.all([
-            fetchCalendarsByProjectId(project_id, token),
-            fetchTripsByRouteId(
-              selectedEntities.route.route_id,
-              project_id,
-              token,
-              1,
-              9999,
-              searchTerms.trips
-            ),
-          ]);
-
+        // Calendars
+        let calendarData;
+        if (!selectedEntities.calendar) {
+          calendarData = await fetchCalendarsByProjectId(project_id, token);
           setCalendars(
             Array.isArray(calendarData) ? calendarData : calendarData.data || []
           );
-
-          const allTrips = routeTrips.data;
-          setFullTrips(allTrips);
-
-          const tripTimesData = {};
-          await Promise.all(
-            allTrips.map(async (trip) => {
-              const stops = await fetchStopsAndStopTimesByTripId(
-                trip.trip_id,
-                project_id,
-                token
-              );
-              tripTimesData[trip.trip_id] =
-                stops.length > 0
-                  ? {
-                      firstArrival: stops[0].arrival_time,
-                      lastDeparture: stops[stops.length - 1].departure_time,
-                    }
-                  : { firstArrival: null, lastDeparture: null };
-            })
-          );
-          setTripTimes(tripTimesData);
-
-          const updatedTrips = applyTripFiltersAndSort(allTrips);
-          setTrips(updatedTrips);
         } else {
-          setFullTrips([]);
-          setTrips({ data: [], total: 0 });
-          setTripTimes({});
-          setIsFilterOpen(false);
-          setIsFiltered(false);
+          calendarData = calendars;
         }
 
+        // Trips
+        let tripResponse;
+        if (selectedEntities.route) {
+          tripResponse = await fetchTripsByRouteId(
+            selectedEntities.route.route_id,
+            project_id,
+            token,
+            pageTrips,
+            itemsPerPage,
+            searchTerms.trips
+          );
+        } else {
+          tripResponse = await fetchTripsByProjectId(
+            project_id,
+            token,
+            pageTrips,
+            itemsPerPage,
+            searchTerms.trips
+          );
+        }
+
+        const allTrips = tripResponse.data || [];
+        const totalTrips = tripResponse.total || allTrips.length;
+        setFullTrips(allTrips);
+
+        // Trip Times
+        const tripTimesData = {};
+        await Promise.all(
+          allTrips.map(async (trip) => {
+            const stops = await fetchStopsAndStopTimesByTripId(
+              trip.trip_id,
+              project_id,
+              token
+            );
+            tripTimesData[trip.trip_id] =
+              stops.length > 0
+                ? {
+                    firstArrival: stops[0].arrival_time || "N/A",
+                    lastDeparture:
+                      stops[stops.length - 1].departure_time || "N/A",
+                  }
+                : { firstArrival: "N/A", lastDeparture: "N/A" };
+          })
+        );
+        setTripTimes(tripTimesData);
+
+        let filteredTrips = [...allTrips];
+        if (selectedEntities.calendar && !isFiltered) {
+          filteredTrips = filteredTrips.filter(
+            (trip) => trip.service_id === selectedEntities.calendar.service_id
+          );
+        }
+
+        const sortedTrips = sortTripsByDeparture(filteredTrips);
+        setTrips({
+          data: sortedTrips,
+          total: totalTrips,
+        });
+
+        // Stops (sadece stop'lar, zaman bilgisi yok)
+        let stopsResponse;
+        if (selectedEntities.trip) {
+          stopsResponse = await fetchStopsAndStopTimesByTripId(
+            selectedEntities.trip.trip_id,
+            project_id,
+            token
+          );
+          console.log("Trip seçildi, stopsResponse:", stopsResponse);
+          setStopsAndTimes(stopsResponse); // Direkt array olarak set ediliyor
+        } else {
+          stopsResponse = await fetchStopsByProjectId(
+            project_id,
+            token,
+            pageStops, // Sayfalama için eklendi
+            itemsPerPage, // Sayfalama için eklendi
+            searchTerms.stops || "" // Arama terimi, yoksa boş string
+          );
+          console.log("Trip seçilmedi, sadece stoplar:", stopsResponse);
+          setStopsAndTimes(stopsResponse.data || stopsResponse || []); // Direkt array olarak set ediliyor
+        }
+
+        // Shapes ve Map Center
         if (selectedEntities.trip) {
           const shapesResponse = await fetchShapesByTripId(
             project_id,
@@ -231,13 +295,6 @@ const Sidebar = ({
           );
           setShapes(shapesResponse);
 
-          const stopsResponse = await fetchStopsAndStopTimesByTripId(
-            selectedEntities.trip.trip_id,
-            project_id,
-            token
-          );
-          setStopsAndTimes(stopsResponse);
-
           const center = calculateCenter(shapesResponse, stopsResponse);
           if (center) {
             setMapCenter(center);
@@ -245,16 +302,16 @@ const Sidebar = ({
           }
         } else {
           setShapes([]);
-          setStopsAndTimes({ data: [], total: 0 });
         }
       } catch (error) {
         console.error("Veri yüklenirken hata oluştu:", error);
         setAgencies({ data: [], total: 0 });
         setRoutes({ data: [], total: 0 });
+        setCalendars([]);
         setFullTrips([]);
         setTrips({ data: [], total: 0 });
         setShapes([]);
-        setStopsAndTimes({ data: [], total: 0 });
+        setStopsAndTimes([]); // Hata durumunda direkt boş array
         setTripTimes({});
       }
     };
@@ -266,13 +323,15 @@ const Sidebar = ({
     pageAgencies,
     pageRoutes,
     pageTrips,
+    pageStops, // Sayfalama için bağımlılık eklendi
+    itemsPerPage,
     searchTerms,
     selectedEntities.agency,
     selectedEntities.route,
     selectedEntities.trip,
     selectedEntities.calendar,
     isFiltered,
-    sortDirection, // Sıralama yönü değiştiğinde yeniden çalışır
+    sortDirection,
   ]);
 
   useEffect(() => {
@@ -841,104 +900,106 @@ const Sidebar = ({
   const toggleSortDirection = (e) => {
     e.stopPropagation();
     setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    const sortedTrips = sortTripsByDeparture(trips.data);
+    setTrips({ data: sortedTrips, total: sortedTrips.length });
   };
 
-  const renderTripsAccordion = () => (
-    <Accordion.Item eventKey="3">
-      <Accordion.Header>
-        <BusFront size={20} className="me-2" /> Trips
-        {selectedEntities.route && (
-          <>
-            <span
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsFilterOpen((prev) => !prev);
-              }}
-              className="ms-2 p-0"
-              style={{ cursor: "pointer" }}
-            >
-              <Funnel size={20} />
-            </span>
-            <span
-              onClick={toggleSortDirection}
-              className="ms-2 p-0"
-              style={{ cursor: "pointer" }}
-            >
-              {sortDirection === "asc" ? (
-                <SortUp size={20} />
-              ) : (
-                <SortDown size={20} />
-              )}
-            </span>
-          </>
-        )}
-      </Accordion.Header>
-      <Accordion.Body>
-        <Form.Group className="mb-3">
-          <Form.Control
-            type="text"
-            placeholder="Search trips..."
-            value={searchTerms.trips}
-            onChange={(e) => handleSearch("trips", e.target.value)}
-          />
-        </Form.Group>
-        {trips.data && trips.data.length > 0 ? (
-          trips.data.map((trip) => {
-            const times = tripTimes[trip.trip_id] || {
-              firstArrival: null,
-              lastDeparture: null,
-            };
-            const calendar = calendars.find(
-              (cal) => cal.service_id === trip.service_id
-            );
-            const activeDays = getActiveDays(calendar);
-            return (
-              <Card
-                key={trip.trip_id}
-                className={`mb-2 item-card ${
-                  selectedEntities.trip?.trip_id === trip.trip_id
-                    ? "active"
-                    : ""
-                } ${isTripInPast(trip.trip_id) ? "past-trip" : ""}`}
-                onClick={() => handleSelectionChange("trip", trip)}
+  const renderTripsAccordion = () => {
+    const tripData = trips.data || [];
+
+    return (
+      <Accordion.Item eventKey="3">
+        <Accordion.Header>
+          <BusFront size={20} className="me-2" /> Trips
+          {selectedEntities.route && (
+            <>
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsFilterOpen((prev) => !prev);
+                }}
+                className="ms-2 p-0"
+                style={{ cursor: "pointer" }}
               >
-                <Card.Body className="d-flex align-items-center p-2">
-                  {trip.direction_id === 0 ? (
-                    <ArrowDownLeft className="me-2" />
-                  ) : (
-                    <ArrowUpRight className="me-2" />
-                  )}
-                  <OverlayTrigger
-                    placement="top"
-                    overlay={renderTooltip(trip.trip_headsign || trip.trip_id)}
-                  >
-                    <div className="d-flex flex-column">
-                      <span className="item-title">
-                        {trip.trip_headsign || trip.trip_id}
-                      </span>
-                      <span className="trip-times">
-                        {times.firstArrival && times.lastDeparture
-                          ? `${times.firstArrival} - ${times.lastDeparture}`
-                          : "No times available"}{" "}
-                        {activeDays !== "N/A" && `(${activeDays})`}
-                      </span>
-                    </div>
-                  </OverlayTrigger>
-                </Card.Body>
-              </Card>
-            );
-          })
-        ) : (
-          <p className="text-muted text-center">
-            {selectedEntities.route
-              ? "No trips found."
-              : "Select a route first."}
-          </p>
-        )}
-        {renderPagination(trips.total, pageTrips, setPageTrips)}
-      </Accordion.Body>
-    </Accordion.Item>
-  );
+                <Funnel size={20} />
+              </span>
+              <span
+                onClick={toggleSortDirection}
+                className="ms-2 p-0"
+                style={{ cursor: "pointer" }}
+              >
+                {sortDirection === "asc" ? (
+                  <SortUp size={20} />
+                ) : (
+                  <SortDown size={20} />
+                )}
+              </span>
+            </>
+          )}
+        </Accordion.Header>
+        <Accordion.Body>
+          <Form.Group className="mb-3">
+            <Form.Control
+              type="text"
+              placeholder="Search trips..."
+              value={searchTerms.trips}
+              onChange={(e) => handleSearch("trips", e.target.value)}
+            />
+          </Form.Group>
+          {tripData.length > 0 ? (
+            tripData.map((trip) => {
+              const times = tripTimes[trip.trip_id] || {
+                firstArrival: "N/A",
+                lastDeparture: "N/A",
+              };
+              const calendar = calendars.find(
+                (cal) => cal.service_id === trip.service_id
+              );
+              const activeDays = getActiveDays(calendar);
+              return (
+                <Card
+                  key={trip.trip_id}
+                  className={`mb-2 item-card ${
+                    selectedEntities.trip?.trip_id === trip.trip_id
+                      ? "active"
+                      : ""
+                  } ${isTripInPast(trip.trip_id) ? "past-trip" : ""}`}
+                  onClick={() => handleSelectionChange("trip", trip)}
+                >
+                  <Card.Body className="d-flex align-items-center p-2">
+                    {trip.direction_id === 0 ? (
+                      <ArrowDownLeft className="me-2" />
+                    ) : (
+                      <ArrowUpRight className="me-2" />
+                    )}
+                    <OverlayTrigger
+                      placement="top"
+                      overlay={renderTooltip(
+                        trip.trip_headsign || trip.trip_id
+                      )}
+                    >
+                      <div className="d-flex flex-column">
+                        <span className="item-title">
+                          {trip.trip_headsign || trip.trip_id}
+                        </span>
+                        <span className="trip-times">
+                          {`${times.firstArrival} - ${times.lastDeparture}`}{" "}
+                          {activeDays !== "N/A" && `(${activeDays})`}
+                        </span>
+                      </div>
+                    </OverlayTrigger>
+                  </Card.Body>
+                </Card>
+              );
+            })
+          ) : (
+            <p className="text-muted text-center">No trips found.</p>
+          )}
+          {renderPagination(trips.total || 0, pageTrips, setPageTrips)}
+        </Accordion.Body>
+      </Accordion.Item>
+    );
+  };
 
   return (
     <div className="sidebar-container d-flex">
@@ -946,8 +1007,8 @@ const Sidebar = ({
         <Accordion
           activeKey={activeKey}
           onSelect={(key) => {
-            setActiveKey(key)
-            setSelectedCategory(categoryMap[key])
+            setActiveKey(key);
+            setSelectedCategory(categoryMap[key]);
           }}
           className="sidebar-accordion"
         >
@@ -1147,12 +1208,14 @@ const Sidebar = ({
               {stopsAndTimes && stopsAndTimes.length > 0 ? (
                 paginateItems(
                   stopsAndTimes.sort(
-                    (a, b) => a.stop_sequence - b.stop_sequence
-                  ),
+                    (a, b) => (a.stop_sequence || 0) - (b.stop_sequence || 0)
+                  ), // stop_sequence yoksa 0 kabul et
                   pageStops
                 ).map((stop) => (
                   <Card
-                    key={`${stop.trip_id}-${stop.stop_sequence}`}
+                    key={`${stop.trip_id || "no-trip"}-${
+                      stop.stop_sequence || stop.stop_id
+                    }`} // trip_id yoksa stop_id kullan
                     className={`mb-2 item-card ${
                       selectedEntities.stop?.stop_id === stop.stop_id
                         ? "active"
@@ -1172,12 +1235,14 @@ const Sidebar = ({
                             <div className="item-title">
                               {stop.stop_name || stop.stop_id}
                             </div>
-                            <div style={{ fontSize: "0.8em" }}>
-                              {stop.departure_time !== "N/A" &&
-                              stop.arrival_time !== "N/A"
-                                ? `${stop.departure_time} - ${stop.arrival_time}`
-                                : "N/A"}
-                            </div>
+                            {/* Trip seçiliyse saatleri göster, değilse gösterme */}
+                            {selectedEntities.trip && (
+                              <div style={{ fontSize: "0.8em" }}>
+                                {stop.departure_time && stop.arrival_time
+                                  ? `${stop.arrival_time} - ${stop.departure_time}`
+                                  : "N/A"}
+                              </div>
+                            )}
                           </div>
                         </OverlayTrigger>
                       </div>
@@ -1188,7 +1253,7 @@ const Sidebar = ({
                 <p className="text-muted text-center">
                   {selectedEntities.trip
                     ? "No stops found."
-                    : "Select a trip first."}
+                    : "All stops in the project."}
                 </p>
               )}
               {renderPagination(stopsAndTimes.length, pageStops, setPageStops)}
@@ -1200,16 +1265,18 @@ const Sidebar = ({
         <TripFilterPanel
           calendars={calendars}
           tripTimes={tripTimes}
-          setTrips={setTrips}
+          setTrips={(newTrips) => {
+            setTrips(newTrips);
+            setPageTrips(1);
+          }}
           setIsFiltered={setIsFiltered}
           fullTrips={fullTrips}
-          pageTrips={pageTrips}
-          itemsPerPage={itemsPerPage}
           onClose={() => {
             setIsFilterOpen(false);
             setIsFiltered(false);
             const updatedTrips = applyTripFiltersAndSort(fullTrips);
             setTrips(updatedTrips);
+            setPageTrips(1);
           }}
         />
       )}

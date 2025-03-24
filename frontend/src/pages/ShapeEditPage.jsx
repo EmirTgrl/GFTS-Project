@@ -10,7 +10,7 @@ const ShapeEditPage = ({
   onClose,
   setShapes,
   shapes,
-  clickedCoords, 
+  clickedCoords,
 }) => {
   const { token } = useContext(AuthContext);
   const [shapeData, setShapeData] = useState({
@@ -19,7 +19,7 @@ const ShapeEditPage = ({
     shape_pt_sequence: "",
     shape_dist_traveled: "",
     project_id: project_id,
-    shape_id: ""
+    shape_id: "",
   });
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const ShapeEditPage = ({
         shape_pt_sequence: currentShape.shape_pt_sequence || "",
         shape_dist_traveled: currentShape.shape_dist_traveled || "",
         project_id: currentShape.project_id || project_id,
-        shape_id: currentShape.shape_id
+        shape_id: currentShape.shape_id,
       });
     } else {
       console.error("Shape not found in shapes array:", shape_pt_sequence);
@@ -74,26 +74,70 @@ const ShapeEditPage = ({
 
     if (result.isConfirmed) {
       try {
+        const originalSequence = parseInt(shape_pt_sequence); 
+        const newSequence = parseInt(shapeData.shape_pt_sequence);
+
         const updatedShapeData = {
           shape_pt_lat: parseFloat(shapeData.shape_pt_lat),
           shape_pt_lon: parseFloat(shapeData.shape_pt_lon),
-          shape_pt_sequence: parseInt(shapeData.shape_pt_sequence),
+          shape_pt_sequence: newSequence,
           shape_dist_traveled: shapeData.shape_dist_traveled
             ? parseFloat(shapeData.shape_dist_traveled)
             : null,
           project_id: project_id,
-          shape_id: shapeData.shape_id
+          shape_id: shapeData.shape_id,
         };
 
-        await updateShape(shape_pt_sequence, updatedShapeData, token);
+        let updatedShapes = [...shapes];
 
-        setShapes((prev) =>
-          prev.map((shape) =>
-            shape.shape_pt_sequence === shape_pt_sequence
+        if (originalSequence !== newSequence) {
+          updatedShapes = updatedShapes.map((shape) => {
+            const currentSeq = parseInt(shape.shape_pt_sequence);
+
+            if (
+              currentSeq >= newSequence &&
+              currentSeq < originalSequence &&
+              currentSeq !== originalSequence
+            ) {
+              return { ...shape, shape_pt_sequence: currentSeq + 1 };
+            }
+            else if (
+              currentSeq > originalSequence &&
+              currentSeq <= newSequence
+            ) {
+              return { ...shape, shape_pt_sequence: currentSeq - 1 };
+            }
+            return shape;
+          });
+
+          updatedShapes = updatedShapes.map((shape) =>
+            shape.shape_pt_sequence === originalSequence
               ? { ...shape, ...updatedShapeData }
               : shape
-          )
-        );
+          );
+
+          updatedShapes.sort(
+            (a, b) =>
+              parseInt(a.shape_pt_sequence) - parseInt(b.shape_pt_sequence)
+          );
+
+          await Promise.all(
+            updatedShapes.map((shape) =>
+              updateShape(shape.shape_pt_sequence, shape, token)
+            )
+          );
+
+          setShapes(updatedShapes);
+        } else {
+          await updateShape(originalSequence, updatedShapeData, token);
+          setShapes((prev) =>
+            prev.map((shape) =>
+              shape.shape_pt_sequence === originalSequence
+                ? { ...shape, ...updatedShapeData }
+                : shape
+            )
+          );
+        }
 
         Swal.fire("Güncellendi!", "Şekil başarıyla güncellendi.", "success");
         onClose();
@@ -155,6 +199,7 @@ const ShapeEditPage = ({
             value={shapeData.shape_pt_sequence}
             onChange={handleChange}
             required
+            min="1"
           />
         </div>
         <div className="mb-2">

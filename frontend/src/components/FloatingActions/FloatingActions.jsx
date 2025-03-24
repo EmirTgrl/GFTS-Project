@@ -3,7 +3,13 @@ import PropTypes from "prop-types";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import "../../styles/FloatingActions.css";
 
-const FloatingActions = ({ setAction, editorMode, setEditorMode, selectedCategory, selectedEntities }) => {
+const FloatingActions = ({
+  setAction,
+  editorMode,
+  setEditorMode,
+  selectedCategory,
+  selectedEntities,
+}) => {
   const renderTooltip = (text) => (
     <Tooltip id={`tooltip-${text.toLowerCase()}`}>{text}</Tooltip>
   );
@@ -166,7 +172,10 @@ FloatingActions.propTypes = {
   setAction: PropTypes.func.isRequired,
   editorMode: PropTypes.string.isRequired,
   setEditorMode: PropTypes.func.isRequired,
-  selectedCategory: PropTypes.string
+  selectedCategory: PropTypes.string,
+  selectedEntities: PropTypes.shape({
+    trip: PropTypes.any,
+  }).isRequired,
 };
 
 export default FloatingActions;
