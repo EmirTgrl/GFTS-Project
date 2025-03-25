@@ -1,16 +1,12 @@
 const API_BASE_URL = "http://localhost:5000/api/stop-times";
 
-
 export const fetchStopsByRoute = async (route_id, token) => {
-  const response = await fetch(
-    `${API_BASE_URL}/route/${route_id}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await fetch(`${API_BASE_URL}/route/${route_id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!response.ok) throw new Error("Failed to fetch stops and stop times");
   return response.json();
-}
+};
 
 export const fetchStopsAndStopTimesByTripId = async (
   tripId,
@@ -108,6 +104,39 @@ export const saveMultipleStopsAndTimes = async (stopsAndTimes, token) => {
   });
   if (!response.ok) throw new Error("Failed to save stop time");
   return response.json();
-}
+};
 
+export const calculateRouteBetweenStops = async (
+  stops,
+  token,
+  osrmUrl = "http://localhost:5001"
+) => {
+  const coordinates = stops
+    .sort((a, b) => a.stop_sequence - b.stop_sequence)
+    .map((stop) => `${stop.stop_lon},${stop.stop_lat}`)
+    .join(";");
 
+  const url = `${osrmUrl}/route/v1/driving/${coordinates}?steps=true&geometries=geojson&overview=full`;
+
+  const response = await fetch(url, {
+    method: "GET"
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Failed to calculate route:", response.status, errorText);
+    throw new Error(`Failed to calculate route: ${errorText}`);
+  }
+
+  const data = await response.json();
+  if (data.code !== "Ok") {
+    throw new Error(`OSRM Route failed: ${data.message}`);
+  }
+
+  const route = data.routes[0];
+  return {
+    distance: route.distance / 1000,
+    duration: route.duration / 60, 
+    geometry: route.geometry.coordinates, 
+  };
+};

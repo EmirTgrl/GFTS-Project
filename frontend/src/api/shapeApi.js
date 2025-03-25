@@ -80,3 +80,48 @@ export const saveMultipleShapes = async (shapesData, trip_id, token) => {
   }
   return response.json();
 };
+
+export const snapShapesToRoads = async (
+  shapes,
+  token,
+  osrmUrl = "http://localhost:5001"
+) => {
+  const coordinates = shapes
+    .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
+    .map((shape) => `${shape.shape_pt_lon},${shape.shape_pt_lat}`)
+    .join(";");
+
+  const url = `${osrmUrl}/match/v1/driving/${coordinates}?steps=false&geometries=geojson&overview=full`;
+
+  const response = await fetch(url, {
+    method: "GET"
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(
+      "Failed to snap shapes to roads:",
+      response.status,
+      errorText
+    );
+    throw new Error(`Failed to snap shapes: ${errorText}`);
+  }
+
+  const data = await response.json();
+  if (data.code !== "Ok") {
+    throw new Error(`OSRM Match failed: ${data.message}`);
+  }
+
+  const snappedShapes = data.matchings[0].geometry.coordinates.map(
+    (coord, index) => ({
+      shape_id: shapes[0].shape_id,
+      shape_pt_lat: coord[1],
+      shape_pt_lon: coord[0],
+      shape_pt_sequence: shapes[index]?.shape_pt_sequence || index + 1,
+      project_id: shapes[0].project_id,
+      shape_dist_traveled: null,
+    })
+  );
+
+  return snappedShapes;
+};

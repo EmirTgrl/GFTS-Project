@@ -12,7 +12,10 @@ import PropTypes from "prop-types";
 import L from "leaflet";
 import MapUpdater from "./MapUpdater.jsx";
 import Swal from "sweetalert2";
-import { saveMultipleStopsAndTimes } from "../../api/stopTimeApi.js";
+import {
+  saveMultipleStopsAndTimes,
+  calculateRouteBetweenStops,
+} from "../../api/stopTimeApi.js";
 import { saveMultipleShapes } from "../../api/shapeApi.js";
 import { CaretUpFill } from "react-bootstrap-icons";
 import { renderToString } from "react-dom/server";
@@ -59,14 +62,15 @@ const MapView = ({
 }) => {
   const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
   const [tempShapes, setTempShapes] = useState([]);
+  const [routeInfo, setRouteInfo] = useState(null);
 
   useEffect(() => {
-    if(selectedEntities.trip){
-    setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes)));
-    setTempShapes(JSON.parse(JSON.stringify(shapes)));
-    }else{
-      setTempShapes([])
-      setTempStopsAndTimes([])
+    if (selectedEntities.trip) {
+      setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes)));
+      setTempShapes(JSON.parse(JSON.stringify(shapes)));
+    } else {
+      setTempShapes([]);
+      setTempStopsAndTimes([]);
     }
   }, [stopsAndTimes, shapes]);
 
@@ -195,7 +199,6 @@ const MapView = ({
   useEffect(() => {
     if (editorMode === "add-stop") {
       Swal.fire({
-        // Use Swal.fire
         icon: "info",
         title: "Add Stop",
         text: "Click on the map to add a new stop.",
@@ -206,7 +209,6 @@ const MapView = ({
     }
     if (editorMode === "add-shape") {
       Swal.fire({
-        // Use Swal.fire
         icon: "info",
         title: "Add Shape Point",
         text: "Click on the map to add a shape point.",
@@ -231,7 +233,6 @@ const MapView = ({
     if (editorMode === "close") return;
 
     const newLatLng = e.target.getLatLng();
-
     setTempStopsAndTimes((prevStopsAndTimes) =>
       prevStopsAndTimes.map((stopTime) => {
         if (stopTime.stop_sequence === stopSequence) {
@@ -245,6 +246,7 @@ const MapView = ({
       })
     );
   };
+
   const handleShapeDrag = (e, shapePtSequence) => {
     if (editorMode === "close") return;
 
@@ -261,6 +263,41 @@ const MapView = ({
         return shape;
       })
     );
+  };
+
+  const handleCalculateRoute = async () => {
+    if (!tempStopsAndTimes.length) {
+      Swal.fire("Error", "No stops to calculate route!", "error");
+      return;
+    }
+
+    try {
+      const routeData = await calculateRouteBetweenStops(
+        tempStopsAndTimes,
+        token
+      );
+      setRouteInfo(routeData);
+      Swal.fire(
+        "Route Calculated",
+        `Distance: ${routeData.distance.toFixed(
+          2
+        )} km\nDuration: ${routeData.duration.toFixed(2)} min`,
+        "success"
+      );
+
+      const routeShapes = routeData.geometry.map((coord, index) => ({
+        shape_id: tempShapes[0]?.shape_id || `route-${Date.now()}`,
+        shape_pt_lat: coord[1],
+        shape_pt_lon: coord[0],
+        shape_pt_sequence: index + 1,
+        project_id: selectedEntities.trip.project_id,
+        shape_dist_traveled: null,
+      }));
+      setTempShapes(routeShapes);
+    } catch (error) {
+      console.error("Error calculating route:", error);
+      Swal.fire("Error", "Failed to calculate route between stops.", "error");
+    }
   };
 
   function PolylineWithDirectionalArrows({ positions, color, weight }) {
@@ -311,6 +348,7 @@ const MapView = ({
         }
       };
     }, [map, positions]);
+
     return <Polyline positions={positions} color={color} weight={weight} />;
   }
 
@@ -404,6 +442,25 @@ const MapView = ({
             })}
         </>
       )}
+      {editorMode !== "close" && (
+        <div style={{ position: "absolute", top: 10, right: 10, zIndex: 1000 }}>
+          {tempStopsAndTimes.length > 1 && (
+            <button
+              onClick={handleCalculateRoute}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Snap The Route
+            </button>
+          )}
+        </div>
+      )}
     </MapContainer>
   );
 };
@@ -411,7 +468,8 @@ const MapView = ({
 MapView.propTypes = {
   mapCenter: PropTypes.arrayOf(PropTypes.number).isRequired,
   zoom: PropTypes.number.isRequired,
-  stopsAndTimes: PropTypes.object.isRequired,
+  stopsAndTimes: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
+    .isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
   setShapes: PropTypes.func.isRequired,
   onMapClick: PropTypes.func.isRequired,
@@ -420,7 +478,6 @@ MapView.propTypes = {
     lat: PropTypes.number,
     lng: PropTypes.number,
   }),
-  isStopTimeAddOpen: PropTypes.bool.isRequired,
   editorMode: PropTypes.string.isRequired,
   setEditorMode: PropTypes.func.isRequired,
   selectedEntities: PropTypes.object.isRequired,

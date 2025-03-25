@@ -143,19 +143,19 @@ const Sidebar = ({
   };
 
   const applyTripFiltersAndSort = (tripsToFilter) => {
-    let filteredTrips = tripsToFilter;
-    if (selectedEntities.calendar && !isFiltered) {
-      filteredTrips = filteredTrips.filter(
-        (trip) => trip.service_id === selectedEntities.calendar.service_id
-      );
-    }
-    const sortedTrips = sortTripsByDeparture(filteredTrips);
-    const paginatedTrips = sortedTrips.slice(
-      (pageTrips - 1) * itemsPerPage,
-      pageTrips * itemsPerPage
+  let filteredTrips = [...tripsToFilter];
+  if (selectedEntities.calendar && !isFiltered) {
+    filteredTrips = filteredTrips.filter(
+      (trip) => trip.service_id === selectedEntities.calendar.service_id
     );
-    return { data: paginatedTrips, total: sortedTrips.length };
-  };
+  }
+  const sortedTrips = sortTripsByDeparture(filteredTrips);
+  const paginatedTrips = sortedTrips.slice(
+    (pageTrips - 1) * itemsPerPage,
+    pageTrips * itemsPerPage
+  );
+  return { data: paginatedTrips, total: sortedTrips.length };
+};
 
   useEffect(() => {
     const fetchData = async () => {
@@ -266,7 +266,6 @@ const Sidebar = ({
             project_id,
             token
           );
-          console.log("Trip seçildi, stopsResponse:", stopsResponse);
           setStopsAndTimes(stopsResponse); 
         } else {
           stopsResponse = await fetchStopsByProjectId(
@@ -276,7 +275,6 @@ const Sidebar = ({
             itemsPerPage,
             searchTerms.stops || ""
           );
-          console.log("Trip seçilmedi, sadece stoplar:", stopsResponse);
           setStopsAndTimes(stopsResponse.data || stopsResponse || []); 
         }
 
