@@ -1,14 +1,4 @@
-import {
-  PlusLg,
-  Pencil,
-  List,
-  Trash,
-  Map,
-  Floppy,
-  Arrow90degLeft,
-  BoundingBoxCircles,
-  GeoAlt,
-} from "react-bootstrap-icons";
+import { PlusLg, Pencil, List, Trash, Map, Floppy, Arrow90degLeft, BoundingBoxCircles, GeoAlt, Copy } from "react-bootstrap-icons";
 import PropTypes from "prop-types";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import "../../styles/FloatingActions.css";
@@ -41,6 +31,18 @@ const FloatingActions = ({
                     onClick={() => setEditorMode("open")}
                   >
                     <Map size={20} />
+                  </button>
+                </OverlayTrigger>
+                <OverlayTrigger
+                  placement="left"
+                  overlay={renderTooltip("Copy Trip")}
+                  trigger={["hover", "focus"]}
+                >
+                  <button
+                    className="fab-secondary"
+                    onClick={() => setAction("copy")}
+                  >
+                    <Copy size={20} />
                   </button>
                 </OverlayTrigger>
               </>
@@ -90,17 +92,34 @@ const FloatingActions = ({
           <>
             <OverlayTrigger
               placement="left"
-              overlay={renderTooltip("Add Stop")}
+              overlay={renderTooltip("Delete " + selectedCategory)}
               trigger={["hover", "focus"]}
             >
               <button
-                className={`fab-secondary ${
-                  editorMode === "add-stop" ? "active" : ""
-                }`}
-                onClick={() =>
-                  setEditorMode(editorMode === "add-stop" ? "open" : "add-stop")
-                }
+                className="fab-secondary"
+                onClick={() => setAction("delete")}
               >
+                <Trash size={20} />
+              </button>
+            </OverlayTrigger>
+            <OverlayTrigger
+              placement="left"
+              overlay={renderTooltip("Edit " + selectedCategory)}
+              trigger={["hover", "focus"]}
+            >
+              <button
+                className="fab-secondary"
+                onClick={() => setAction("edit")}
+              >
+                <Pencil size={20} />
+              </button>
+            </OverlayTrigger>
+            <OverlayTrigger
+              placement="left"
+              overlay={renderTooltip("Add Stop")}
+              trigger={["hover", "focus"]}
+            >
+              <button className={`fab-secondary ${editorMode === "add-stop" ? "active" : ""}`} onClick={() => setEditorMode(editorMode === "add-stop" ? "open" : "add-stop")}>
                 <GeoAlt size={20} />
               </button>
             </OverlayTrigger>
@@ -109,16 +128,7 @@ const FloatingActions = ({
               overlay={renderTooltip("Add Shape")}
               trigger={["hover", "focus"]}
             >
-              <button
-                className={`fab-secondary ${
-                  editorMode === "add-shape" ? "active" : ""
-                }`}
-                onClick={() =>
-                  setEditorMode(
-                    editorMode === "add-shape" ? "open" : "add-shape"
-                  )
-                }
-              >
+              <button className={`fab-secondary ${editorMode === "add-shape" ? "active" : ""}`} onClick={() => setEditorMode(editorMode === "add-shape" ? "open" : "add-shape")}>
                 <BoundingBoxCircles size={20} />
               </button>
             </OverlayTrigger>
@@ -127,10 +137,7 @@ const FloatingActions = ({
               overlay={renderTooltip("Save Changes")}
               trigger={["hover", "focus"]}
             >
-              <button
-                className="fab-secondary"
-                onClick={() => setEditorMode("save")}
-              >
+              <button className="fab-secondary" onClick={() => setEditorMode("save")}>
                 <Floppy size={20} />
               </button>
             </OverlayTrigger>
@@ -139,10 +146,7 @@ const FloatingActions = ({
               overlay={renderTooltip("Close Editor")}
               trigger={["hover", "focus"]}
             >
-              <button
-                className="fab-secondary"
-                onClick={() => setEditorMode("close")}
-              >
+              <button className="fab-secondary" onClick={() => setEditorMode("close")}>
                 <Arrow90degLeft size={20} />
               </button>
             </OverlayTrigger>

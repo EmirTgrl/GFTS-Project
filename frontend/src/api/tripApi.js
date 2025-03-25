@@ -1,5 +1,22 @@
 const API_BASE_URL = "http://localhost:5000/api/trips";
 
+export const copyTripWithOffset = async (
+  trip,
+ offsetMinutes,
+ token
+) => {
+  const response = await fetch(`${API_BASE_URL}/copy`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({trip, offsetMinutes}),
+  });
+  if (!response.ok) throw new Error("Failed to save trip");
+  return response.json();
+}
+
 export const fetchTripsByRouteId = async (
   routeId,
   projectId,
