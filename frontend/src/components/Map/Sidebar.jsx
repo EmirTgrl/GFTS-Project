@@ -1194,7 +1194,6 @@ const Sidebar = ({
                             <div className="item-title">
                               {stop.stop_name || stop.stop_id}
                             </div>
-                            {/* Trip seçiliyse saatleri göster, değilse gösterme */}
                             {selectedEntities.trip && (
                               <div style={{ fontSize: "0.8em" }}>
                                 {stop.departure_time && stop.arrival_time

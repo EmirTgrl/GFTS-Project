@@ -13,7 +13,7 @@ const StopTimeAddPage = ({
   initialLat,
   initialLon,
   resetClickedCoords,
-  route_id, // Add route_id prop
+  route_id,
 }) => {
   const { token } = useContext(AuthContext);
   const [stopData, setStopData] = useState({
@@ -35,12 +35,10 @@ const StopTimeAddPage = ({
     stop_timezone: "",
     wheelchair_boarding: "",
   });
-  const [allStops, setAllStops] = useState([]); // State for storing existing stops
-  const [selectedStopId, setSelectedStopId] = useState(""); // State for selected stop ID
-  const [isNewStop, setIsNewStop] = useState(false); // State to indicate if a new stop is being created
+  const [allStops, setAllStops] = useState([]);
+  const [selectedStopId, setSelectedStopId] = useState("");
+  const [isNewStop, setIsNewStop] = useState(false);
 
-
-  // Fetch existing stops when the component mounts or route_id changes
   useEffect(() => {
     const fetchStops = async () => {
       if (route_id) {
@@ -49,14 +47,12 @@ const StopTimeAddPage = ({
           setAllStops(stops);
         } catch (error) {
           console.error("Error fetching stops:", error);
-          // Handle the error appropriately, maybe with a user-friendly message
         }
       }
     };
 
     fetchStops();
   }, [route_id, token]);
-
 
   useEffect(() => {
     if (initialLat !== undefined && initialLon !== undefined) {
@@ -76,20 +72,18 @@ const StopTimeAddPage = ({
     }));
   };
 
-  // Handles changes to the stop selection dropdown
   const handleStopSelectChange = (e) => {
     const newSelectedStopId = e.target.value;
     setSelectedStopId(newSelectedStopId);
 
     if (newSelectedStopId === "new") {
-      // If "New Stop" is selected, reset stop-related fields
       setIsNewStop(true);
       setStopData((prev) => ({
         ...prev,
         stop_code: "",
         stop_name: "",
         stop_desc: "",
-        stop_lat: initialLat !== undefined ? initialLat : "", // Keep coordinates if available
+        stop_lat: initialLat !== undefined ? initialLat : "",
         stop_lon: initialLon !== undefined ? initialLon : "",
         stop_url: "",
         location_type: "",
@@ -97,7 +91,6 @@ const StopTimeAddPage = ({
         wheelchair_boarding: "",
       }));
     } else {
-      // If an existing stop is selected, populate the form with its data
       setIsNewStop(false);
       const selectedStop = allStops.find(
         (stop) => stop.stop_id === parseInt(newSelectedStopId)
@@ -137,7 +130,6 @@ const StopTimeAddPage = ({
       try {
         let stopResponse;
 
-        // Prepare stop data based on whether it's a new stop or an existing one
         const stopDataForApi = {
           stop_code: stopData.stop_code || null,
           stop_name: stopData.stop_name || null,
@@ -155,7 +147,6 @@ const StopTimeAddPage = ({
           project_id: project_id,
         };
 
-        // Prepare stop time data
         const stopTimeDataForApi = {
           trip_id: trip_id,
           arrival_time: stopData.arrival_time || null,
@@ -177,32 +168,50 @@ const StopTimeAddPage = ({
           project_id: project_id,
         };
 
-
         if (isNewStop) {
-          // Save new stop and get the response to use the stop_id
           stopResponse = await saveStop(stopDataForApi, token);
         } else {
-          //If exist stop selected, use selectedStopId
           stopResponse = { stop_id: parseInt(selectedStopId) };
         }
 
-        stopTimeDataForApi.stop_id = stopResponse.stop_id;  // Use the returned stop_id
-        await saveStopTime(stopTimeDataForApi, token);
+        stopTimeDataForApi.stop_id = stopResponse.stop_id;
 
+        // Mevcut stopsAndTimes'ı güncelle: Yeni sequence'e göre sıralama yap
+        setStopsAndTimes((prevStops) => {
+          const currentStops = Array.isArray(prevStops) ? [...prevStops] : [];
+          const newSequence = parseInt(stopData.stop_sequence) || 1;
 
+          // Aynı veya daha büyük sequence'ları bir artır
+          const updatedStops = currentStops.map((stop) => {
+            if (
+              stop.trip_id === trip_id &&
+              (stop.stop_sequence || 0) >= newSequence
+            ) {
+              return { ...stop, stop_sequence: (stop.stop_sequence || 0) + 1 };
+            }
+            return stop;
+          });
 
-        // Update the state with the new/updated stop time
-        setStopsAndTimes((prev) => [
-          ...prev,
-          {
+          // Yeni stop'u ekle
+          const newStop = {
             ...stopDataForApi,
             ...stopTimeDataForApi,
             stop_id: stopResponse.stop_id,
-          },
-        ]);
+          };
+          updatedStops.push(newStop);
+
+          // Sequence'e göre sırala
+          return updatedStops.sort(
+            (a, b) => (a.stop_sequence || 0) - (b.stop_sequence || 0)
+          );
+        });
+
+        // API'ye kaydet
+        await saveStopTime(stopTimeDataForApi, token);
+
         Swal.fire("Eklendi!", "Durak zamanı başarıyla eklendi.", "success");
 
-        // Reset form fields
+        // Formu sıfırla
         setStopData({
           arrival_time: "",
           departure_time: "",
@@ -222,10 +231,9 @@ const StopTimeAddPage = ({
           stop_timezone: "",
           wheelchair_boarding: "",
         });
-        setSelectedStopId(""); // Reset selected stop
+        setSelectedStopId("");
         setIsNewStop(false);
 
-        // Harita koordinatlarını sıfırla
         if (resetClickedCoords) {
           resetClickedCoords();
         }
@@ -244,8 +252,7 @@ const StopTimeAddPage = ({
   return (
     <div className="form-container">
       <form onSubmit={handleSubmit}>
-        
-      <h5>Stop</h5>
+        <h5>Stop</h5>
         <div className="mb-2">
           <label htmlFor="stop_select" className="form-label">
             Durak Seçimi
@@ -489,8 +496,8 @@ const StopTimeAddPage = ({
           <div className="col-6 mb-2">
             <label htmlFor="drop_off_type" className="form-label">
               Bırakış Türü
-            </label> 
-            <select 
+            </label>
+            <select
               id="drop_off_type"
               name="drop_off_type"
               className="form-control"
@@ -558,7 +565,7 @@ StopTimeAddPage.propTypes = {
   initialLat: PropTypes.number,
   initialLon: PropTypes.number,
   resetClickedCoords: PropTypes.func,
-  route_id: PropTypes.string.isRequired, // Add route_id prop type
+  route_id: PropTypes.string.isRequired,
 };
 
 export default StopTimeAddPage;
