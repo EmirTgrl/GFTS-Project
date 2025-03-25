@@ -49,6 +49,15 @@ services:
       - ./frontend:/app 
       - /app/node_modules 
 
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    container_name: gtfs-osrm
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./osrm/data:/data  # Mount a directory containing your OSRM data
+    restart: always
+    command: osrm-routed --algorithm mld --max-table-size 1024 --port 5000 /data/turkey-latest.osrm
 
 volumes:
   mysql_data:
