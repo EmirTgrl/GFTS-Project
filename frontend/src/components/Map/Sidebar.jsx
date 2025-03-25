@@ -46,7 +46,7 @@ import {
   deleteTripById,
   fetchTripsByProjectId,
   fetchTripsByRouteId,
-  copyTripWithOffset
+  copyTripWithOffset,
 } from "../../api/tripApi";
 import {
   fetchStopsAndStopTimesByTripId,
@@ -162,7 +162,6 @@ const Sidebar = ({
       try {
         if (!token || !project_id) return;
 
-        // Agencies
         const agencyData = await fetchAgenciesByProjectId(
           project_id,
           token,
@@ -172,7 +171,6 @@ const Sidebar = ({
         );
         setAgencies(agencyData);
 
-        // Routes
         let routeData;
         if (selectedEntities.agency) {
           routeData = await fetchRoutesByAgencyId(
@@ -194,7 +192,6 @@ const Sidebar = ({
         }
         setRoutes(routeData);
 
-        // Calendars
         let calendarData;
         if (!selectedEntities.calendar) {
           calendarData = await fetchCalendarsByProjectId(project_id, token);
@@ -205,7 +202,6 @@ const Sidebar = ({
           calendarData = calendars;
         }
 
-        // Trips
         let tripResponse;
         if (selectedEntities.route) {
           tripResponse = await fetchTripsByRouteId(
@@ -230,7 +226,6 @@ const Sidebar = ({
         const totalTrips = tripResponse.total || allTrips.length;
         setFullTrips(allTrips);
 
-        // Trip Times
         const tripTimesData = {};
         await Promise.all(
           allTrips.map(async (trip) => {
@@ -264,7 +259,6 @@ const Sidebar = ({
           total: totalTrips,
         });
 
-        // Stops (sadece stop'lar, zaman bilgisi yok)
         let stopsResponse;
         if (selectedEntities.trip) {
           stopsResponse = await fetchStopsAndStopTimesByTripId(
@@ -273,20 +267,19 @@ const Sidebar = ({
             token
           );
           console.log("Trip seçildi, stopsResponse:", stopsResponse);
-          setStopsAndTimes(stopsResponse); // Direkt array olarak set ediliyor
+          setStopsAndTimes(stopsResponse); 
         } else {
           stopsResponse = await fetchStopsByProjectId(
             project_id,
             token,
-            pageStops, // Sayfalama için eklendi
-            itemsPerPage, // Sayfalama için eklendi
-            searchTerms.stops || "" // Arama terimi, yoksa boş string
+            pageStops,
+            itemsPerPage,
+            searchTerms.stops || ""
           );
           console.log("Trip seçilmedi, sadece stoplar:", stopsResponse);
-          setStopsAndTimes(stopsResponse.data || stopsResponse || []); // Direkt array olarak set ediliyor
+          setStopsAndTimes(stopsResponse.data || stopsResponse || []); 
         }
 
-        // Shapes ve Map Center
         if (selectedEntities.trip) {
           const shapesResponse = await fetchShapesByTripId(
             project_id,
@@ -311,7 +304,7 @@ const Sidebar = ({
         setFullTrips([]);
         setTrips({ data: [], total: 0 });
         setShapes([]);
-        setStopsAndTimes([]); // Hata durumunda direkt boş array
+        setStopsAndTimes([]);
         setTripTimes({});
       }
     };
@@ -323,7 +316,7 @@ const Sidebar = ({
     pageAgencies,
     pageRoutes,
     pageTrips,
-    pageStops, // Sayfalama için bağımlılık eklendi
+    pageStops,
     itemsPerPage,
     searchTerms,
     selectedEntities.agency,
@@ -382,49 +375,55 @@ const Sidebar = ({
       } else {
         Swal.fire("Error", "Please select an entity to delete.", "error");
       }
-    } else if (actionType === "copy"){
-      if(selectedEntities.trip){
-        handleCopy(selectedEntities.trip)
+    } else if (actionType === "copy") {
+      if (selectedEntities.trip) {
+        handleCopy(selectedEntities.trip);
       }
     }
   };
 
   const handleCopy = async (trip) => {
     Swal.fire({
-      title: 'Copy Trip',
-      text: 'Enter the offset (in minutes) to be applied to all stop times:',
-      input: 'number',
+      title: "Copy Trip",
+      text: "Enter the offset (in minutes) to be applied to all stop times:",
+      input: "number",
       showCancelButton: true,
-      confirmButtonText: 'Copy',
-      cancelButtonText: 'Cancel',
+      confirmButtonText: "Copy",
+      cancelButtonText: "Cancel",
       showLoaderOnConfirm: true,
       preConfirm: (offset) => {
-        if (offset === '' || isNaN(offset)) {
-          Swal.showValidationMessage('Please enter a valid number.');
-          return false; 
+        if (offset === "" || isNaN(offset)) {
+          Swal.showValidationMessage("Please enter a valid number.");
+          return false;
         }
-         return Number(offset); 
-  
+        return Number(offset);
       },
-      allowOutsideClick: () => !Swal.isLoading()
+      allowOutsideClick: () => !Swal.isLoading(),
     }).then(async (result) => {
       if (result.isConfirmed) {
         const offsetMinutes = result.value;
-        Swal.fire('Copied!', `Trip copied with an offset of ${offsetMinutes} minutes.`, 'success');
-  
+        Swal.fire(
+          "Copied!",
+          `Trip copied with an offset of ${offsetMinutes} minutes.`,
+          "success"
+        );
+
         try {
-            const newTripId =  await copyTripWithOffset(trip, offsetMinutes, token);
-            
-             Swal.fire('Copied!', `Trip copied with an offset of ${offsetMinutes} minutes.`, 'success');
+          await copyTripWithOffset(trip, offsetMinutes, token);
+
+          Swal.fire(
+            "Copied!",
+            `Trip copied with an offset of ${offsetMinutes} minutes.`,
+            "success"
+          );
         } catch (error) {
-            console.error("Error copying trip:", error);
-            Swal.fire('Error!', 'Failed to copy trip.', 'error');
+          console.error("Error copying trip:", error);
+          Swal.fire("Error!", "Failed to copy trip.", "error");
         }
-        
       }
     });
   };
-  
+
   const calculateCenter = (shapes, stops) => {
     let latSum = 0;
     let lonSum = 0;
@@ -1209,13 +1208,13 @@ const Sidebar = ({
                 paginateItems(
                   stopsAndTimes.sort(
                     (a, b) => (a.stop_sequence || 0) - (b.stop_sequence || 0)
-                  ), // stop_sequence yoksa 0 kabul et
+                  ),
                   pageStops
                 ).map((stop) => (
                   <Card
                     key={`${stop.trip_id || "no-trip"}-${
                       stop.stop_sequence || stop.stop_id
-                    }`} // trip_id yoksa stop_id kullan
+                    }`}
                     className={`mb-2 item-card ${
                       selectedEntities.stop?.stop_id === stop.stop_id
                         ? "active"
