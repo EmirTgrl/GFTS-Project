@@ -762,7 +762,7 @@ const Sidebar = ({
               onClose={() => setFormConfig(null)}
               setTrips={setTrips}
               routes={routes.data}
-              calendars={calendars}
+              calendars={calendars.data || []}
               selectedRoute={selectedEntities.route}
               trips={trips.data}
             />
@@ -1249,7 +1249,7 @@ const Sidebar = ({
       </div>
       {isFilterOpen && selectedEntities.route && (
         <TripFilterPanel
-          calendars={calendars}
+          calendars={calendars.data || []}
           tripTimes={tripTimes}
           setTrips={(newTrips) => {
             setTrips(newTrips);
