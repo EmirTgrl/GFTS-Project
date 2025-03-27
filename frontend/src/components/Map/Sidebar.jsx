@@ -693,7 +693,7 @@ const Sidebar = ({
               project_id={project_id}
               onClose={() => setFormConfig(null)}
               setTrips={setTrips}
-              calendars={calendars}
+              calendars={calendars.data || []}
               selectedRoute={selectedEntities.route}
             />
           );
