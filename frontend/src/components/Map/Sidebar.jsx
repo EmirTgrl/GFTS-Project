@@ -786,7 +786,7 @@ const Sidebar = ({
               service_id={entity.service_id}
               onClose={() => setFormConfig(null)}
               setCalendars={setCalendars}
-              calendars={calendars}
+              calendars={calendars.data || []}
             />
           );
         case "shape":
