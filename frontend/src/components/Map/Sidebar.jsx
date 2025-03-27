@@ -143,19 +143,19 @@ const Sidebar = ({
   };
 
   const applyTripFiltersAndSort = (tripsToFilter) => {
-  let filteredTrips = [...tripsToFilter];
-  if (selectedEntities.calendar && !isFiltered) {
-    filteredTrips = filteredTrips.filter(
-      (trip) => trip.service_id === selectedEntities.calendar.service_id
+    let filteredTrips = [...tripsToFilter];
+    if (selectedEntities.calendar && !isFiltered) {
+      filteredTrips = filteredTrips.filter(
+        (trip) => trip.service_id === selectedEntities.calendar.service_id
+      );
+    }
+    const sortedTrips = sortTripsByDeparture(filteredTrips);
+    const paginatedTrips = sortedTrips.slice(
+      (pageTrips - 1) * itemsPerPage,
+      pageTrips * itemsPerPage
     );
-  }
-  const sortedTrips = sortTripsByDeparture(filteredTrips);
-  const paginatedTrips = sortedTrips.slice(
-    (pageTrips - 1) * itemsPerPage,
-    pageTrips * itemsPerPage
-  );
-  return { data: paginatedTrips, total: sortedTrips.length };
-};
+    return { data: paginatedTrips, total: sortedTrips.length };
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -192,15 +192,13 @@ const Sidebar = ({
         }
         setRoutes(routeData);
 
-        let calendarData;
-        if (!selectedEntities.calendar) {
-          calendarData = await fetchCalendarsByProjectId(project_id, token);
-          setCalendars(
-            Array.isArray(calendarData) ? calendarData : calendarData.data || []
-          );
-        } else {
-          calendarData = calendars;
-        }
+        const calendarData = await fetchCalendarsByProjectId(
+          project_id,
+          token,
+          pageCalendars,
+          itemsPerPage
+        );
+        setCalendars(calendarData);
 
         let tripResponse;
         if (selectedEntities.route) {
@@ -266,7 +264,7 @@ const Sidebar = ({
             project_id,
             token
           );
-          setStopsAndTimes(stopsResponse); 
+          setStopsAndTimes(stopsResponse);
         } else {
           stopsResponse = await fetchStopsByProjectId(
             project_id,
@@ -275,7 +273,7 @@ const Sidebar = ({
             itemsPerPage,
             searchTerms.stops || ""
           );
-          setStopsAndTimes(stopsResponse.data || stopsResponse || []); 
+          setStopsAndTimes(stopsResponse.data || stopsResponse || []);
         }
 
         if (selectedEntities.trip) {
@@ -949,7 +947,7 @@ const Sidebar = ({
                 firstArrival: "N/A",
                 lastDeparture: "N/A",
               };
-              const calendar = calendars.find(
+              const calendar = calendars.data.find(
                 (cal) => cal.service_id === trip.service_id
               );
               const activeDays = getActiveDays(calendar);
@@ -1105,16 +1103,8 @@ const Sidebar = ({
               <Calendar size={20} className="me-2" /> Calendars
             </Accordion.Header>
             <Accordion.Body>
-              <Form.Group className="mb-3">
-                <Form.Control
-                  type="text"
-                  placeholder="Search calendars..."
-                  value={searchTerms.calendars}
-                  onChange={(e) => handleSearch("calendars", e.target.value)}
-                />
-              </Form.Group>
-              {calendars.length > 0 ? (
-                calendars.map((cal) => (
+              {calendars.data && calendars.data.length > 0 ? (
+                calendars.data.map((cal) => (
                   <Card
                     key={cal.service_id}
                     className={`mb-2 item-card ${
@@ -1138,7 +1128,7 @@ const Sidebar = ({
                 <p className="text-muted text-center">No calendars found.</p>
               )}
               {renderPagination(
-                calendars.length,
+                calendars.total || 0,
                 pageCalendars,
                 setPageCalendars
               )}

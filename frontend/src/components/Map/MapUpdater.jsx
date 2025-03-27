@@ -6,8 +6,13 @@ const MapUpdater = ({ mapCenter, zoom }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (mapCenter && mapCenter.length === 2 && !isNaN(mapCenter[0]) && !isNaN(mapCenter[1])) {
-      map.setView(mapCenter, zoom); 
+    if (
+      mapCenter &&
+      mapCenter.length === 2 &&
+      !isNaN(mapCenter[0]) &&
+      !isNaN(mapCenter[1])
+    ) {
+      map.setView(mapCenter, zoom);
     }
   }, [mapCenter, zoom, map]);
 

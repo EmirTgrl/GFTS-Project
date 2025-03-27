@@ -1,20 +1,17 @@
 const API_BASE_URL = "http://localhost:5000/api/calendars";
 
-export const fetchCalendarByServiceId = async (serviceId, token) => {
-  const response = await fetch(`${API_BASE_URL}?service_id=${serviceId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Failed to fetch calendar:", response.status, errorText);
-    throw new Error(`Failed to fetch calendar: ${errorText}`);
-  }
-  const data = await response.json();
-  return data; 
-};
+export const fetchCalendarByServiceId = async (
+  serviceId,
+  token,
+  page = 1,
+  limit = 8
+) => {
+  const url = new URL(`${API_BASE_URL}`);
+  url.searchParams.append("service_id", serviceId);
+  url.searchParams.append("page", page);
+  url.searchParams.append("limit", limit);
 
-export const fetchCalendarsByProjectId = async (projectId, token) => {
-  const response = await fetch(`${API_BASE_URL}?project_id=${projectId}`, {
+  const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -22,7 +19,33 @@ export const fetchCalendarsByProjectId = async (projectId, token) => {
     console.error("Failed to fetch calendars:", response.status, errorText);
     throw new Error(`Failed to fetch calendars: ${errorText}`);
   }
-  return response.json(); 
+  return response.json();
+};
+
+export const fetchCalendarsByProjectId = async (
+  projectId,
+  token,
+  page = 1,
+  limit = 8
+) => {
+  const url = new URL(`${API_BASE_URL}`);
+  url.searchParams.append("project_id", projectId);
+  url.searchParams.append("page", page);
+  url.searchParams.append("limit", limit);
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Failed to fetch calendars:", response.status, errorText);
+    throw new Error(`Failed to fetch calendars: ${errorText}`);
+  }
+  const result = await response.json();
+  return {
+    data: result.data || [],
+    total: result.total || 0,
+  };
 };
 
 export const deleteCalendarById = async (serviceId, token) => {
@@ -34,7 +57,7 @@ export const deleteCalendarById = async (serviceId, token) => {
     const errorText = await response.text();
     throw new Error(`Failed to delete calendar: ${errorText}`);
   }
-  return response.json(); 
+  return response.json();
 };
 
 export const updateCalendar = async (calendarData, token) => {
@@ -53,7 +76,7 @@ export const updateCalendar = async (calendarData, token) => {
     const errorText = await response.text();
     throw new Error(`Failed to update calendar: ${errorText}`);
   }
-  return response.json(); 
+  return response.json();
 };
 
 export const saveCalendar = async (calendarData, token) => {

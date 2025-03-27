@@ -2,12 +2,25 @@ const multer = require("multer");
 const csv = require("csv-parser");
 const unzipper = require("unzipper");
 const { pool } = require("../db.js");
-const { Readable } = require("stream");
-const { initializeTables, tableExists } = require("../initTables.js");
+const fs = require("fs");
+const path = require("path");
+const { pipeline } = require("stream").promises;
 
 class ImportService {
   constructor() {
-    this.storage = multer.memoryStorage();
+    this.storage = multer.diskStorage({
+      destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, "../uploads");
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+      },
+    });
+
     this.upload = multer({
       storage: this.storage,
       fileFilter: (req, file, cb) => {
@@ -17,7 +30,8 @@ class ImportService {
         cb(null, true);
       },
     });
-    this.batchSize = 2000;
+
+    this.batchSize = 5000;
     this.tableOrder = [
       "agency",
       "calendar",
@@ -35,6 +49,7 @@ class ImportService {
       "shapes",
     ];
     this.dependentTables = ["trips", "stop_times"];
+    this.tempDir = path.join(__dirname, "../temp");
   }
 
   async insertImportedData(userId, fileName) {
@@ -92,108 +107,111 @@ class ImportService {
 
     const values = batch.map((row) => columns.map((col) => row[col]));
 
-    let retries = 3;
-    while (retries > 0) {
-      try {
-        await pool.query(sql, [values]);
-        break;
-      } catch (error) {
-        if (error.code === "ER_NO_REFERENCED_ROW_2") {
-          const [fk] = await pool.query(
-            `
-            SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = ?
-            AND REFERENCED_TABLE_NAME IS NOT NULL
-            LIMIT 1
-          `,
-            [tableName]
-          );
-          if (fk) {
-            const missingRefs = new Set();
-            batch.forEach((row) => {
-              if (
-                row[fk.COLUMN_NAME] &&
-                !missingRefs.has(row[fk.COLUMN_NAME])
-              ) {
-                missingRefs.add(row[fk.COLUMN_NAME]);
-              }
-            });
-            const refValues = Array.from(missingRefs).map((ref) => [
-              ref,
-              batch[0].user_id,
-              batch[0].project_id,
-            ]);
-            await pool.query(
-              `INSERT IGNORE INTO ${fk.REFERENCED_TABLE_NAME} (${fk.REFERENCED_COLUMN_NAME}, user_id, project_id) VALUES ?`,
-              [refValues]
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      await connection.query(sql, [values]);
+
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          await connection.commit();
+          break;
+        } catch (error) {
+          if (error.code === "ER_NO_REFERENCED_ROW_2") {
+            const [fk] = await connection.query(
+              `
+              SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+              FROM information_schema.KEY_COLUMN_USAGE
+              WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = ?
+              AND REFERENCED_TABLE_NAME IS NOT NULL
+              LIMIT 1
+            `,
+              [tableName]
             );
-            await pool.query(sql, [values]);
+            if (fk) {
+              const missingRefs = new Set();
+              batch.forEach((row) => {
+                if (
+                  row[fk.COLUMN_NAME] &&
+                  !missingRefs.has(row[fk.COLUMN_NAME])
+                ) {
+                  missingRefs.add(row[fk.COLUMN_NAME]);
+                }
+              });
+              const refValues = Array.from(missingRefs).map((ref) => [
+                ref,
+                batch[0].user_id,
+                batch[0].project_id,
+              ]);
+              await connection.query(
+                `INSERT IGNORE INTO ${fk.REFERENCED_TABLE_NAME} (${fk.REFERENCED_COLUMN_NAME}, user_id, project_id) VALUES ?`,
+                [refValues]
+              );
+              await connection.query(sql, [values]);
+            }
+          } else if (error.code === "ECONNRESET" && retries > 0) {
+            console.warn(
+              `⚠️ Connection reset, retrying (${retries} attempts left)`
+            );
+            retries--;
+            await new Promise((res) => setTimeout(res, 1000));
+          } else {
+            throw error;
           }
-        } else if (error.code === "ECONNRESET" && retries > 0) {
-          console.warn(
-            `⚠️ Connection reset, retrying (${retries} attempts left)`
-          );
-          retries--;
-          await new Promise((res) => setTimeout(res, 1000));
-        } else {
-          console.error(
-            `❌ Batch import error for ${tableName}:`,
-            error.message
-          );
-          throw error;
         }
       }
+    } catch (error) {
+      await connection.rollback();
+      console.error(`❌ Batch import error for ${tableName}:`, error.message);
+      throw error;
+    } finally {
+      connection.release();
     }
   }
 
-  async processTable(tableName, buffer, userId, projectId) {
+  async processTable(tableName, filePath, userId, projectId) {
     console.log(`📥 Importing ${tableName}.txt (${tableName})...`);
     let batch = [];
 
-    await new Promise((resolve, reject) => {
-      const stream = Readable.from(buffer).pipe(csv());
-      stream
-        .on("data", async (row) => {
-          Object.keys(row).forEach((key) => {
-            if (row[key] === "" || row[key] === undefined) {
-              row[key] = null;
+    try {
+      await pipeline(
+        fs.createReadStream(filePath),
+        csv(),
+        async function* (source) {
+          for await (const row of source) {
+            Object.keys(row).forEach((key) => {
+              if (row[key] === "" || row[key] === undefined) {
+                row[key] = null;
+              }
+            });
+            row.user_id = userId;
+            row.project_id = projectId;
+
+            batch.push(row);
+
+            if (batch.length >= this.batchSize) {
+              await this.processBatch(tableName, batch);
+              batch = [];
             }
-          });
-          row.user_id = userId;
-          row.project_id = projectId;
-
-          batch.push(row);
-
-          if (batch.length >= this.batchSize) {
-            stream.pause();
-            await this.processBatch(tableName, batch);
-            batch = [];
-            stream.resume();
           }
-        })
-        .on("end", async () => {
           if (batch.length > 0) {
             await this.processBatch(tableName, batch);
           }
-          console.log(`✅ Import completed for ${tableName}`);
-          resolve();
-        })
-        .on("error", (error) => {
-          console.error(
-            `❌ CSV parsing error for ${tableName}:`,
-            error.message
-          );
-          reject(error);
-        });
-    });
+        }.bind(this)
+      );
+      console.log(`✅ Import completed for ${tableName}`);
+    } catch (error) {
+      console.error(`❌ Error processing ${tableName}:`, error.message);
+      throw error;
+    }
   }
 
   async importGTFSData(req, res) {
     try {
       const userId = req.user.id;
-      const importMode = req.body.importMode || "parallel"; // "sequential" veya "parallel" olabilir
+      const importMode = req.body.importMode || "parallel";
       console.log(
         `📤 Import request received from user: ${userId}, mode: ${importMode}`
       );
@@ -203,8 +221,8 @@ class ImportService {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      console.log("📁 Processing file:", req.file.originalname);
-      console.log("📦 Starting ZIP extraction...");
+      console.log("📁 Processing file:", req.file.filename);
+      console.log("📦 Starting ZIP extraction to disk...");
 
       const [userExists] = await pool.query(
         "SELECT COUNT(*) as count FROM users WHERE id = ?",
@@ -216,43 +234,15 @@ class ImportService {
         );
       }
 
-      const files = {};
-      await new Promise((resolve, reject) => {
-        const zipStream = Readable.from(req.file.buffer).pipe(unzipper.Parse());
-        let totalFiles = 0;
-        let processedFiles = 0;
+      if (!fs.existsSync(this.tempDir)) {
+        fs.mkdirSync(this.tempDir, { recursive: true });
+      }
 
-        zipStream
-          .on("entry", (entry) => {
-            const fileName = entry.path;
-            const chunks = [];
-            totalFiles++;
-
-            entry
-              .on("data", (chunk) => chunks.push(chunk))
-              .on("end", () => {
-                files[fileName] = Buffer.concat(chunks);
-                console.log("📄 Extracted:", fileName);
-                processedFiles++;
-              })
-              .on("error", (error) => reject(error));
-          })
-          .on("error", (error) => reject(error))
-          .on("finish", () => {
-            const waitForFiles = () => {
-              if (processedFiles === totalFiles && totalFiles > 0) {
-                console.log("✅ All files extracted, total:", processedFiles);
-                resolve();
-              } else if (totalFiles === 0) {
-                reject(new Error("No files found in ZIP"));
-              } else {
-                setTimeout(waitForFiles, 100);
-              }
-            };
-            waitForFiles();
-          });
-      });
-
+      const zipPath = path.join(__dirname, "../uploads", req.file.filename);
+      await fs
+        .createReadStream(zipPath)
+        .pipe(unzipper.Extract({ path: this.tempDir }))
+        .promise();
       console.log("✅ ZIP extraction complete");
 
       const projectId = await this.insertImportedData(
@@ -264,47 +254,35 @@ class ImportService {
         projectId
       );
 
-      const importTable = async (tableName, buffer) => {
-        if (!buffer) {
+      const importTable = async (tableName) => {
+        const filePath = path.join(this.tempDir, `${tableName}.txt`);
+        if (!fs.existsSync(filePath)) {
           console.log(`⚠️ ${tableName}.txt not found in ZIP, skipping`);
           return;
         }
-        await this.processTable(tableName, buffer, userId, projectId);
+        await this.processTable(tableName, filePath, userId, projectId);
       };
 
       if (importMode === "sequential") {
-        // Sıralı içe aktarma
         for (const tableName of this.tableOrder) {
-          const filename = `${tableName}.txt`;
-          await importTable(tableName, files[filename]);
+          await importTable(tableName);
         }
       } else {
-        // Paralel içe aktarma (mevcut mantık)
-        const independentPromises = this.independentTables.map((tableName) => {
-          const filename = `${tableName}.txt`;
-          return importTable(tableName, files[filename]);
-        });
-
-        await Promise.all(independentPromises);
-        console.log("✅ All independent tables imported");
-
-        const dependentPromises = this.dependentTables.map((tableName) => {
-          const filename = `${tableName}.txt`;
-          return importTable(tableName, files[filename]);
-        });
-
-        await Promise.all(dependentPromises);
-        console.log("✅ All dependent tables imported");
+        const allPromises = this.tableOrder.map((tableName) =>
+          importTable(tableName)
+        );
+        await Promise.all(allPromises);
+        console.log("✅ All tables imported in parallel");
       }
 
-      for (const [filename] of Object.entries(files)) {
-        const tableName = filename.replace(".txt", "").toLowerCase();
-        if (!this.tableOrder.includes(tableName)) {
-          console.log(
-            `⚠️ Skipping ${filename} as it is not a valid GTFS table`
-          );
-        }
-      }
+      fs.rm(this.tempDir, { recursive: true, force: true }, (err) => {
+        if (err) console.error("⚠️ Error cleaning temp directory:", err);
+        else console.log("🧹 Temporary directory cleaned");
+      });
+      fs.unlink(zipPath, (err) => {
+        if (err) console.error("⚠️ Error deleting ZIP file:", err);
+        else console.log("🧹 ZIP file deleted");
+      });
 
       console.log(`🎉 ${importMode} import process completed`);
       return res.status(200).json({

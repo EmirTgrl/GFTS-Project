@@ -26,22 +26,44 @@ const calendarService = {
       if (validFields.includes(param)) {
         fields.push(`${param} = ?`);
         values.push(req.query[param]);
-      } else {
+      } else if (param !== "page" && param !== "limit") {
         console.warn(`Unexpected query parameter: ${param}`);
       }
     }
 
-    let query = `SELECT * FROM calendar WHERE ${fields.join(" AND ")}`;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 8;
+    const offset = (page - 1) * limit;
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM calendar
+      WHERE ${fields.join(" AND ")}
+    `;
+
+    const dataQuery = `
+      SELECT c.*
+      FROM calendar c
+      WHERE ${fields.join(" AND ")}
+      LIMIT ? OFFSET ?
+    `;
 
     try {
-      const [rows] = await pool.execute(query, values);
-      if (rows.length > 0) {
-        res.json(rows)
-      } else {
-        res.status(404).json({ error: "Calendar not found" });
-      }
+      const [countRows] = await pool.query(countQuery, values);
+      const total = countRows[0].total;
+
+      const [dataRows] = await pool.query(dataQuery, [
+        ...values,
+        limit,
+        offset,
+      ]);
+
+      res.json({
+        data: dataRows.length > 0 ? dataRows : [],
+        total: total,
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Query execution error:", error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
@@ -115,7 +137,7 @@ const calendarService = {
         return res.status(404).json({ error: "Calendar not found" });
       }
 
-      res.status(200).json({message:"updated successfully"});
+      res.status(200).json({ message: "updated successfully" });
     } catch (error) {
       console.error(`Error in updateCalendar:`, error);
       res.status(500).json({ error: "Server Error" });
@@ -164,7 +186,7 @@ const calendarService = {
       `;
       const [result] = await pool.execute(query, values);
 
-      res.status(201).json({service_id:result.insertId});
+      res.status(201).json({ service_id: result.insertId });
     } catch (error) {
       console.error(`Error in saveCalendar:`, error);
       res.status(500).json({ error: "Server Error" });

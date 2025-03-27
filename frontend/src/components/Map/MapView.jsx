@@ -4,8 +4,8 @@ import {
   Marker,
   Polyline,
   Popup,
-  useMapEvents,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
@@ -19,7 +19,11 @@ import {
 import { saveMultipleShapes } from "../../api/shapeApi.js";
 import { CaretUpFill } from "react-bootstrap-icons";
 import { renderToString } from "react-dom/server";
+import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet-polylinedecorator";
+import "leaflet.markercluster";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -44,6 +48,120 @@ MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
 };
 
+function PolylineWithDirectionalArrows({ positions, color, weight }) {
+  const map = useMap();
+  const decoratorRef = useRef(null);
+
+  useEffect(() => {
+    if (!map || !positions || positions.length < 2) return;
+
+    if (decoratorRef.current) {
+      map.removeLayer(decoratorRef.current);
+    }
+
+    const decorator = L.polylineDecorator(positions, {
+      patterns: [
+        {
+          offset: 20,
+          repeat: 50,
+          symbol: L.Symbol.marker({
+            rotate: true,
+            markerOptions: {
+              icon: L.divIcon({
+                className: "arrow-icon",
+                html: renderToString(<CaretUpFill color="white" />),
+                iconSize: [12, 12],
+                iconAnchor: [6, 6],
+              }),
+            },
+          }),
+        },
+      ],
+    }).addTo(map);
+
+    decoratorRef.current = decorator;
+
+    return () => {
+      if (decoratorRef.current) {
+        map.removeLayer(decoratorRef.current);
+      }
+    };
+  }, [map, positions]);
+
+  return <Polyline positions={positions} color={color} weight={weight} />;
+}
+
+PolylineWithDirectionalArrows.propTypes = {
+  positions: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired,
+  color: PropTypes.string.isRequired,
+  weight: PropTypes.number.isRequired,
+};
+
+const ClusterLayer = ({ stops, editorMode, onStopClick, onStopDrag }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !stops || stops.length === 0) return;
+
+    const markers = L.markerClusterGroup({
+      maxClusterRadius: 80,
+      disableClusteringAtZoom: 15,
+      chunkedLoading: true,
+      showCoverageOnHover: false,
+    });
+
+    stops
+      .sort((a, b) => a.stop_sequence - b.stop_sequence)
+      .forEach((stopTime, index) => {
+        if (
+          stopTime?.stop_lat !== undefined &&
+          stopTime?.stop_lon !== undefined &&
+          !isNaN(parseFloat(stopTime.stop_lat)) &&
+          !isNaN(parseFloat(stopTime.stop_lon))
+        ) {
+          const marker = L.marker(
+            [parseFloat(stopTime.stop_lat), parseFloat(stopTime.stop_lon)],
+            {
+              icon: stopIcon,
+              draggable: editorMode !== "close",
+            }
+          )
+            .bindPopup(
+              stopTime.arrival_time && stopTime.departure_time
+                ? `${stopTime.stop_sequence}. ${
+                    stopTime.stop_name || "Bilinmeyen Durak"
+                  }<br />Varış: ${
+                    stopTime.arrival_time || "Bilinmiyor"
+                  }<br />Kalkış: ${stopTime.departure_time || "Bilinmiyor"}`
+                : `${stopTime.stop_sequence}. ${
+                    stopTime.stop_name || "Bilinmeyen Durak"
+                  }`
+            )
+            .on("dragend", (e) => onStopDrag(e, stopTime.stop_sequence))
+            .on("click", () => onStopClick(stopTime));
+          markers.addLayer(marker);
+        } else {
+          console.warn("Invalid stop data:", stopTime);
+        }
+      });
+
+    map.addLayer(markers);
+
+    return () => {
+      map.removeLayer(markers);
+    };
+  }, [map, stops, editorMode, onStopClick, onStopDrag]);
+
+  return null;
+};
+
+ClusterLayer.propTypes = {
+  stops: PropTypes.array.isRequired,
+  editorMode: PropTypes.string.isRequired,
+  onStopClick: PropTypes.func.isRequired,
+  onStopDrag: PropTypes.func.isRequired,
+};
+
 const MapView = ({
   mapCenter,
   zoom,
@@ -63,16 +181,24 @@ const MapView = ({
   const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
   const [tempShapes, setTempShapes] = useState([]);
   const [routeInfo, setRouteInfo] = useState(null);
+  const prevClickedCoords = useRef(null);
+
+  useEffect(() => {
+    const filteredStops = (stopsAndTimes || []).map((stop) => ({
+      stop_name: stop.stop_name,
+      stop_lat: stop.stop_lat,
+      stop_lon: stop.stop_lon,
+      stop_sequence: stop.stop_sequence || 1,
+    }));
+    setTempStopsAndTimes(filteredStops);
+    setTempShapes(JSON.parse(JSON.stringify(shapes || [])));
+  }, [stopsAndTimes, shapes]);
 
   useEffect(() => {
     if (selectedEntities.trip) {
-      setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes)));
-      setTempShapes(JSON.parse(JSON.stringify(shapes)));
-    } else {
-      setTempShapes([]);
-      setTempStopsAndTimes([]);
+      setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes || [])));
     }
-  }, [stopsAndTimes, shapes]);
+  }, [selectedEntities.trip, stopsAndTimes]);
 
   useEffect(() => {
     if (editorMode === "save") {
@@ -81,22 +207,23 @@ const MapView = ({
       saveMultipleShapes(tempShapes, selectedEntities.trip.trip_id, token);
       saveMultipleStopsAndTimes(tempStopsAndTimes, token);
       setEditorMode("close");
+    } else if (editorMode === "close" && selectedEntities.trip) {
+      setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes || [])));
+      setTempShapes(JSON.parse(JSON.stringify(shapes || [])));
     }
-    if (editorMode === "close") {
-      setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes)));
-      setTempShapes(JSON.parse(JSON.stringify(shapes)));
-    }
-  }, [editorMode]);
+  }, [editorMode, selectedEntities.trip, token]);
 
   useEffect(() => {
+    if (!clickedCoords || clickedCoords === prevClickedCoords.current) return;
+
+    prevClickedCoords.current = clickedCoords;
+
     if (editorMode === "add-shape") {
       if (tempShapes.length === 0) {
         Swal.fire({
           title: "Enter Shape ID",
           input: "text",
-          inputAttributes: {
-            autocapitalize: "off",
-          },
+          inputAttributes: { autocapitalize: "off" },
           showCancelButton: true,
           confirmButtonText: "Save",
           cancelButtonText: "Cancel",
@@ -118,10 +245,8 @@ const MapView = ({
                 shape_pt_lat: clickedCoords.lat,
                 shape_pt_lon: clickedCoords.lng,
                 shape_pt_sequence:
-                  tempShapes.length > 0
-                    ? Math.max(
-                        ...tempShapes.map((shape) => shape.shape_pt_sequence)
-                      ) + 1
+                  prev.length > 0
+                    ? Math.max(...prev.map((s) => s.shape_pt_sequence)) + 1
                     : 1,
                 project_id: selectedEntities.trip.project_id,
                 shape_dist_traveled: null,
@@ -139,24 +264,19 @@ const MapView = ({
             shape_pt_lat: clickedCoords.lat,
             shape_pt_lon: clickedCoords.lng,
             shape_pt_sequence:
-              tempShapes.length > 0
-                ? Math.max(
-                    ...tempShapes.map((shape) => shape.shape_pt_sequence)
-                  ) + 1
+              prev.length > 0
+                ? Math.max(...prev.map((s) => s.shape_pt_sequence)) + 1
                 : 1,
             project_id: selectedEntities.trip.project_id,
             shape_dist_traveled: null,
           },
         ]);
       }
-    }
-    if (editorMode === "add-stop") {
+    } else if (editorMode === "add-stop") {
       Swal.fire({
         title: "Enter Stop Name",
         input: "text",
-        inputAttributes: {
-          autocapitalize: "off",
-        },
+        inputAttributes: { autocapitalize: "off" },
         showCancelButton: true,
         confirmButtonText: "Save",
         cancelButtonText: "Cancel",
@@ -174,19 +294,17 @@ const MapView = ({
           setTempStopsAndTimes((prev) => [
             ...prev,
             {
-              trip_id: selectedEntities.trip.trip_id,
+              trip_id: selectedEntities.trip?.trip_id,
               stop_name: stopName,
               stop_lat: clickedCoords.lat,
               stop_lon: clickedCoords.lng,
-              arrival_time: "00:00:00",
-              departure_time: "00:00:00",
+              arrival_time: selectedEntities.trip ? "00:00:00" : undefined,
+              departure_time: selectedEntities.trip ? "00:00:00" : undefined,
               stop_sequence:
-                tempStopsAndTimes.length > 0
-                  ? Math.max(
-                      ...tempStopsAndTimes.map((stop) => stop.stop_sequence)
-                    ) + 1
+                prev.length > 0
+                  ? Math.max(...prev.map((s) => s.stop_sequence)) + 1
                   : 1,
-              project_id: selectedEntities.trip.project_id,
+              project_id: selectedEntities.trip?.project_id,
             },
           ]);
         } else {
@@ -194,7 +312,7 @@ const MapView = ({
         }
       });
     }
-  }, [clickedCoords]);
+  }, [clickedCoords, editorMode, selectedEntities.trip]);
 
   useEffect(() => {
     if (editorMode === "add-stop") {
@@ -206,8 +324,7 @@ const MapView = ({
         position: "top",
         showConfirmButton: false,
       });
-    }
-    if (editorMode === "add-shape") {
+    } else if (editorMode === "add-shape") {
       Swal.fire({
         icon: "info",
         title: "Add Shape Point",
@@ -221,47 +338,39 @@ const MapView = ({
 
   const handleStopClick = (stopTime) => {
     setSelectedCategory("stop");
-    setSelectedEntities({ ...selectedEntities, stop: stopTime });
+    setSelectedEntities((prev) => ({ ...prev, stop: stopTime }));
   };
 
   const handleShapeClick = (shape) => {
     setSelectedCategory("shape");
-    setSelectedEntities({ ...selectedEntities, shape: shape });
+    setSelectedEntities((prev) => ({ ...prev, shape }));
   };
 
   const handleStopDrag = (e, stopSequence) => {
     if (editorMode === "close") return;
-
     const newLatLng = e.target.getLatLng();
-    setTempStopsAndTimes((prevStopsAndTimes) =>
-      prevStopsAndTimes.map((stopTime) => {
-        if (stopTime.stop_sequence === stopSequence) {
-          return {
-            ...stopTime,
-            stop_lat: newLatLng.lat,
-            stop_lon: newLatLng.lng,
-          };
-        }
-        return stopTime;
-      })
+    setTempStopsAndTimes((prev) =>
+      prev.map((stopTime) =>
+        stopTime.stop_sequence === stopSequence
+          ? { ...stopTime, stop_lat: newLatLng.lat, stop_lon: newLatLng.lng }
+          : stopTime
+      )
     );
   };
 
   const handleShapeDrag = (e, shapePtSequence) => {
     if (editorMode === "close") return;
-
     const newLatLng = e.target.getLatLng();
-    setTempShapes((prevShapes) =>
-      prevShapes.map((shape) => {
-        if (shape.shape_pt_sequence === shapePtSequence) {
-          return {
-            ...shape,
-            shape_pt_lat: newLatLng.lat,
-            shape_pt_lon: newLatLng.lng,
-          };
-        }
-        return shape;
-      })
+    setTempShapes((prev) =>
+      prev.map((shape) =>
+        shape.shape_pt_sequence === shapePtSequence
+          ? {
+              ...shape,
+              shape_pt_lat: newLatLng.lat,
+              shape_pt_lon: newLatLng.lng,
+            }
+          : shape
+      )
     );
   };
 
@@ -278,7 +387,7 @@ const MapView = ({
       );
       setRouteInfo(routeData);
       Swal.fire(
-        "Route Calculated",
+        "Route Snap Success",
         `Distance: ${routeData.distance.toFixed(
           2
         )} km\nDuration: ${routeData.duration.toFixed(2)} min`,
@@ -295,100 +404,24 @@ const MapView = ({
       }));
       setTempShapes(routeShapes);
     } catch (error) {
-      console.error("Error calculating route:", error);
-      Swal.fire("Error", "Failed to calculate route between stops.", "error");
+      console.error("Error snaping route:", error);
+      Swal.fire("Error", "Failed to snaps route between stops.", "error");
     }
   };
-
-  function PolylineWithDirectionalArrows({ positions, color, weight }) {
-    const map = useMap();
-    const decoratorRef = useRef(null);
-
-    PolylineWithDirectionalArrows.propTypes = {
-      positions: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number))
-        .isRequired,
-      color: PropTypes.string.isRequired,
-      weight: PropTypes.number.isRequired,
-    };
-
-    useEffect(() => {
-      if (!map || !positions || positions.length < 2) {
-        return;
-      }
-
-      if (decoratorRef.current) {
-        map.removeLayer(decoratorRef.current);
-      }
-
-      const decorator = L.polylineDecorator(positions, {
-        patterns: [
-          {
-            offset: 20,
-            repeat: 50,
-            symbol: L.Symbol.marker({
-              rotate: true,
-              markerOptions: {
-                icon: L.divIcon({
-                  className: "arrow-icon",
-                  html: renderToString(<CaretUpFill color="white" />),
-                  iconSize: [12, 12],
-                  iconAnchor: [6, 6],
-                }),
-              },
-            }),
-          },
-        ],
-      }).addTo(map);
-
-      decoratorRef.current = decorator;
-
-      return () => {
-        if (decorator) {
-          map.removeLayer(decorator);
-        }
-      };
-    }, [map, positions]);
-
-    return <Polyline positions={positions} color={color} weight={weight} />;
-  }
 
   return (
     <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <MapClickHandler onMapClick={onMapClick} />
       <MapUpdater mapCenter={mapCenter} zoom={zoom} />
-      {tempStopsAndTimes &&
-        tempStopsAndTimes.length > 0 &&
-        tempStopsAndTimes
-          .sort((a, b) => a.stop_sequence - b.stop_sequence)
-          .map((stopTime, stop_sequence) => {
-            if (stopTime && stopTime.stop_lat && stopTime.stop_lon) {
-              return (
-                <Marker
-                  draggable={editorMode !== "close"}
-                  key={`${stop_sequence}`}
-                  position={[
-                    parseFloat(stopTime.stop_lat),
-                    parseFloat(stopTime.stop_lon),
-                  ]}
-                  icon={stopIcon}
-                  eventHandlers={{
-                    dragend: (e) => handleStopDrag(e, stopTime.stop_sequence),
-                    click: () => handleStopClick(stopTime),
-                  }}
-                >
-                  <Popup>
-                    {stopTime.stop_sequence}.{" "}
-                    {stopTime.stop_name || "Bilinmeyen Durak"} <br />
-                    Varış: {stopTime.arrival_time || "Bilinmiyor"} <br />
-                    Kalkış: {stopTime.departure_time || "Bilinmiyor"}
-                  </Popup>
-                </Marker>
-              );
-            }
-            return null;
-          })}
+      <ClusterLayer
+        stops={tempStopsAndTimes}
+        editorMode={editorMode}
+        onStopClick={handleStopClick}
+        onStopDrag={handleStopDrag}
+      />
 
+      {/* Şekiller */}
       {tempShapes.length > 0 && (
         <>
           <PolylineWithDirectionalArrows
@@ -442,6 +475,7 @@ const MapView = ({
             })}
         </>
       )}
+
       {editorMode !== "close" && (
         <div style={{ position: "absolute", top: 10, right: 10, zIndex: 1000 }}>
           {tempStopsAndTimes.length > 1 && (
