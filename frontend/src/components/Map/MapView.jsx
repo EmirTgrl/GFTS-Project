@@ -19,11 +19,11 @@ import {
 import { saveMultipleShapes } from "../../api/shapeApi.js";
 import { CaretUpFill } from "react-bootstrap-icons";
 import { renderToString } from "react-dom/server";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet-polylinedecorator";
-import "leaflet.markercluster";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -32,6 +32,12 @@ const stopIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   shadowSize: [41, 41],
+});
+
+const summaryIcon = new L.DivIcon({
+  html: '<div style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 5px;">X Durak</div>',
+  iconSize: [50, 30],
+  iconAnchor: [25, 15],
 });
 
 const MapClickHandler = ({ onMapClick }) => {
@@ -97,69 +103,23 @@ PolylineWithDirectionalArrows.propTypes = {
   weight: PropTypes.number.isRequired,
 };
 
-const ClusterLayer = ({ stops, editorMode, onStopClick, onStopDrag }) => {
+const BoundsTracker = ({ onBoundsChange }) => {
   const map = useMap();
 
-  useEffect(() => {
-    if (!map || !stops || stops.length === 0) return;
-
-    const markers = L.markerClusterGroup({
-      maxClusterRadius: 80,
-      disableClusteringAtZoom: 15,
-      chunkedLoading: true,
-      showCoverageOnHover: false,
-    });
-
-    stops
-      .sort((a, b) => a.stop_sequence - b.stop_sequence)
-      .forEach((stopTime, index) => {
-        if (
-          stopTime?.stop_lat !== undefined &&
-          stopTime?.stop_lon !== undefined &&
-          !isNaN(parseFloat(stopTime.stop_lat)) &&
-          !isNaN(parseFloat(stopTime.stop_lon))
-        ) {
-          const marker = L.marker(
-            [parseFloat(stopTime.stop_lat), parseFloat(stopTime.stop_lon)],
-            {
-              icon: stopIcon,
-              draggable: editorMode !== "close",
-            }
-          )
-            .bindPopup(
-              stopTime.arrival_time && stopTime.departure_time
-                ? `${stopTime.stop_sequence}. ${
-                    stopTime.stop_name || "Bilinmeyen Durak"
-                  }<br />Varış: ${
-                    stopTime.arrival_time || "Bilinmiyor"
-                  }<br />Kalkış: ${stopTime.departure_time || "Bilinmiyor"}`
-                : `${stopTime.stop_sequence}. ${
-                    stopTime.stop_name || "Bilinmeyen Durak"
-                  }`
-            )
-            .on("dragend", (e) => onStopDrag(e, stopTime.stop_sequence))
-            .on("click", () => onStopClick(stopTime));
-          markers.addLayer(marker);
-        } else {
-          console.warn("Invalid stop data:", stopTime);
-        }
-      });
-
-    map.addLayer(markers);
-
-    return () => {
-      map.removeLayer(markers);
-    };
-  }, [map, stops, editorMode, onStopClick, onStopDrag]);
+  useMapEvents({
+    moveend: () => {
+      const bounds = map.getBounds();
+      const zoom = map.getZoom();
+      onBoundsChange({ bounds, zoom });
+    },
+    zoomend: () => {
+      const bounds = map.getBounds();
+      const zoom = map.getZoom();
+      onBoundsChange({ bounds, zoom });
+    },
+  });
 
   return null;
-};
-
-ClusterLayer.propTypes = {
-  stops: PropTypes.array.isRequired,
-  editorMode: PropTypes.string.isRequired,
-  onStopClick: PropTypes.func.isRequired,
-  onStopDrag: PropTypes.func.isRequired,
 };
 
 const MapView = ({
@@ -180,25 +140,82 @@ const MapView = ({
 }) => {
   const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
   const [tempShapes, setTempShapes] = useState([]);
-  const [routeInfo, setRouteInfo] = useState(null);
+  const [visibleStops, setVisibleStops] = useState([]);
+  const [visibleShapes, setVisibleShapes] = useState([]);
+  const [currentBounds, setCurrentBounds] = useState(null);
+  const [currentZoom, setCurrentZoom] = useState(zoom);
   const prevClickedCoords = useRef(null);
+  const mapRef = useRef(null);
+  const prevStopsAndTimesRef = useRef(null);
 
+  // stopsAndTimes veya shapes değiştiğinde güncelle
   useEffect(() => {
-    const filteredStops = (stopsAndTimes || []).map((stop) => ({
-      stop_name: stop.stop_name,
-      stop_lat: stop.stop_lat,
-      stop_lon: stop.stop_lon,
-      stop_sequence: stop.stop_sequence || 1,
-    }));
-    setTempStopsAndTimes(filteredStops);
-    setTempShapes(JSON.parse(JSON.stringify(shapes || [])));
-  }, [stopsAndTimes, shapes]);
+    if (!stopsAndTimes || stopsAndTimes.length === 0) return;
 
-  useEffect(() => {
-    if (selectedEntities.trip) {
-      setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes || [])));
+    if (
+      JSON.stringify(stopsAndTimes) !==
+      JSON.stringify(prevStopsAndTimesRef.current)
+    ) {
+      console.log("Updating tempStopsAndTimes:", stopsAndTimes);
+      const newStops = JSON.parse(JSON.stringify(stopsAndTimes));
+      const newShapes = JSON.parse(JSON.stringify(shapes || []));
+      setTempStopsAndTimes(newStops);
+      setTempShapes(newShapes);
+      prevStopsAndTimesRef.current = stopsAndTimes;
+
+      // İlk trip seçiminde shape’lerin görünmesini sağla
+      if (selectedEntities.trip) {
+        setVisibleShapes(newShapes);
+      }
     }
-  }, [selectedEntities.trip, stopsAndTimes]);
+  }, [stopsAndTimes, shapes, selectedEntities.trip]);
+
+  // Trip seçildiğinde sadece o trip’in duraklarına zoom yap ve shape’leri göster
+  useEffect(() => {
+    if (selectedEntities.trip && tempStopsAndTimes.length > 0) {
+      const tripStops = tempStopsAndTimes.filter(
+        (stop) => stop.trip_id === selectedEntities.trip.trip_id
+      );
+      const tripShapes = tempShapes; // Şimdilik tüm shape’ler, filtre gerekirse ekleriz
+
+      if (tripStops.length > 0) {
+        const avgLat =
+          tripStops.reduce((sum, stop) => sum + parseFloat(stop.stop_lat), 0) /
+          tripStops.length;
+        const avgLon =
+          tripStops.reduce((sum, stop) => sum + parseFloat(stop.stop_lon), 0) /
+          tripStops.length;
+        const newCenter = [avgLat, avgLon];
+        if (mapRef.current) {
+          mapRef.current.setView(newCenter, 12);
+        }
+        setVisibleStops(tripStops);
+        setVisibleShapes(tripShapes); // Her trip seçiminde shape’leri güncelle
+      }
+    }
+  }, [selectedEntities.trip, tempStopsAndTimes, tempShapes]);
+
+  // Bounds ve zoom değiştiğinde görünür durakları ve shape’leri güncelle
+  const handleBoundsChange = ({ bounds, zoom }) => {
+    setCurrentBounds(bounds);
+    setCurrentZoom(zoom);
+
+    if (!selectedEntities.trip) {
+      if (zoom >= 10) {
+        const filteredStops = tempStopsAndTimes.filter((stop) =>
+          bounds.contains([
+            parseFloat(stop.stop_lat),
+            parseFloat(stop.stop_lon),
+          ])
+        );
+        setVisibleStops(filteredStops);
+        setVisibleShapes(tempShapes);
+      } else {
+        setVisibleStops([]);
+        setVisibleShapes([]);
+      }
+    }
+  };
 
   useEffect(() => {
     if (editorMode === "save") {
@@ -208,8 +225,7 @@ const MapView = ({
       saveMultipleStopsAndTimes(tempStopsAndTimes, token);
       setEditorMode("close");
     } else if (editorMode === "close" && selectedEntities.trip) {
-      setTempStopsAndTimes(JSON.parse(JSON.stringify(stopsAndTimes || [])));
-      setTempShapes(JSON.parse(JSON.stringify(shapes || [])));
+      // Yeniden yükleme yok, mevcut veri korunuyor
     }
   }, [editorMode, selectedEntities.trip, token]);
 
@@ -385,7 +401,6 @@ const MapView = ({
         tempStopsAndTimes,
         token
       );
-      setRouteInfo(routeData);
       Swal.fire(
         "Route Snap Success",
         `Distance: ${routeData.distance.toFixed(
@@ -404,28 +419,82 @@ const MapView = ({
       }));
       setTempShapes(routeShapes);
     } catch (error) {
-      console.error("Error snaping route:", error);
-      Swal.fire("Error", "Failed to snaps route between stops.", "error");
+      console.error("Error snapping route:", error);
+      Swal.fire("Error", "Failed to snap route between stops.", "error");
     }
   };
 
   return (
-    <MapContainer center={mapCenter} zoom={zoom} id="map" zoomControl={false}>
+    <MapContainer
+      center={mapCenter}
+      zoom={zoom}
+      id="map"
+      zoomControl={false}
+      ref={mapRef}
+    >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <MapClickHandler onMapClick={onMapClick} />
       <MapUpdater mapCenter={mapCenter} zoom={zoom} />
-      <ClusterLayer
-        stops={tempStopsAndTimes}
-        editorMode={editorMode}
-        onStopClick={handleStopClick}
-        onStopDrag={handleStopDrag}
-      />
+      <BoundsTracker onBoundsChange={handleBoundsChange} />
 
-      {/* Şekiller */}
-      {tempShapes.length > 0 && (
+      {/* Duraklar: Trip seçiliyse trip’in durakları, değilse zoom/bounds’a bağlı */}
+      {!selectedEntities.trip &&
+      currentZoom < 10 &&
+      tempStopsAndTimes.length > 0 ? (
+        <Marker
+          position={mapCenter}
+          icon={L.divIcon({
+            ...summaryIcon,
+            html: `<div style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 5px;">${tempStopsAndTimes.length} Durak</div>`,
+          })}
+        >
+          <Popup>{tempStopsAndTimes.length} durak bu bölgede.</Popup>
+        </Marker>
+      ) : (
+        <MarkerClusterGroup
+          maxClusterRadius={80}
+          disableClusteringAtZoom={15}
+          chunkedLoading={true}
+          showCoverageOnHover={false}
+        >
+          {visibleStops.map((stopTime, index) => (
+            <Marker
+              key={stopTime.stop_sequence || index}
+              position={[
+                parseFloat(stopTime.stop_lat),
+                parseFloat(stopTime.stop_lon),
+              ]}
+              icon={stopIcon}
+              draggable={editorMode !== "close"}
+              eventHandlers={{
+                click: () => handleStopClick(stopTime),
+                dragend: (e) => handleStopDrag(e, stopTime.stop_sequence),
+              }}
+            >
+              <Popup>
+                <strong>
+                  {stopTime.stop_sequence || index + 1}.{" "}
+                  {stopTime.stop_name || "Bilinmeyen Durak"}
+                </strong>
+                <br />
+                Varış:{" "}
+                {stopTime.arrival_time ? stopTime.arrival_time : "Bilinmiyor"}
+                <br />
+                Kalkış:{" "}
+                {stopTime.departure_time
+                  ? stopTime.departure_time
+                  : "Bilinmiyor"}
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
+      )}
+
+      {/* Şekiller: Trip seçiliyse trip’in shape’leri, değilse tüm shape’ler */}
+      {visibleShapes.length > 0 && (
         <>
           <PolylineWithDirectionalArrows
-            positions={tempShapes
+            positions={visibleShapes
               .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
               .map((shape) => [
                 parseFloat(shape.shape_pt_lat),
@@ -435,7 +504,7 @@ const MapView = ({
             weight={8}
           />
           {editorMode !== "close" &&
-            tempShapes.map((shape) => {
+            visibleShapes.map((shape) => {
               const position = [
                 parseFloat(shape.shape_pt_lat),
                 parseFloat(shape.shape_pt_lon),
