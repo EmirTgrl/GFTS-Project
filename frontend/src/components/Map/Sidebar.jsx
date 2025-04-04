@@ -200,6 +200,15 @@ const Sidebar = ({
         );
         setCalendars(calendarData);
 
+        // Filtreleme varsa fetch’i atla, mevcut trips’i kullan
+        if (isFiltered) {
+          console.log(
+            "Skipping fetch due to filtering, using current trips:",
+            trips
+          );
+          return;
+        }
+
         let tripResponse;
         if (selectedEntities.route) {
           tripResponse = await fetchTripsByRouteId(
@@ -379,37 +388,53 @@ const Sidebar = ({
             offsetMinutes,
             token
           );
-          const newTripId = copyResult.trip_id;
+          const newTrip = copyResult.trip;
+          const newStopTimes = copyResult.stop_times || [];
 
-          const newTrip = {
-            ...trip,
-            trip_id: newTripId,
-            trip_headsign: trip.trip_headsign || `${trip.trip_id} (Copy)`,
-            trip_short_name: trip.trip_short_name || `${trip.trip_id} (Copy)`,
-          };
+          const enrichedStopTimes = newStopTimes
+            .map((stopTime) => {
+              const originalStop = stopsAndTimes.find(
+                (s) => s.stop_id === stopTime.stop_id
+              );
+              return {
+                ...stopTime,
+                stop_lat: stopTime.stop_lat || originalStop?.stop_lat || 0,
+                stop_lon: stopTime.stop_lon || originalStop?.stop_lon || 0,
+              };
+            })
+            .sort((a, b) => (a.stop_sequence || 0) - (b.stop_sequence || 0));
 
           setFullTrips((prev) => [...prev, newTrip]);
           const updatedTrips = applyTripFiltersAndSort([...fullTrips, newTrip]);
           setTrips(updatedTrips);
 
-          const newStopTimes = copyResult.new_stop_times || [];
-          if (newStopTimes.length > 0) {
+          if (enrichedStopTimes.length > 0) {
             setTripTimes((prev) => ({
               ...prev,
-              [newTripId]: {
-                firstArrival: newStopTimes[0].arrival_time || "N/A",
+              [newTrip.trip_id]: {
+                firstArrival: enrichedStopTimes[0].arrival_time || "N/A",
                 lastDeparture:
-                  newStopTimes[newStopTimes.length - 1].departure_time || "N/A",
+                  enrichedStopTimes[enrichedStopTimes.length - 1]
+                    .departure_time || "N/A",
               },
+            }));
+          }
+
+          if (selectedEntities.trip?.trip_id === trip.trip_id) {
+            setStopsAndTimes(enrichedStopTimes);
+            setSelectedEntities((prev) => ({
+              ...prev,
+              trip: newTrip,
             }));
           }
 
           Swal.fire(
             "Copied!",
             `Trip copied with an offset of ${offsetMinutes} minutes. New times: ${
-              newStopTimes[0]?.arrival_time || "N/A"
+              enrichedStopTimes[0]?.arrival_time || "N/A"
             } - ${
-              newStopTimes[newStopTimes.length - 1]?.departure_time || "N/A"
+              enrichedStopTimes[enrichedStopTimes.length - 1]?.departure_time ||
+              "N/A"
             }`,
             "success"
           );
@@ -538,6 +563,7 @@ const Sidebar = ({
           }));
           setSelectedCategory("calendar");
           setShapes([]);
+          setStopsAndTimes([]);
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -553,14 +579,14 @@ const Sidebar = ({
               entity.shape_id,
               token
             );
-            setShapes(shapesResponse);
+            setShapes(shapesResponse || []);
 
             const stopsResponse = await fetchStopsAndStopTimesByTripId(
               entity.trip_id,
               project_id,
               token
             );
-            setStopsAndTimes(stopsResponse);
+            setStopsAndTimes(stopsResponse || []);
 
             const center = calculateCenter(shapesResponse, stopsResponse);
             if (center) {
@@ -568,7 +594,7 @@ const Sidebar = ({
               setZoom(12);
             }
           } catch (error) {
-            console.error("Trip seçilirken şekiller yüklenemedi:", error);
+            console.error("Trip seçilirken veriler yüklenemedi:", error);
             setShapes([]);
             setStopsAndTimes([]);
           }
@@ -990,7 +1016,7 @@ const Sidebar = ({
                   onClick={() => handleSelectionChange("trip", trip)}
                 >
                   <Card.Body className="d-flex align-items-center p-2">
-                    {trip.direction_id === 0 ? (
+                    {trip.direction_id === "0" ? (
                       <ArrowDownLeft className="me-2" />
                     ) : (
                       <ArrowUpRight className="me-2" />

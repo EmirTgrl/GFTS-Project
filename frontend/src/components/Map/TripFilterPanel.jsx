@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { Form, Button } from "react-bootstrap";
 import { X } from "react-bootstrap-icons";
@@ -9,8 +9,6 @@ const TripFilterPanel = ({
   setTrips,
   setIsFiltered,
   fullTrips,
-  pageTrips,
-  itemsPerPage,
   onClose,
 }) => {
   const [filters, setFilters] = useState({
@@ -18,6 +16,11 @@ const TripFilterPanel = ({
     direction_id: "",
     timeRange: { start: "", end: "" },
   });
+
+  const serviceIdRef = useRef(null);
+  const directionIdRef = useRef(null);
+  const startTimeRef = useRef(null);
+  const endTimeRef = useRef(null);
 
   const getActiveDays = (calendar) => {
     if (!calendar) return "N/A";
@@ -39,7 +42,7 @@ const TripFilterPanel = ({
     return h1 * 60 + m1 - (h2 * 60 + m2);
   };
 
-  const filterTrips = (tripsData) => {
+  const filterTrips = (tripsData, currentFilters) => {
     if (!tripsData || !Array.isArray(tripsData)) {
       console.warn("Invalid trips data:", tripsData);
       return [];
@@ -52,49 +55,55 @@ const TripFilterPanel = ({
       };
 
       const matchesService =
-        !filters.service_id ||
-        trip.service_id.toString() === filters.service_id;
+        !currentFilters.service_id ||
+        trip.service_id === currentFilters.service_id;
 
       const matchesDirection =
-        !filters.direction_id ||
-        trip.direction_id.toString() === filters.direction_id;
+        !currentFilters.direction_id ||
+        trip.direction_id === currentFilters.direction_id;
 
       const matchesTime =
-        (!filters.timeRange.start ||
+        (!currentFilters.timeRange.start ||
           (times.firstArrival &&
-            compareTimes(times.firstArrival, filters.timeRange.start) >= 0)) &&
-        (!filters.timeRange.end ||
+            compareTimes(times.firstArrival, currentFilters.timeRange.start) >=
+              0)) &&
+        (!currentFilters.timeRange.end ||
           (times.lastDeparture &&
-            compareTimes(times.lastDeparture, filters.timeRange.end) <= 0));
+            compareTimes(times.lastDeparture, currentFilters.timeRange.end) <=
+              0));
 
       return matchesService && matchesDirection && matchesTime;
     });
   };
 
   const handleApplyFilters = () => {
-    const filtered = filterTrips(fullTrips);
-    const paginatedFiltered = filtered.slice(
-      (pageTrips - 1) * itemsPerPage,
-      pageTrips * itemsPerPage
-    );
+    const currentFilters = {
+      service_id: serviceIdRef.current.value,
+      direction_id: directionIdRef.current.value,
+      timeRange: {
+        start: startTimeRef.current.value,
+        end: endTimeRef.current.value,
+      },
+    };
+
+    setFilters(currentFilters);
+
+    const filtered = filterTrips(fullTrips, currentFilters);
     setTrips({
-      data: paginatedFiltered,
+      data: filtered,
       total: filtered.length,
     });
     setIsFiltered(true);
   };
 
   const handleResetFilters = () => {
-    setFilters({
+    const resetFilters = {
       service_id: "",
       direction_id: "",
       timeRange: { start: "", end: "" },
-    });
-    const paginatedTrips = fullTrips.slice(
-      (pageTrips - 1) * itemsPerPage,
-      pageTrips * itemsPerPage
-    );
-    setTrips({ data: paginatedTrips, total: fullTrips.length });
+    };
+    setFilters(resetFilters);
+    setTrips({ data: fullTrips, total: fullTrips.length });
     setIsFiltered(false);
   };
 
@@ -110,6 +119,7 @@ const TripFilterPanel = ({
           <Form.Select
             size="sm"
             value={filters.service_id}
+            ref={serviceIdRef}
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, service_id: e.target.value }))
             }
@@ -128,6 +138,7 @@ const TripFilterPanel = ({
           <Form.Select
             size="sm"
             value={filters.direction_id}
+            ref={directionIdRef}
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, direction_id: e.target.value }))
             }
@@ -144,6 +155,7 @@ const TripFilterPanel = ({
             size="sm"
             type="time"
             value={filters.timeRange.start}
+            ref={startTimeRef}
             onChange={(e) =>
               setFilters((prev) => ({
                 ...prev,
@@ -159,6 +171,7 @@ const TripFilterPanel = ({
             size="sm"
             type="time"
             value={filters.timeRange.end}
+            ref={endTimeRef}
             onChange={(e) =>
               setFilters((prev) => ({
                 ...prev,
@@ -187,8 +200,6 @@ TripFilterPanel.propTypes = {
   setTrips: PropTypes.func.isRequired,
   setIsFiltered: PropTypes.func.isRequired,
   fullTrips: PropTypes.array.isRequired,
-  pageTrips: PropTypes.number.isRequired,
-  itemsPerPage: PropTypes.number.isRequired,
   onClose: PropTypes.func.isRequired,
 };
 

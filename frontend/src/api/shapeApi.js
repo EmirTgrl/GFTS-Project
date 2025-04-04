@@ -72,7 +72,12 @@ export const saveMultipleShapes = async (shapesData, trip_id, token) => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(shapesData),
+    body: JSON.stringify(
+      shapesData.map((shape) => ({
+        ...shape,
+        shape_id: parseInt(shape.shape_id),
+      }))
+    ),
   });
   if (!response.ok) {
     const errorText = await response.text();

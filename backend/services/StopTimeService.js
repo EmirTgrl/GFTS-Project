@@ -124,7 +124,7 @@ const stopTimeService = {
         "shape_dist_traveled",
         "timepoint",
         "project_id",
-      ]; // trip_id ve stop_id WHERE’da kullanıldığı için validFields’dan çıkarıldı
+      ];
 
       const { ...params } = req.body;
 

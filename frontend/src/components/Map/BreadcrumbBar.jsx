@@ -10,6 +10,7 @@ const BreadcrumbBar = ({
   trips,
   setPageTrips,
   itemsPerPage,
+  isFilterOpen,
 }) => {
   const renderTooltip = (text) => (
     <Tooltip id={`tooltip-${text}`} className="custom-tooltip">
@@ -166,35 +167,29 @@ const BreadcrumbBar = ({
     });
   }
 
-  return (
-    <div className="breadcrumb-bar">
-      {breadcrumbItems.length > 0 ? (
-        breadcrumbItems.map((item, index) => (
-          <React.Fragment key={item.category}>
-            {index > 0 && <span className="breadcrumb-separator">/</span>}
-            <OverlayTrigger
-              placement="bottom"
-              overlay={renderTooltip(item.fullLabel)}
+  return breadcrumbItems.length > 0 ? (
+    <div className={`breadcrumb-bar ${isFilterOpen ? "filter-open" : ""}`}>
+      {breadcrumbItems.map((item, index) => (
+        <React.Fragment key={item.category}>
+          {index > 0 && <span className="breadcrumb-separator">/</span>}
+          <OverlayTrigger
+            placement="bottom"
+            overlay={renderTooltip(item.fullLabel)}
+          >
+            <div
+              className={`kk-bg-none breadcrumb-item ${
+                index === breadcrumbItems.length - 1 ? "active" : ""
+              }`}
+              onClick={() => handleBreadcrumbClick(item.category, item.entity)}
             >
-              <div
-                className={`kk-bg-none breadcrumb-item ${
-                  index === breadcrumbItems.length - 1 ? "active" : ""
-                }`}
-                onClick={() =>
-                  handleBreadcrumbClick(item.category, item.entity)
-                }
-              >
-                <span className="breadcrumb-category">{item.category}</span>
-                <span className="breadcrumb-label">{item.label}</span>
-              </div>
-            </OverlayTrigger>
-          </React.Fragment>
-        ))
-      ) : (
-        <span></span>
-      )}
+              <span className="breadcrumb-category">{item.category}</span>
+              <span className="breadcrumb-label">{item.label}</span>
+            </div>
+          </OverlayTrigger>
+        </React.Fragment>
+      ))}
     </div>
-  );
+  ) : null;
 };
 
 BreadcrumbBar.propTypes = {
@@ -211,6 +206,7 @@ BreadcrumbBar.propTypes = {
   trips: PropTypes.object.isRequired,
   setPageTrips: PropTypes.func.isRequired,
   itemsPerPage: PropTypes.number.isRequired,
+  isFilterOpen: PropTypes.bool.isRequired,
 };
 
 export default BreadcrumbBar;

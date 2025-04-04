@@ -3,15 +3,14 @@ const { pool } = require("../db.js");
 const tripService = {
   copyTrip: async (req, res) => {
     const user_id = req.user.id;
-    const { offsetMinutes, trip } = req.body;
+    const { offsetMinutes, trip, new_trip_id } = req.body;
 
-    if (!offsetMinutes || !trip || !trip.trip_id) {
-      return res
-        .status(400)
-        .json({ error: "offsetMinutes and trip (with trip_id) are required" });
+    if (!trip || !trip.trip_id) {
+      return res.status(400).json({ error: "trip (with trip_id) is required" });
     }
-    const offset = parseInt(offsetMinutes);
-    if (isNaN(offset)) {
+
+    const offset = offsetMinutes ? parseInt(offsetMinutes) : 0;
+    if (offsetMinutes && isNaN(offset)) {
       return res.status(400).json({ error: "offsetMinutes should be integer" });
     }
 
@@ -20,64 +19,118 @@ const tripService = {
     try {
       await connection.beginTransaction();
 
-      // Yeni trip_id’yi kullanıcıdan almıyoruz, benzersiz bir string oluşturabiliriz (örneğin trip_id + timestamp)
-      const newTripId = `${trip.trip_id}_${Date.now()}`; // Örnek bir benzersiz ID
+      const [originalTripRows] = await connection.execute(
+        `SELECT * FROM trips WHERE trip_id = ? AND user_id = ?`,
+        [trip.trip_id, user_id]
+      );
+
+      if (originalTripRows.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ error: "Original trip not found" });
+      }
+
+      const originalTrip = originalTripRows[0];
+      if (!originalTrip.route_id) {
+        await connection.rollback();
+        return res.status(400).json({ error: "Original trip has no route_id" });
+      }
+
+      const newTripId =
+        new_trip_id || `${originalTrip.trip_id}_copy_${Date.now()}`;
+
+      const tripValues = [
+        originalTrip.route_id,
+        originalTrip.service_id ?? null,
+        newTripId,
+        originalTrip.trip_headsign ?? null,
+        originalTrip.trip_short_name ?? null,
+        originalTrip.direction_id ?? null,
+        originalTrip.block_id ?? null,
+        originalTrip.shape_id ?? null,
+        originalTrip.wheelchair_accessible ?? null,
+        originalTrip.bikes_allowed ?? null,
+        user_id,
+        originalTrip.project_id ?? null,
+      ];
 
       await connection.execute(
         `INSERT INTO trips (route_id, service_id, trip_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id, wheelchair_accessible, bikes_allowed, user_id, project_id)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          trip.route_id,
-          trip.service_id,
-          newTripId,
-          trip.trip_headsign,
-          trip.trip_short_name,
-          trip.direction_id,
-          trip.block_id,
-          trip.shape_id,
-          trip.wheelchair_accessible,
-          trip.bikes_allowed,
-          user_id,
-          trip.project_id,
-        ]
+        tripValues
       );
 
       const [originalStopTimes] = await connection.execute(
         `SELECT * FROM stop_times WHERE trip_id = ? ORDER BY stop_sequence`,
-        [trip.trip_id]
+        [originalTrip.trip_id]
       );
 
+      if (originalStopTimes.length === 0) {
+        await connection.rollback();
+        return res
+          .status(400)
+          .json({ error: "No stop times found for the original trip" });
+      }
+
+      const newStopTimes = [];
       for (const stopTime of originalStopTimes) {
+        const arrivalTime = offset ? `ADDTIME(?, SEC_TO_TIME(? * 60))` : `?`;
+        const departureTime = offset ? `ADDTIME(?, SEC_TO_TIME(? * 60))` : `?`;
+
+        const stopTimeValues = [
+          newTripId,
+          stopTime.arrival_time ?? null,
+          ...(offset ? [offset] : []),
+          stopTime.departure_time ?? null,
+          ...(offset ? [offset] : []),
+          stopTime.stop_id ?? null,
+          stopTime.stop_sequence ?? null,
+          stopTime.stop_headsign ?? null,
+          stopTime.pickup_type ?? null,
+          stopTime.drop_off_type ?? null,
+          stopTime.shape_dist_traveled ?? null,
+          stopTime.timepoint ?? null,
+          user_id,
+          stopTime.project_id ?? null,
+        ];
+
         await connection.execute(
           `INSERT INTO stop_times (trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_headsign, pickup_type, drop_off_type, shape_dist_traveled, timepoint, user_id, project_id)
-           VALUES (?, ADDTIME(?, SEC_TO_TIME(? * 60)), ADDTIME(?, SEC_TO_TIME(? * 60)), ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            newTripId,
-            stopTime.arrival_time,
-            offset,
-            stopTime.departure_time,
-            offset,
-            stopTime.stop_id,
-            stopTime.stop_sequence,
-            stopTime.stop_headsign,
-            stopTime.pickup_type,
-            stopTime.drop_off_type,
-            stopTime.shape_dist_traveled,
-            stopTime.timepoint,
-            user_id,
-            stopTime.project_id,
-          ]
+           VALUES (?, ${arrivalTime}, ${departureTime}, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          stopTimeValues
         );
+
+        // Yeni eklenen stop_time verisini çek
+        const [newStopTimeRows] = await connection.execute(
+          `SELECT * FROM stop_times WHERE trip_id = ? AND stop_id = ? AND stop_sequence = ?`,
+          [newTripId, stopTime.stop_id, stopTime.stop_sequence]
+        );
+        if (newStopTimeRows.length > 0) {
+          newStopTimes.push(newStopTimeRows[0]);
+        }
       }
 
       await connection.commit();
-      res
-        .status(201)
-        .json({ message: "Trip copied successfully", trip_id: newTripId });
+
+      const [newTripRows] = await connection.execute(
+        `SELECT * FROM trips WHERE trip_id = ? AND user_id = ?`,
+        [newTripId, user_id]
+      );
+
+      res.status(201).json({
+        message: "Trip copied successfully",
+        trip: newTripRows[0],
+        stop_times: newStopTimes,
+      });
     } catch (error) {
       await connection.rollback();
-      console.error("Error copying trip:", error);
-      res.status(500).json({ error: "Server error", details: error.message });
+      console.error("Error copying trip:", error.message, error.stack);
+      res
+        .status(500)
+        .json({
+          error: "Server error",
+          details: error.message,
+          stack: error.stack,
+        });
     } finally {
       connection.release();
     }
@@ -146,7 +199,7 @@ const tripService = {
         total: total,
       });
     } catch (error) {
-      console.error("Query execution error:", error);
+      console.error("Query execution error:", error.message);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
@@ -156,10 +209,7 @@ const tripService = {
       const user_id = req.user.id;
       const { trip_id } = req.params;
       const [result] = await pool.execute(
-        `
-        DELETE FROM trips
-        WHERE trip_id = ? AND user_id = ?
-        `,
+        `DELETE FROM trips WHERE trip_id = ? AND user_id = ?`,
         [trip_id, user_id]
       );
       if (result.affectedRows === 0) {
@@ -167,8 +217,8 @@ const tripService = {
       }
       res.status(200).json({ message: "Trip deleted successfully" });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server error" });
+      console.error("Error deleting trip:", error.message);
+      res.status(500).json({ error: "Server error", details: error.message });
     }
   },
 
@@ -187,7 +237,7 @@ const tripService = {
         "wheelchair_accessible",
         "bikes_allowed",
         "project_id",
-      ]; // trip_id’yi validFields’dan çıkardık, WHERE’da kullanılıyor
+      ];
       const { ...params } = req.body;
 
       const fields = [];
@@ -198,7 +248,7 @@ const tripService = {
           fields.push(`${param} = ?`);
           values.push(params[param]);
         } else {
-          console.warn(`unexpected field ${param}`);
+          console.warn(`Unexpected field: ${param}`);
         }
       }
 
@@ -217,9 +267,9 @@ const tripService = {
         return res.status(404).json({ error: "Trip not found" });
       }
       return res.status(200).json({ message: "Trip successfully updated" });
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: "Server Error", details: e.message });
+    } catch (error) {
+      console.error("Error updating trip:", error.message);
+      res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
 
@@ -229,7 +279,7 @@ const tripService = {
       const validFields = [
         "route_id",
         "service_id",
-        "trip_id", // trip_id’yi ekledik, kullanıcıdan gelecek
+        "trip_id",
         "trip_headsign",
         "trip_short_name",
         "direction_id",
@@ -259,7 +309,7 @@ const tripService = {
           values.push(params[param]);
           placeholders.push("?");
         } else {
-          console.warn(`unexpected field in ${param}`);
+          console.warn(`Unexpected field: ${param}`);
         }
       }
 
@@ -276,10 +326,10 @@ const tripService = {
 
       res.status(201).json({
         message: "Trip saved successfully",
-        trip_id: trip_id, 
+        trip_id: trip_id,
       });
     } catch (error) {
-      console.error(error);
+      console.error("Error saving trip:", error.message);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },

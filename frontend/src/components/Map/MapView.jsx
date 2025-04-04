@@ -148,6 +148,19 @@ const MapView = ({
   const mapRef = useRef(null);
   const prevStopsAndTimesRef = useRef(null);
 
+  const isValidLatLng = (lat, lng) => {
+    return (
+      typeof lat === "number" &&
+      !isNaN(lat) &&
+      typeof lng === "number" &&
+      !isNaN(lng) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180
+    );
+  };
+
   useEffect(() => {
     if (!stopsAndTimes || stopsAndTimes.length === 0) return;
 
@@ -155,14 +168,22 @@ const MapView = ({
       JSON.stringify(stopsAndTimes) !==
       JSON.stringify(prevStopsAndTimesRef.current)
     ) {
-      const newStops = JSON.parse(JSON.stringify(stopsAndTimes));
+      const newStops = stopsAndTimes
+        .filter((stop) =>
+          isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon))
+        )
+        .map((stop) => ({ ...stop }));
       const newShapes = JSON.parse(JSON.stringify(shapes || []));
       setTempStopsAndTimes(newStops);
       setTempShapes(newShapes);
       prevStopsAndTimesRef.current = stopsAndTimes;
 
       if (selectedEntities.trip) {
-        setVisibleShapes(newShapes);
+        setVisibleShapes(
+          newShapes.filter(
+            (shape) => shape.shape_id === selectedEntities.trip.shape_id
+          )
+        );
       }
     }
   }, [stopsAndTimes, shapes, selectedEntities.trip]);
@@ -172,21 +193,36 @@ const MapView = ({
       const tripStops = tempStopsAndTimes.filter(
         (stop) => stop.trip_id === selectedEntities.trip.trip_id
       );
-      const tripShapes = tempShapes;
+      const tripShapes = tempShapes.filter(
+        (shape) => shape.shape_id === selectedEntities.trip.shape_id
+      );
 
       if (tripStops.length > 0) {
-        const avgLat =
-          tripStops.reduce((sum, stop) => sum + parseFloat(stop.stop_lat), 0) /
-          tripStops.length;
-        const avgLon =
-          tripStops.reduce((sum, stop) => sum + parseFloat(stop.stop_lon), 0) /
-          tripStops.length;
-        const newCenter = [avgLat, avgLon];
-        if (mapRef.current) {
-          mapRef.current.setView(newCenter, 12);
+        const validStops = tripStops.filter((stop) =>
+          isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon))
+        );
+        if (validStops.length > 0) {
+          const avgLat =
+            validStops.reduce(
+              (sum, stop) => sum + parseFloat(stop.stop_lat),
+              0
+            ) / validStops.length;
+          const avgLon =
+            validStops.reduce(
+              (sum, stop) => sum + parseFloat(stop.stop_lon),
+              0
+            ) / validStops.length;
+          const newCenter = [avgLat, avgLon];
+          if (mapRef.current && isValidLatLng(avgLat, avgLon)) {
+            mapRef.current.setView(newCenter, 12);
+          }
+          setVisibleStops(validStops);
+          setVisibleShapes(tripShapes);
+        } else {
+          console.warn("No valid stops with coordinates found for this trip.");
+          setVisibleStops([]);
+          setVisibleShapes(tripShapes);
         }
-        setVisibleStops(tripStops);
-        setVisibleShapes(tripShapes);
       }
     }
   }, [selectedEntities.trip, tempStopsAndTimes, tempShapes]);
@@ -197,11 +233,16 @@ const MapView = ({
 
     if (!selectedEntities.trip) {
       if (zoom >= 10) {
-        const filteredStops = tempStopsAndTimes.filter((stop) =>
-          bounds.contains([
-            parseFloat(stop.stop_lat),
-            parseFloat(stop.stop_lon),
-          ])
+        const filteredStops = tempStopsAndTimes.filter(
+          (stop) =>
+            isValidLatLng(
+              parseFloat(stop.stop_lat),
+              parseFloat(stop.stop_lon)
+            ) &&
+            bounds.contains([
+              parseFloat(stop.stop_lat),
+              parseFloat(stop.stop_lon),
+            ])
         );
         setVisibleStops(filteredStops);
         setVisibleShapes(tempShapes);
@@ -244,18 +285,19 @@ const MapView = ({
     if (editorMode === "add-shape") {
       if (tempShapes.length === 0) {
         Swal.fire({
-          title: "Enter Shape ID",
-          input: "text",
+          title: "Enter Shape ID (Number)",
+          input: "number",
           inputAttributes: { autocapitalize: "off" },
           showCancelButton: true,
           confirmButtonText: "Save",
           cancelButtonText: "Cancel",
           showLoaderOnConfirm: true,
           preConfirm: (shapeId) => {
-            if (!shapeId) {
-              Swal.showValidationMessage(`Shape ID is required`);
+            const parsedShapeId = parseInt(shapeId);
+            if (!shapeId || isNaN(parsedShapeId)) {
+              Swal.showValidationMessage(`Shape ID must be a valid number`);
             }
-            return shapeId;
+            return parsedShapeId;
           },
           allowOutsideClick: () => !Swal.isLoading(),
         }).then((result) => {
@@ -421,7 +463,7 @@ const MapView = ({
       );
 
       const routeShapes = routeData.geometry.map((coord, index) => ({
-        shape_id: tempShapes[0]?.shape_id || `route-${Date.now()}`,
+        shape_id: tempShapes[0]?.shape_id || parseInt(`1000${Date.now()}`),
         shape_pt_lat: coord[1],
         shape_pt_lon: coord[0],
         shape_pt_sequence: index + 1,
@@ -435,9 +477,13 @@ const MapView = ({
     }
   };
 
+  const defaultCenter = [51.505, -0.09];
+
   return (
     <MapContainer
-      center={mapCenter}
+      center={
+        isValidLatLng(mapCenter[0], mapCenter[1]) ? mapCenter : defaultCenter
+      }
       zoom={zoom}
       id="map"
       zoomControl={false}
@@ -452,7 +498,11 @@ const MapView = ({
       currentZoom < 10 &&
       tempStopsAndTimes.length > 0 ? (
         <Marker
-          position={mapCenter}
+          position={
+            isValidLatLng(mapCenter[0], mapCenter[1])
+              ? mapCenter
+              : defaultCenter
+          }
           icon={L.divIcon({
             ...summaryIcon,
             html: `<div style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 5px;">${tempStopsAndTimes.length} Durak</div>`,
@@ -467,36 +517,38 @@ const MapView = ({
           chunkedLoading={true}
           showCoverageOnHover={false}
         >
-          {visibleStops.map((stopTime, index) => (
-            <Marker
-              key={stopTime.stop_id || index}
-              position={[
-                parseFloat(stopTime.stop_lat),
-                parseFloat(stopTime.stop_lon),
-              ]}
-              icon={stopIcon}
-              draggable={editorMode !== "close"}
-              eventHandlers={{
-                click: () => handleStopClick(stopTime),
-                dragend: (e) => handleStopDrag(e, stopTime.stop_sequence),
-              }}
-            >
-              <Popup>
-                <strong>
-                  {stopTime.stop_sequence || index + 1}.{" "}
-                  {stopTime.stop_name || "Bilinmeyen Durak"}
-                </strong>
-                <br />
-                Varış:{" "}
-                {stopTime.arrival_time ? stopTime.arrival_time : "Bilinmiyor"}
-                <br />
-                Kalkış:{" "}
-                {stopTime.departure_time
-                  ? stopTime.departure_time
-                  : "Bilinmiyor"}
-              </Popup>
-            </Marker>
-          ))}
+          {visibleStops.map((stopTime, index) => {
+            const lat = parseFloat(stopTime.stop_lat);
+            const lon = parseFloat(stopTime.stop_lon);
+            if (!isValidLatLng(lat, lon)) return null;
+            return (
+              <Marker
+                key={stopTime.stop_id || index}
+                position={[lat, lon]}
+                icon={stopIcon}
+                draggable={editorMode !== "close"}
+                eventHandlers={{
+                  click: () => handleStopClick(stopTime),
+                  dragend: (e) => handleStopDrag(e, stopTime.stop_sequence),
+                }}
+              >
+                <Popup>
+                  <strong>
+                    {stopTime.stop_sequence || index + 1}.{" "}
+                    {stopTime.stop_name || "Bilinmeyen Durak"}
+                  </strong>
+                  <br />
+                  Varış:{" "}
+                  {stopTime.arrival_time ? stopTime.arrival_time : "Bilinmiyor"}
+                  <br />
+                  Kalkış:{" "}
+                  {stopTime.departure_time
+                    ? stopTime.departure_time
+                    : "Bilinmiyor"}
+                </Popup>
+              </Marker>
+            );
+          })}
         </MarkerClusterGroup>
       )}
 
@@ -505,6 +557,12 @@ const MapView = ({
           <PolylineWithDirectionalArrows
             positions={visibleShapes
               .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
+              .filter((shape) =>
+                isValidLatLng(
+                  parseFloat(shape.shape_pt_lat),
+                  parseFloat(shape.shape_pt_lon)
+                )
+              )
               .map((shape) => [
                 parseFloat(shape.shape_pt_lat),
                 parseFloat(shape.shape_pt_lon),
@@ -514,10 +572,10 @@ const MapView = ({
           />
           {editorMode !== "close" &&
             visibleShapes.map((shape) => {
-              const position = [
-                parseFloat(shape.shape_pt_lat),
-                parseFloat(shape.shape_pt_lon),
-              ];
+              const lat = parseFloat(shape.shape_pt_lat);
+              const lon = parseFloat(shape.shape_pt_lon);
+              if (!isValidLatLng(lat, lon)) return null;
+              const position = [lat, lon];
               const isHighlighted =
                 shape.shape_pt_sequence ===
                 selectedEntities.shape?.shape_pt_sequence;

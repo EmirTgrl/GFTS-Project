@@ -33,7 +33,7 @@ const Header = () => {
                 <Upload size={20} />
               </Nav.Link>
               <NavDropdown
-                title={<PersonCircle size={20} />}
+                title={<PersonCircle size={20} color="#fff" />}
                 id="user-dropdown"
                 align="end"
                 className="nav-link-custom"
