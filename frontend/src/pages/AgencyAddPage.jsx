@@ -7,6 +7,7 @@ import { AuthContext } from "../components/Auth/AuthContext";
 const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({
+    agency_id: "",
     agency_name: "",
     agency_url: "",
     agency_timezone: "",
@@ -23,11 +24,16 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (
+      !formData.agency_id || 
       !formData.agency_name ||
       !formData.agency_url ||
       !formData.agency_timezone
     ) {
-      Swal.fire("Hata!", "Ajans adı, URL ve zaman dilimi zorunludur!", "error");
+      Swal.fire(
+        "Hata!",
+        "Ajans ID, ajans adı, URL ve zaman dilimi zorunludur!",
+        "error"
+      );
       return;
     }
 
@@ -48,7 +54,10 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         const agencyData = { project_id, ...formData };
         const response = await saveAgency(agencyData, token);
         const agency_id = response.agency_id;
-        setAgencies((prev) => ({ ...prev, data: [...prev.data, { ...agencyData, agency_id }]}));
+        setAgencies((prev) => ({
+          ...prev,
+          data: [...prev.data, { ...agencyData, agency_id }],
+        }));
         Swal.fire("Eklendi!", "Ajans başarıyla eklendi.", "success");
         onClose();
       } catch (error) {
@@ -67,6 +76,20 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
     <div className="form-container">
       <h5>Yeni Ajans Ekle</h5>
       <form onSubmit={handleSubmit}>
+        <div className="mb-2">
+          <label htmlFor="agency_id" className="form-label">
+            Ajans ID (*)
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="agency_id"
+            name="agency_id"
+            value={formData.agency_id}
+            onChange={handleChange}
+            required
+          />
+        </div>
         <div className="mb-2">
           <label htmlFor="agency_name" className="form-label">
             Ajans Adı (*)

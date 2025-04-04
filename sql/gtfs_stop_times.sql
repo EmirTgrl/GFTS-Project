@@ -23,12 +23,12 @@ DROP TABLE IF EXISTS `stop_times`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stop_times` (
-  `trip_id` int DEFAULT NULL,
+  `trip_id` VARCHAR(255) DEFAULT NULL,
   `arrival_time` time DEFAULT NULL,
   `departure_time` time DEFAULT NULL,
-  `stop_id` int NOT NULL,
+  `stop_id` VARCHAR(255) NOT NULL,
   `stop_sequence` int NOT NULL,
-  `stop_headsign` varchar(255) DEFAULT NULL,
+  `stop_headsign` VARCHAR(255) DEFAULT NULL,
   `pickup_type` tinyint DEFAULT NULL,
   `drop_off_type` tinyint DEFAULT NULL,
   `shape_dist_traveled` float DEFAULT NULL,

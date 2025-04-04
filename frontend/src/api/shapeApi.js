@@ -94,7 +94,7 @@ export const snapShapesToRoads = async (
   const url = `${osrmUrl}/match/v1/driving/${coordinates}?steps=false&geometries=geojson&overview=full`;
 
   const response = await fetch(url, {
-    method: "GET"
+    method: "GET",
   });
 
   if (!response.ok) {

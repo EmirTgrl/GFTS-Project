@@ -13,8 +13,9 @@ const TripAddPage = ({
 }) => {
   const { token } = useContext(AuthContext);
   const [tripData, setTripData] = useState({
+    trip_id: "", // trip_id ekledik, string olacak
     service_id: "",
-    route_id: "",
+    route_id: selectedRoute?.route_id || "",
     project_id,
     trip_headsign: "",
     trip_short_name: "",
@@ -34,8 +35,8 @@ const TripAddPage = ({
         name === "bikes_allowed"
           ? value === ""
             ? null
-            : parseInt(value, 10) || null
-          : value,
+            : parseInt(value, 10) || null // Sayısal alanlar için parseInt korundu
+          : value, // trip_id dahil diğer alanlar string
     }));
   };
 
@@ -60,6 +61,15 @@ const TripAddPage = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!tripData.trip_id || !tripData.service_id || !tripData.trip_headsign) {
+      Swal.fire(
+        "Hata!",
+        "Trip ID, servis ve trip başlığı zorunludur!",
+        "error"
+      );
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Emin misiniz?",
       text: "Bu trip’i eklemek istediğinize emin misiniz?",
@@ -73,10 +83,17 @@ const TripAddPage = ({
 
     if (result.isConfirmed) {
       try {
-        const formData = { ...tripData, project_id, route_id: selectedRoute.route_id };
+        const formData = {
+          ...tripData,
+          project_id,
+          route_id: selectedRoute.route_id,
+        };
         const response = await saveTrip(formData, token);
         const trip_id = response.trip_id;
-        setTrips((prev) => ({...prev, data: [...prev.data, { ...formData, trip_id }]}));
+        setTrips((prev) => ({
+          ...prev,
+          data: [...prev.data, { ...formData, trip_id }],
+        }));
         Swal.fire("Eklendi!", "Trip başarıyla eklendi.", "success");
         onClose();
       } catch (error) {
@@ -94,8 +111,22 @@ const TripAddPage = ({
       <h5>Yeni Trip Ekle</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
+          <label htmlFor="trip_id" className="form-label">
+            Trip ID (*)
+          </label>
+          <input
+            type="text"
+            id="trip_id"
+            name="trip_id"
+            className="form-control"
+            value={tripData.trip_id}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="mb-2">
           <label htmlFor="service_id" className="form-label">
-            Servis
+            Servis (*)
           </label>
           <select
             id="service_id"
@@ -115,7 +146,7 @@ const TripAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_headsign" className="form-label">
-            Trip Başlığı
+            Trip Başlığı (*)
           </label>
           <input
             type="text"
@@ -173,8 +204,21 @@ TripAddPage.propTypes = {
   project_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setTrips: PropTypes.func.isRequired,
-  calendars: PropTypes.array.isRequired,
-  selectedRoute: PropTypes.string.isRequired,
+  calendars: PropTypes.arrayOf(
+    PropTypes.shape({
+      service_id: PropTypes.string.isRequired,
+      monday: PropTypes.number,
+      tuesday: PropTypes.number,
+      wednesday: PropTypes.number,
+      thursday: PropTypes.number,
+      friday: PropTypes.number,
+      saturday: PropTypes.number,
+      sunday: PropTypes.number,
+    })
+  ).isRequired,
+  selectedRoute: PropTypes.shape({
+    route_id: PropTypes.string.isRequired,
+  }), // selectedRoute opsiyonel ama route_id string
 };
 
 export default TripAddPage;

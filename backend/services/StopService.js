@@ -16,14 +16,14 @@ const stopService = {
       "parent_station",
       "stop_timezone",
       "wheelchair_boarding",
-      "project_id"
+      "project_id",
     ];
-  
+
     const fields = [];
     const values = [];
-    fields.push("user_id = ?")
+    fields.push("user_id = ?");
     values.push(user_id);
-  
+
     for (const param in req.query) {
       if (validFields.includes(param)) {
         if (param === "stop_name") {
@@ -37,10 +37,9 @@ const stopService = {
         console.warn(`Unexpected query parameter: ${param}`);
       }
     }
-  
-    let query = `SELECT * FROM stops 
-    WHERE ${fields.join(" AND ")}`;
-  
+
+    let query = `SELECT * FROM stops WHERE ${fields.join(" AND ")}`;
+
     try {
       const [rows] = await pool.execute(query, values);
       res.json(rows.length > 0 ? rows : []);
@@ -54,11 +53,13 @@ const stopService = {
     try {
       const user_id = req.user.id;
       const { stop_id } = req.params;
-      await pool.execute(
-        `DELETE FROM stops
-        WHERE stop_id = ? AND user_id = ?`,
+      const [result] = await pool.execute(
+        `DELETE FROM stops WHERE stop_id = ? AND user_id = ?`,
         [stop_id, user_id]
       );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Stop not found" });
+      }
       res.status(200).json({ message: "Stop deleted successfully" });
     } catch (error) {
       console.error(
@@ -72,9 +73,8 @@ const stopService = {
   updateStop: async (req, res) => {
     try {
       const user_id = req.user.id;
-      const {stop_id} = req.params; 
+      const { stop_id } = req.params;
       const validFields = [
-        "stop_id",
         "stop_code",
         "stop_name",
         "stop_desc",
@@ -86,10 +86,10 @@ const stopService = {
         "parent_station",
         "stop_timezone",
         "wheelchair_boarding",
-        "project_id"        
-      ]
-      
-      const {...params} = req.body;
+        "project_id",
+      ];
+
+      const { ...params } = req.body;
 
       const fields = [];
       const values = [];
@@ -102,11 +102,14 @@ const stopService = {
           console.warn(`unexpected field ${param}`);
         }
       }
-      
+
+      if (fields.length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+
       const query = `
         UPDATE stops 
-        SET
-         ${fields.join(", ")}
+        SET ${fields.join(", ")}
         WHERE stop_id = ? AND user_id = ?`;
 
       const [result] = await pool.execute(query, [...values, stop_id, user_id]);
@@ -138,20 +141,24 @@ const stopService = {
         "parent_station",
         "stop_timezone",
         "wheelchair_boarding",
-        "project_id"        
-      ]
+        "project_id",
+      ];
 
-      const {...params} = req.body;
+      const { stop_id, ...params } = req.body;
 
-      const fields = [];
-      const values = [];
-      const placeholders = [];
+      if (!stop_id) {
+        return res.status(400).json({ error: "stop_id is required" });
+      }
+
+      const fields = ["stop_id"];
+      const values = [stop_id];
+      const placeholders = ["?"];
 
       for (const param in params) {
         if (validFields.includes(param)) {
           fields.push(param);
           values.push(params[param]);
-          placeholders.push("?")
+          placeholders.push("?");
         } else {
           console.warn(`unexpected field in ${param}`);
         }
@@ -160,16 +167,16 @@ const stopService = {
       fields.push("user_id");
       placeholders.push("?");
       values.push(user_id);
-      
+
       const query = `
         INSERT INTO stops (${fields.join(", ")})
         VALUES (${placeholders.join(", ")})
       `;
-      const [result] = await pool.execute(query, values);
+      await pool.execute(query, values);
 
       res.status(201).json({
         message: "Stop saved successfully",
-        stop_id: result.insertId
+        stop_id,
       });
     } catch (error) {
       console.error(`Error in saveStop:`, error);

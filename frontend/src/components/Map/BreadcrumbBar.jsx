@@ -1,11 +1,12 @@
 import PropTypes from "prop-types";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import "../../styles/BreadcrumbBar.css";
+import React from "react";
 
 const BreadcrumbBar = ({
   selectedEntities,
   setSelectedEntities,
-  setActiveAccordionKey,
+  setActiveKey,
   trips,
   setPageTrips,
   itemsPerPage,
@@ -20,50 +21,50 @@ const BreadcrumbBar = ({
     switch (category) {
       case "agency":
         setSelectedEntities({
-          agency: selectedEntities.agency,
+          agency: item,
           route: null,
           calendar: null,
           trip: null,
           shape: null,
           stop: null,
         });
-        setActiveAccordionKey("0"); // Agencies accordion
+        setActiveKey("0");
         break;
       case "route":
         setSelectedEntities({
           agency: selectedEntities.agency,
-          route: selectedEntities.route,
+          route: item,
           calendar: null,
           trip: null,
           shape: null,
           stop: null,
         });
-        setActiveAccordionKey("1"); // Routes accordion
+        setActiveKey("1");
         break;
       case "calendar":
         setSelectedEntities({
           agency: selectedEntities.agency,
           route: selectedEntities.route,
-          calendar: selectedEntities.calendar,
+          calendar: item,
           trip: null,
           shape: null,
           stop: null,
         });
-        setActiveAccordionKey("2"); // Calendars accordion
+        setActiveKey("2");
         break;
       case "trip":
         setSelectedEntities({
           agency: selectedEntities.agency,
           route: selectedEntities.route,
           calendar: selectedEntities.calendar,
-          trip: selectedEntities.trip,
+          trip: item,
           shape: null,
           stop: null,
         });
-        setActiveAccordionKey("3"); // Trips accordion
+        setActiveKey("3");
         if (item && trips.data) {
           const tripIndex = trips.data.findIndex(
-            (trip) => trip.trip_id === item.trip_id
+            (t) => t.trip_id === item.trip_id
           );
           if (tripIndex !== -1) {
             const page = Math.floor(tripIndex / itemsPerPage) + 1;
@@ -77,17 +78,21 @@ const BreadcrumbBar = ({
           route: selectedEntities.route,
           calendar: selectedEntities.calendar,
           trip: selectedEntities.trip,
-          shape: selectedEntities.shape,
+          shape: item,
           stop: null,
         });
-        setActiveAccordionKey("4"); // Shapes accordion
+        setActiveKey("4");
         break;
       case "stop":
         setSelectedEntities({
-          ...selectedEntities,
-          stop: selectedEntities.stop,
+          agency: selectedEntities.agency,
+          route: selectedEntities.route,
+          calendar: selectedEntities.calendar,
+          trip: selectedEntities.trip,
+          shape: selectedEntities.shape,
+          stop: item,
         });
-        setActiveAccordionKey("5"); // Stops accordion
+        setActiveKey("5");
         break;
       default:
         break;
@@ -165,26 +170,28 @@ const BreadcrumbBar = ({
     <div className="breadcrumb-bar">
       {breadcrumbItems.length > 0 ? (
         breadcrumbItems.map((item, index) => (
-          <OverlayTrigger
-            key={item.category}
-            placement="top"
-            overlay={renderTooltip(item.fullLabel)}
-          >
-            <span
-              className={`breadcrumb-item ${
-                index === breadcrumbItems.length - 1 ? "active" : ""
-              }`}
-              onClick={() => handleBreadcrumbClick(item.category, item.entity)}
+          <React.Fragment key={item.category}>
+            {index > 0 && <span className="breadcrumb-separator">/</span>}
+            <OverlayTrigger
+              placement="bottom"
+              overlay={renderTooltip(item.fullLabel)}
             >
-              {item.label}
-              {index < breadcrumbItems.length - 1 && (
-                <span className="separator">›</span>
-              )}
-            </span>
-          </OverlayTrigger>
+              <div
+                className={`kk-bg-none breadcrumb-item ${
+                  index === breadcrumbItems.length - 1 ? "active" : ""
+                }`}
+                onClick={() =>
+                  handleBreadcrumbClick(item.category, item.entity)
+                }
+              >
+                <span className="breadcrumb-category">{item.category}</span>
+                <span className="breadcrumb-label">{item.label}</span>
+              </div>
+            </OverlayTrigger>
+          </React.Fragment>
         ))
       ) : (
-        <span className="breadcrumb-item no-selection">No Selection</span>
+        <span></span>
       )}
     </div>
   );
@@ -200,7 +207,7 @@ BreadcrumbBar.propTypes = {
     stop: PropTypes.object,
   }).isRequired,
   setSelectedEntities: PropTypes.func.isRequired,
-  setActiveAccordionKey: PropTypes.func.isRequired,
+  setActiveKey: PropTypes.func.isRequired,
   trips: PropTypes.object.isRequired,
   setPageTrips: PropTypes.func.isRequired,
   itemsPerPage: PropTypes.number.isRequired,

@@ -29,9 +29,7 @@ const StopTimeEditPage = ({
         setAllStops(stopsResponse);
 
         const stopTimeResponse = stopsAndTimes.find(
-          (st) =>
-            parseInt(st.stop_id, 10) === parseInt(stop_id, 10) &&
-            parseInt(st.trip_id, 10) === parseInt(trip_id, 10)
+          (st) => st.stop_id === stop_id && st.trip_id === trip_id
         );
 
         if (!stopTimeResponse) {
@@ -39,45 +37,26 @@ const StopTimeEditPage = ({
         }
 
         setStopTimeData({
-          stop_code: stopTimeResponse.stop_code || null,
+          stop_code: stopTimeResponse.stop_code || "",
           stop_name: stopTimeResponse.stop_name || "",
-          stop_desc: stopTimeResponse.stop_desc || null,
-          stop_lat: stopTimeResponse.stop_lat || null,
-          stop_lon: stopTimeResponse.stop_lon || null,
-          stop_url: stopTimeResponse.stop_url || null,
-          location_type:
-            stopTimeResponse.location_type !== undefined
-              ? stopTimeResponse.location_type
-              : null,
-          stop_timezone: stopTimeResponse.stop_timezone || null,
-          wheelchair_boarding:
-            stopTimeResponse.wheelchair_boarding !== undefined
-              ? stopTimeResponse.wheelchair_boarding
-              : null,
+          stop_desc: stopTimeResponse.stop_desc || "",
+          stop_lat: stopTimeResponse.stop_lat || "",
+          stop_lon: stopTimeResponse.stop_lon || "",
+          stop_url: stopTimeResponse.stop_url || "",
+          location_type: stopTimeResponse.location_type || "",
+          stop_timezone: stopTimeResponse.stop_timezone || "",
+          wheelchair_boarding: stopTimeResponse.wheelchair_boarding || "",
           arrival_time: stopTimeResponse.arrival_time || "",
           departure_time: stopTimeResponse.departure_time || "",
-          stop_sequence: stopTimeResponse.stop_sequence || null,
+          stop_sequence: stopTimeResponse.stop_sequence || "",
           stop_headsign: stopTimeResponse.stop_headsign || "",
-          pickup_type:
-            stopTimeResponse.pickup_type !== undefined
-              ? stopTimeResponse.pickup_type
-              : null,
-          drop_off_type:
-            stopTimeResponse.drop_off_type !== undefined
-              ? stopTimeResponse.drop_off_type
-              : null,
-          shape_dist_traveled: stopTimeResponse.shape_dist_traveled || null,
-          timepoint:
-            stopTimeResponse.timepoint !== undefined
-              ? stopTimeResponse.timepoint
-              : null,
-          trip_id:
-            parseInt(stopTimeResponse.trip_id, 10) || parseInt(trip_id, 10),
-          project_id:
-            parseInt(stopTimeResponse.project_id, 10) ||
-            parseInt(project_id, 10),
-          stop_id:
-            parseInt(stopTimeResponse.stop_id, 10) || parseInt(stop_id, 10),
+          pickup_type: stopTimeResponse.pickup_type || "",
+          drop_off_type: stopTimeResponse.drop_off_type || "",
+          shape_dist_traveled: stopTimeResponse.shape_dist_traveled || "",
+          timepoint: stopTimeResponse.timepoint || "",
+          trip_id: stopTimeResponse.trip_id || trip_id,
+          project_id: stopTimeResponse.project_id || project_id,
+          stop_id: stopTimeResponse.stop_id || stop_id,
         });
       } catch (err) {
         console.error("Error fetching/parsing stop time data:", err);
@@ -92,26 +71,27 @@ const StopTimeEditPage = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let parsedValue = value;
-
-    if (name === "stop_lat" || name === "stop_lon") {
-      parsedValue = value === "" ? null : parseFloat(value);
-    } else if (
-      name === "location_type" ||
-      name === "wheelchair_boarding" ||
-      name === "stop_sequence" ||
-      name === "pickup_type" ||
-      name === "drop_off_type" ||
-      name === "timepoint"
-    ) {
-      parsedValue = value === "" ? null : parseInt(value, 10);
-    } else if (name === "shape_dist_traveled") {
-      parsedValue = value === "" ? null : parseFloat(value);
-    }
-
     setStopTimeData((prev) => ({
       ...prev,
-      [name]: parsedValue,
+      [name]:
+        name === "stop_lat" || name === "stop_lon"
+          ? value === ""
+            ? ""
+            : parseFloat(value)
+          : name === "stop_sequence" ||
+            name === "pickup_type" ||
+            name === "drop_off_type" ||
+            name === "timepoint" ||
+            name === "location_type" ||
+            name === "wheelchair_boarding"
+          ? value === ""
+            ? ""
+            : parseInt(value, 10)
+          : name === "shape_dist_traveled"
+          ? value === ""
+            ? ""
+            : parseFloat(value)
+          : value,
     }));
   };
 
@@ -123,33 +103,35 @@ const StopTimeEditPage = ({
       setIsNewStop(true);
       setStopTimeData((prev) => ({
         ...prev,
-        stop_code: null,
+        stop_id: "",
+        stop_code: "",
         stop_name: "",
-        stop_desc: null,
-        stop_lat: null,
-        stop_lon: null,
-        stop_url: null,
-        location_type: null,
-        stop_timezone: null,
-        wheelchair_boarding: null,
+        stop_desc: "",
+        stop_lat: "",
+        stop_lon: "",
+        stop_url: "",
+        location_type: "",
+        stop_timezone: "",
+        wheelchair_boarding: "",
       }));
     } else {
       setIsNewStop(false);
       const selectedStop = allStops.find(
-        (stop) => stop.stop_id === parseInt(newSelectedStopId)
+        (stop) => stop.stop_id === newSelectedStopId
       );
       if (selectedStop) {
         setStopTimeData((prev) => ({
           ...prev,
-          stop_code: selectedStop.stop_code,
-          stop_name: selectedStop.stop_name,
-          stop_desc: selectedStop.stop_desc,
-          stop_lat: selectedStop.stop_lat,
-          stop_lon: selectedStop.stop_lon,
-          stop_url: selectedStop.stop_url,
-          location_type: selectedStop.location_type,
-          stop_timezone: selectedStop.stop_timezone,
-          wheelchair_boarding: selectedStop.wheelchair_boarding,
+          stop_id: selectedStop.stop_id,
+          stop_code: selectedStop.stop_code || "",
+          stop_name: selectedStop.stop_name || "",
+          stop_desc: selectedStop.stop_desc || "",
+          stop_lat: selectedStop.stop_lat || "",
+          stop_lon: selectedStop.stop_lon || "",
+          stop_url: selectedStop.stop_url || "",
+          location_type: selectedStop.location_type || "",
+          stop_timezone: selectedStop.stop_timezone || "",
+          wheelchair_boarding: selectedStop.wheelchair_boarding || "",
         }));
       }
     }
@@ -157,6 +139,11 @@ const StopTimeEditPage = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!stopTimeData.stop_name || !stopTimeData.stop_sequence) {
+      Swal.fire("Hata!", "Durak adı ve sıra numarası zorunludur!", "error");
+      return;
+    }
 
     const result = await Swal.fire({
       title: "Emin misiniz?",
@@ -172,48 +159,43 @@ const StopTimeEditPage = ({
     if (result.isConfirmed) {
       try {
         const stopData = {
-          stop_code: stopTimeData.stop_code,
+          stop_id: stopTimeData.stop_id,
+          stop_code: stopTimeData.stop_code || null,
           stop_name: stopTimeData.stop_name,
-          stop_desc: stopTimeData.stop_desc,
-          stop_lat: stopTimeData.stop_lat,
-          stop_lon: stopTimeData.stop_lon,
-          stop_url: stopTimeData.stop_url,
-          location_type: stopTimeData.location_type,
-          stop_timezone: stopTimeData.stop_timezone,
-          wheelchair_boarding: stopTimeData.wheelchair_boarding,
+          stop_desc: stopTimeData.stop_desc || null,
+          stop_lat: stopTimeData.stop_lat || null,
+          stop_lon: stopTimeData.stop_lon || null,
+          stop_url: stopTimeData.stop_url || null,
+          location_type: stopTimeData.location_type || null,
+          stop_timezone: stopTimeData.stop_timezone || null,
+          wheelchair_boarding: stopTimeData.wheelchair_boarding || null,
+          project_id,
         };
 
         const stopTime = {
-          arrival_time: stopTimeData.arrival_time,
-          departure_time: stopTimeData.departure_time,
-          stop_sequence: stopTimeData.stop_sequence,
-          stop_headsign: stopTimeData.stop_headsign,
-          pickup_type: stopTimeData.pickup_type,
-          drop_off_type: stopTimeData.drop_off_type,
-          shape_dist_traveled: stopTimeData.shape_dist_traveled,
-          timepoint: stopTimeData.timepoint,
+          arrival_time: stopTimeData.arrival_time || null,
+          departure_time: stopTimeData.departure_time || null,
+          stop_sequence: stopTimeData.stop_sequence || null,
+          stop_headsign: stopTimeData.stop_headsign || null,
+          pickup_type: stopTimeData.pickup_type || null,
+          drop_off_type: stopTimeData.drop_off_type || null,
+          shape_dist_traveled: stopTimeData.shape_dist_traveled || null,
+          timepoint: stopTimeData.timepoint || null,
+          project_id,
         };
 
         let updatedStopId = selectedStopId;
 
         if (isNewStop) {
-          const newStopResponse = await saveStop(
-            { ...stopData, project_id },
-            token
-          );
+          stopData.stop_id = stopData.stop_id || `${trip_id}_${Date.now()}`; // Benzersiz stop_id
+          const newStopResponse = await saveStop(stopData, token);
           updatedStopId = newStopResponse.stop_id;
         } else {
-          await updateStop(
-            { ...stopData, stop_id: selectedStopId, project_id },
-            selectedStopId,
-            token
-          );
+          await updateStop(stopData, selectedStopId, token);
         }
 
         const originalSequence = stopsAndTimes.find(
-          (st) =>
-            parseInt(st.stop_id, 10) === parseInt(stop_id, 10) &&
-            parseInt(st.trip_id, 10) === parseInt(trip_id, 10)
+          (st) => st.stop_id === stop_id && st.trip_id === trip_id
         ).stop_sequence;
         const newSequence = parseInt(stopTimeData.stop_sequence);
 
@@ -221,12 +203,10 @@ const StopTimeEditPage = ({
 
         if (originalSequence !== newSequence) {
           const tripStops = updatedStopsAndTimes
-            .filter((st) => parseInt(st.trip_id, 10) === parseInt(trip_id, 10))
-            .sort((a, b) => a.stop_sequence - b.stop_sequence);
+            .filter((st) => st.trip_id === trip_id)
+            .sort((a, b) => (a.stop_sequence || 0) - (b.stop_sequence || 0));
 
-          const currentStop = tripStops.find(
-            (st) => parseInt(st.stop_id, 10) === parseInt(stop_id, 10)
-          );
+          const currentStop = tripStops.find((st) => st.stop_id === stop_id);
           const currentIndex = tripStops.indexOf(currentStop);
 
           const newTripStops = [...tripStops];
@@ -244,10 +224,8 @@ const StopTimeEditPage = ({
           }));
 
           updatedStopsAndTimes = updatedStopsAndTimes.map((st) =>
-            parseInt(st.trip_id, 10) === parseInt(trip_id, 10)
-              ? resequencedStops.find(
-                  (rs) => parseInt(rs.stop_id, 10) === parseInt(st.stop_id, 10)
-                ) || st
+            st.trip_id === trip_id
+              ? resequencedStops.find((rs) => rs.stop_id === st.stop_id) || st
               : st
           );
 
@@ -263,10 +241,6 @@ const StopTimeEditPage = ({
           );
 
           setStopsAndTimes(updatedStopsAndTimes);
-          console.log(
-            "StopTimeEditPage - Sıralı kaydırma yapıldı, güncellenmiş stopsAndTimes:",
-            updatedStopsAndTimes
-          );
         } else {
           await updateStopTime(
             { ...stopTime, stop_id: updatedStopId },
@@ -275,16 +249,11 @@ const StopTimeEditPage = ({
             token
           );
           updatedStopsAndTimes = updatedStopsAndTimes.map((st) =>
-            parseInt(st.stop_id, 10) === parseInt(stop_id, 10) &&
-            parseInt(st.trip_id, 10) === parseInt(trip_id, 10)
-              ? { ...st, ...stopTimeData, stop_id: updatedStopId }
+            st.stop_id === stop_id && st.trip_id === trip_id
+              ? { ...st, ...stopTime, stop_id: updatedStopId }
               : st
           );
           setStopsAndTimes(updatedStopsAndTimes);
-          console.log(
-            "StopTimeEditPage - Sequence değişmedi, güncellenmiş stopsAndTimes:",
-            updatedStopsAndTimes
-          );
         }
 
         if (isNewStop) {
@@ -320,6 +289,19 @@ const StopTimeEditPage = ({
       <form onSubmit={handleSubmit}>
         <h5 className="mb-3">Stop</h5>
         <div className="mb-2">
+          <label htmlFor="stop_id" className="form-label">
+            Durak ID (Değiştirilemez)
+          </label>
+          <input
+            type="text"
+            id="stop_id"
+            name="stop_id"
+            className="form-control"
+            value={stopTimeData.stop_id}
+            disabled
+          />
+        </div>
+        <div className="mb-2">
           <label htmlFor="stop_select" className="form-label">
             Durak Seçimi
           </label>
@@ -339,7 +321,22 @@ const StopTimeEditPage = ({
             <option value="new">Yeni Durak Ekle</option>
           </select>
         </div>
-
+        {isNewStop && (
+          <div className="mb-2">
+            <label htmlFor="new_stop_id" className="form-label">
+              Yeni Durak ID (*)
+            </label>
+            <input
+              type="text"
+              id="new_stop_id"
+              name="stop_id"
+              className="form-control"
+              value={stopTimeData.stop_id}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        )}
         <div className="mb-2">
           <label htmlFor="stop_code" className="form-label">
             Durak Kodu
@@ -351,11 +348,12 @@ const StopTimeEditPage = ({
             className="form-control"
             value={stopTimeData.stop_code || ""}
             onChange={handleChange}
+            disabled={!isNewStop}
           />
         </div>
         <div className="mb-2">
           <label htmlFor="stop_name" className="form-label">
-            Durak Adı
+            Durak Adı (*)
           </label>
           <input
             type="text"
@@ -364,6 +362,8 @@ const StopTimeEditPage = ({
             className="form-control"
             value={stopTimeData.stop_name || ""}
             onChange={handleChange}
+            required
+            disabled={!isNewStop}
           />
         </div>
         <div className="mb-2">
@@ -377,6 +377,7 @@ const StopTimeEditPage = ({
             className="form-control"
             value={stopTimeData.stop_desc || ""}
             onChange={handleChange}
+            disabled={!isNewStop}
           />
         </div>
         <div className="row">
@@ -392,6 +393,7 @@ const StopTimeEditPage = ({
               value={stopTimeData.stop_lat || ""}
               onChange={handleChange}
               step="0.000001"
+              disabled={!isNewStop}
             />
           </div>
           <div className="col-6 mb-2">
@@ -406,6 +408,7 @@ const StopTimeEditPage = ({
               value={stopTimeData.stop_lon || ""}
               onChange={handleChange}
               step="0.000001"
+              disabled={!isNewStop}
             />
           </div>
         </div>
@@ -420,6 +423,7 @@ const StopTimeEditPage = ({
             className="form-control"
             value={stopTimeData.stop_url || ""}
             onChange={handleChange}
+            disabled={!isNewStop}
           />
         </div>
         <div className="mb-2">
@@ -430,8 +434,9 @@ const StopTimeEditPage = ({
             id="location_type"
             name="location_type"
             className="form-control"
-            value={stopTimeData.location_type ?? ""}
+            value={stopTimeData.location_type || ""}
             onChange={handleChange}
+            disabled={!isNewStop}
           >
             <option value="">Seçiniz</option>
             <option value="0">0 - Durak/Platform</option>
@@ -449,6 +454,7 @@ const StopTimeEditPage = ({
             className="form-control"
             value={stopTimeData.stop_timezone || ""}
             onChange={handleChange}
+            disabled={!isNewStop}
           />
         </div>
         <div className="mb-2">
@@ -459,8 +465,9 @@ const StopTimeEditPage = ({
             id="wheelchair_boarding"
             name="wheelchair_boarding"
             className="form-control"
-            value={stopTimeData.wheelchair_boarding ?? ""}
+            value={stopTimeData.wheelchair_boarding || ""}
             onChange={handleChange}
+            disabled={!isNewStop}
           >
             <option value="">Seçiniz</option>
             <option value="0">0 - Bilgi Yok</option>
@@ -501,15 +508,16 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_sequence" className="form-label">
-            Durak Sırası
+            Durak Sırası (*)
           </label>
           <input
             type="number"
             id="stop_sequence"
             name="stop_sequence"
             className="form-control"
-            value={stopTimeData.stop_sequence ?? ""}
+            value={stopTimeData.stop_sequence || ""}
             onChange={handleChange}
+            required
           />
         </div>
         <div className="mb-2">
@@ -533,7 +541,7 @@ const StopTimeEditPage = ({
             id="pickup_type"
             name="pickup_type"
             className="form-control"
-            value={stopTimeData.pickup_type ?? ""}
+            value={stopTimeData.pickup_type || ""}
             onChange={handleChange}
           >
             <option value="">Seçiniz</option>
@@ -551,7 +559,7 @@ const StopTimeEditPage = ({
             id="drop_off_type"
             name="drop_off_type"
             className="form-control"
-            value={stopTimeData.drop_off_type ?? ""}
+            value={stopTimeData.drop_off_type || ""}
             onChange={handleChange}
           >
             <option value="">Seçiniz</option>
@@ -570,7 +578,7 @@ const StopTimeEditPage = ({
             id="shape_dist_traveled"
             name="shape_dist_traveled"
             className="form-control"
-            value={stopTimeData.shape_dist_traveled ?? ""}
+            value={stopTimeData.shape_dist_traveled || ""}
             onChange={handleChange}
             step="0.01"
           />
@@ -583,7 +591,7 @@ const StopTimeEditPage = ({
             id="timepoint"
             name="timepoint"
             className="form-control"
-            value={stopTimeData.timepoint ?? ""}
+            value={stopTimeData.timepoint || ""}
             onChange={handleChange}
           >
             <option value="">Seçiniz</option>
@@ -611,7 +619,30 @@ StopTimeEditPage.propTypes = {
   stop_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
-  stopsAndTimes: PropTypes.array.isRequired,
+  stopsAndTimes: PropTypes.arrayOf(
+    PropTypes.shape({
+      stop_id: PropTypes.string.isRequired,
+      trip_id: PropTypes.string.isRequired,
+      project_id: PropTypes.string,
+      stop_code: PropTypes.string,
+      stop_name: PropTypes.string,
+      stop_desc: PropTypes.string,
+      stop_lat: PropTypes.number,
+      stop_lon: PropTypes.number,
+      stop_url: PropTypes.string,
+      location_type: PropTypes.number,
+      stop_timezone: PropTypes.string,
+      wheelchair_boarding: PropTypes.number,
+      arrival_time: PropTypes.string,
+      departure_time: PropTypes.string,
+      stop_sequence: PropTypes.number,
+      stop_headsign: PropTypes.string,
+      pickup_type: PropTypes.number,
+      drop_off_type: PropTypes.number,
+      shape_dist_traveled: PropTypes.number,
+      timepoint: PropTypes.number,
+    })
+  ).isRequired,
   route_id: PropTypes.string.isRequired,
 };
 

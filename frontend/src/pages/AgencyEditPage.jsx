@@ -18,9 +18,17 @@ const AgencyEditPage = ({
   useEffect(() => {
     const loadAgency = async () => {
       try {
-        const agency = agencies.find(
-          (ag) => ag.agency_id === parseInt(agency_id)
-        );
+        console.log("Agencies prop:", agencies); // agencies’in yapısını logla
+        console.log("Agency ID:", agency_id);
+
+        // agencies’in tanımlı olup olmadığını kontrol et
+        if (!agencies || (!agencies.data && !Array.isArray(agencies))) {
+          throw new Error("Agencies prop’u geçersiz veya eksik");
+        }
+
+        // agencies.data varsa onu kullan, yoksa direkt agencies’i kullan
+        const agencyList = agencies.data || agencies;
+        const agency = agencyList.find((ag) => ag.agency_id === agency_id);
 
         if (agency) {
           setFormData({
@@ -41,6 +49,7 @@ const AgencyEditPage = ({
           `Ajans yüklenirken hata oluştu: ${error.message}`,
           "error"
         );
+        onClose();
       }
     };
     loadAgency();
@@ -78,14 +87,17 @@ const AgencyEditPage = ({
         setLoading(true);
         const agencyData = { project_id, ...formData };
         await updateAgency(agencyData, token);
-        setAgencies((prevAgencies) => ({
-          ...prevAgencies,
-          data: prevAgencies.data.map((agency) =>
-            agency.agency_id === formData.agency_id
-              ? { ...agency, ...formData }
-              : agency
-          ),
-        }));
+        setAgencies((prevAgencies) => {
+          const agencyList = prevAgencies.data || prevAgencies;
+          return {
+            ...prevAgencies,
+            data: agencyList.map((agency) =>
+              agency.agency_id === formData.agency_id
+                ? { ...agency, ...formData }
+                : agency
+            ),
+          };
+        });
         Swal.fire("Güncellendi!", "Ajans başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {
@@ -106,6 +118,19 @@ const AgencyEditPage = ({
     <div className="form-container">
       <h5>Ajans Düzenle</h5>
       <form onSubmit={handleSubmit}>
+        <div className="mb-2">
+          <label htmlFor="agency_id" className="form-label">
+            Ajans ID (Değiştirilemez)
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="agency_id"
+            name="agency_id"
+            value={formData.agency_id}
+            disabled
+          />
+        </div>
         <div className="mb-2">
           <label htmlFor="agency_name" className="form-label">
             Ajans Adı
@@ -192,7 +217,30 @@ AgencyEditPage.propTypes = {
   agency_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setAgencies: PropTypes.func.isRequired,
-  agencies: PropTypes.string.isRequired,
+  agencies: PropTypes.oneOfType([
+    PropTypes.arrayOf(
+      PropTypes.shape({
+        agency_id: PropTypes.string.isRequired,
+        agency_name: PropTypes.string,
+        agency_url: PropTypes.string,
+        agency_timezone: PropTypes.string,
+        agency_lang: PropTypes.string,
+        agency_phone: PropTypes.string,
+      })
+    ),
+    PropTypes.shape({
+      data: PropTypes.arrayOf(
+        PropTypes.shape({
+          agency_id: PropTypes.string.isRequired,
+          agency_name: PropTypes.string,
+          agency_url: PropTypes.string,
+          agency_timezone: PropTypes.string,
+          agency_lang: PropTypes.string,
+          agency_phone: PropTypes.string,
+        })
+      ).isRequired,
+    }),
+  ]).isRequired,
 };
 
 export default AgencyEditPage;

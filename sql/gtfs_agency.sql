@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `agency`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `agency` (
-  `agency_id` int NOT NULL AUTO_INCREMENT,
+  `agency_id` VARCHAR(255) NOT NULL,
   `agency_name` varchar(255) NOT NULL,
   `agency_url` varchar(255) NOT NULL,
   `agency_timezone` varchar(255) NOT NULL,

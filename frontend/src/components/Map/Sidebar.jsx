@@ -257,16 +257,8 @@ const Sidebar = ({
           total: totalTrips,
         });
 
-        let stopsResponse;
-        if (selectedEntities.trip) {
-          stopsResponse = await fetchStopsAndStopTimesByTripId(
-            selectedEntities.trip.trip_id,
-            project_id,
-            token
-          );
-          setStopsAndTimes(stopsResponse);
-        } else {
-          stopsResponse = await fetchStopsByProjectId(
+        if (!selectedEntities.trip) {
+          const stopsResponse = await fetchStopsByProjectId(
             project_id,
             token,
             pageStops,
@@ -274,22 +266,6 @@ const Sidebar = ({
             searchTerms.stops || ""
           );
           setStopsAndTimes(stopsResponse.data || stopsResponse || []);
-        }
-
-        if (selectedEntities.trip) {
-          const shapesResponse = await fetchShapesByTripId(
-            project_id,
-            selectedEntities.trip.shape_id,
-            token
-          );
-          setShapes(shapesResponse);
-
-          const center = calculateCenter(shapesResponse, stopsResponse);
-          if (center) {
-            setMapCenter(center);
-            setZoom(12);
-          }
-        } else {
           setShapes([]);
         }
       } catch (error) {
@@ -317,7 +293,6 @@ const Sidebar = ({
     searchTerms,
     selectedEntities.agency,
     selectedEntities.route,
-    selectedEntities.trip,
     selectedEntities.calendar,
     isFiltered,
     sortDirection,
@@ -398,23 +373,49 @@ const Sidebar = ({
     }).then(async (result) => {
       if (result.isConfirmed) {
         const offsetMinutes = result.value;
-        Swal.fire(
-          "Copied!",
-          `Trip copied with an offset of ${offsetMinutes} minutes.`,
-          "success"
-        );
-
         try {
-          await copyTripWithOffset(trip, offsetMinutes, token);
+          const copyResult = await copyTripWithOffset(
+            trip.trip_id,
+            offsetMinutes,
+            token
+          );
+          const newTripId = copyResult.trip_id;
+
+          const newTrip = {
+            ...trip,
+            trip_id: newTripId,
+            trip_headsign: trip.trip_headsign || `${trip.trip_id} (Copy)`,
+            trip_short_name: trip.trip_short_name || `${trip.trip_id} (Copy)`,
+          };
+
+          setFullTrips((prev) => [...prev, newTrip]);
+          const updatedTrips = applyTripFiltersAndSort([...fullTrips, newTrip]);
+          setTrips(updatedTrips);
+
+          const newStopTimes = copyResult.new_stop_times || [];
+          if (newStopTimes.length > 0) {
+            setTripTimes((prev) => ({
+              ...prev,
+              [newTripId]: {
+                firstArrival: newStopTimes[0].arrival_time || "N/A",
+                lastDeparture:
+                  newStopTimes[newStopTimes.length - 1].departure_time || "N/A",
+              },
+            }));
+          }
 
           Swal.fire(
             "Copied!",
-            `Trip copied with an offset of ${offsetMinutes} minutes.`,
+            `Trip copied with an offset of ${offsetMinutes} minutes. New times: ${
+              newStopTimes[0]?.arrival_time || "N/A"
+            } - ${
+              newStopTimes[newStopTimes.length - 1]?.departure_time || "N/A"
+            }`,
             "success"
           );
         } catch (error) {
           console.error("Error copying trip:", error);
-          Swal.fire("Error!", "Failed to copy trip.", "error");
+          Swal.fire("Error!", `Failed to copy trip: ${error.message}`, "error");
         }
       }
     });
@@ -432,8 +433,8 @@ const Sidebar = ({
         count++;
       });
     }
-    if (stops && stops.data && stops.data.length > 0) {
-      stops.data.forEach((stop) => {
+    if (stops && stops.length > 0) {
+      stops.forEach((stop) => {
         latSum += parseFloat(stop.stop_lat);
         lonSum += parseFloat(stop.stop_lon);
         count++;
@@ -536,6 +537,7 @@ const Sidebar = ({
             stop: null,
           }));
           setSelectedCategory("calendar");
+          setShapes([]);
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -544,6 +546,32 @@ const Sidebar = ({
             stop: null,
           }));
           setSelectedCategory("trip");
+
+          try {
+            const shapesResponse = await fetchShapesByTripId(
+              project_id,
+              entity.shape_id,
+              token
+            );
+            setShapes(shapesResponse);
+
+            const stopsResponse = await fetchStopsAndStopTimesByTripId(
+              entity.trip_id,
+              project_id,
+              token
+            );
+            setStopsAndTimes(stopsResponse);
+
+            const center = calculateCenter(shapesResponse, stopsResponse);
+            if (center) {
+              setMapCenter(center);
+              setZoom(12);
+            }
+          } catch (error) {
+            console.error("Trip seçilirken şekiller yüklenemedi:", error);
+            setShapes([]);
+            setStopsAndTimes([]);
+          }
         }
         break;
       }
@@ -1294,9 +1322,9 @@ Sidebar.propTypes = {
   setRoutes: PropTypes.func.isRequired,
   trips: PropTypes.object.isRequired,
   setTrips: PropTypes.func.isRequired,
-  stopsAndTimes: PropTypes.object.isRequired,
+  stopsAndTimes: PropTypes.array.isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
-  calendars: PropTypes.array.isRequired,
+  calendars: PropTypes.object.isRequired,
   setCalendars: PropTypes.func.isRequired,
   agencies: PropTypes.object.isRequired,
   setAgencies: PropTypes.func.isRequired,

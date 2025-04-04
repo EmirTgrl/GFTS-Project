@@ -3,28 +3,33 @@ const { pool } = require("../db.js");
 const tripService = {
   copyTrip: async (req, res) => {
     const user_id = req.user.id;
-    const { offsetMinutes, trip } = req.body; 
+    const { offsetMinutes, trip } = req.body;
 
-    if (!offsetMinutes || !trip) {
-      return res.status(400).json({ error: "offsetMinutes and trip_id are required" });
+    if (!offsetMinutes || !trip || !trip.trip_id) {
+      return res
+        .status(400)
+        .json({ error: "offsetMinutes and trip (with trip_id) are required" });
     }
     const offset = parseInt(offsetMinutes);
-    if (isNaN(offset))
-    {
-        return res.status(400).json({ error: "offsetMinutes should be integer" });
+    if (isNaN(offset)) {
+      return res.status(400).json({ error: "offsetMinutes should be integer" });
     }
 
-    const connection = await pool.getConnection(); 
+    const connection = await pool.getConnection();
 
     try {
       await connection.beginTransaction();
 
-      const [newTripResult] = await connection.execute(
-        `INSERT INTO trips (route_id, service_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id, wheelchair_accessible, bikes_allowed, user_id, project_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      // Yeni trip_id’yi kullanıcıdan almıyoruz, benzersiz bir string oluşturabiliriz (örneğin trip_id + timestamp)
+      const newTripId = `${trip.trip_id}_${Date.now()}`; // Örnek bir benzersiz ID
+
+      await connection.execute(
+        `INSERT INTO trips (route_id, service_id, trip_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id, wheelchair_accessible, bikes_allowed, user_id, project_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           trip.route_id,
           trip.service_id,
+          newTripId,
           trip.trip_headsign,
           trip.trip_short_name,
           trip.direction_id,
@@ -32,12 +37,10 @@ const tripService = {
           trip.shape_id,
           trip.wheelchair_accessible,
           trip.bikes_allowed,
-          user_id, 
+          user_id,
           trip.project_id,
         ]
       );
-
-      const newTripId = newTripResult.insertId;
 
       const [originalStopTimes] = await connection.execute(
         `SELECT * FROM stop_times WHERE trip_id = ? ORDER BY stop_sequence`,
@@ -47,13 +50,13 @@ const tripService = {
       for (const stopTime of originalStopTimes) {
         await connection.execute(
           `INSERT INTO stop_times (trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_headsign, pickup_type, drop_off_type, shape_dist_traveled, timepoint, user_id, project_id)
-           VALUES (?, ADDTIME(?, SEC_TO_TIME(? * 60)), ADDTIME(?, SEC_TO_TIME(? * 60)), ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ADDTIME(?, SEC_TO_TIME(? * 60)), ADDTIME(?, SEC_TO_TIME(? * 60)), ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             newTripId,
             stopTime.arrival_time,
-            offset, // offset in seconds
+            offset,
             stopTime.departure_time,
-            offset,  // offset in seconds
+            offset,
             stopTime.stop_id,
             stopTime.stop_sequence,
             stopTime.stop_headsign,
@@ -61,24 +64,25 @@ const tripService = {
             stopTime.drop_off_type,
             stopTime.shape_dist_traveled,
             stopTime.timepoint,
-            user_id, // Use the requesting user's ID
-            stopTime.project_id
+            user_id,
+            stopTime.project_id,
           ]
         );
       }
 
       await connection.commit();
-      res.status(201).json({ message: "Trip copied successfully", trip_id: newTripId });
-
+      res
+        .status(201)
+        .json({ message: "Trip copied successfully", trip_id: newTripId });
     } catch (error) {
       await connection.rollback();
       console.error("Error copying trip:", error);
       res.status(500).json({ error: "Server error", details: error.message });
     } finally {
-      connection.release(); // Always release the connection
+      connection.release();
     }
-  }
-  ,
+  },
+
   getTripsByQuery: async (req, res) => {
     const user_id = req.user.id;
     const validFields = [
@@ -175,7 +179,6 @@ const tripService = {
       const validFields = [
         "route_id",
         "service_id",
-        "trip_id",
         "trip_headsign",
         "trip_short_name",
         "direction_id",
@@ -184,7 +187,7 @@ const tripService = {
         "wheelchair_accessible",
         "bikes_allowed",
         "project_id",
-      ];
+      ]; // trip_id’yi validFields’dan çıkardık, WHERE’da kullanılıyor
       const { ...params } = req.body;
 
       const fields = [];
@@ -199,10 +202,13 @@ const tripService = {
         }
       }
 
+      if (fields.length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+
       const query = `
         UPDATE trips
-        SET
-          ${fields.join(", ")}
+        SET ${fields.join(", ")}
         WHERE trip_id = ? AND user_id = ?
       `;
       const [result] = await pool.execute(query, [...values, trip_id, user_id]);
@@ -223,7 +229,7 @@ const tripService = {
       const validFields = [
         "route_id",
         "service_id",
-        "trip_id",
+        "trip_id", // trip_id’yi ekledik, kullanıcıdan gelecek
         "trip_headsign",
         "trip_short_name",
         "direction_id",
@@ -233,11 +239,19 @@ const tripService = {
         "bikes_allowed",
         "project_id",
       ];
-      const { ...params } = req.body;
+      const { trip_id, ...params } = req.body;
+
+      if (!trip_id) {
+        return res.status(400).json({ error: "trip_id is required" });
+      }
 
       const fields = [];
       const values = [];
       const placeholders = [];
+
+      fields.push("trip_id");
+      values.push(trip_id);
+      placeholders.push("?");
 
       for (const param in params) {
         if (validFields.includes(param)) {
@@ -254,15 +268,15 @@ const tripService = {
       values.push(user_id);
 
       const query = `
-        INSERT INTO trips(${fields.join(", ")})
-        VALUES(${placeholders.join(", ")})
+        INSERT INTO trips (${fields.join(", ")})
+        VALUES (${placeholders.join(", ")})
       `;
 
       const [result] = await pool.execute(query, values);
 
       res.status(201).json({
         message: "Trip saved successfully",
-        trip_id: result.insertId,
+        trip_id: trip_id, 
       });
     } catch (error) {
       console.error(error);

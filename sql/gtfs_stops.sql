@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `stops`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stops` (
-  `stop_id` int NOT NULL AUTO_INCREMENT,
+  `stop_id` VARCHAR(255) NOT NULL,
   `stop_code` varchar(255) DEFAULT NULL,
   `stop_name` varchar(255) NOT NULL,
   `stop_desc` varchar(255) DEFAULT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE `stops` (
   `zone_id` varchar(255) DEFAULT NULL,
   `stop_url` varchar(255) DEFAULT NULL,
   `location_type` tinyint DEFAULT NULL,
-  `parent_station` int DEFAULT NULL,
+  `parent_station` VARCHAR(255) DEFAULT NULL,
   `stop_timezone` varchar(255) DEFAULT NULL,
   `wheelchair_boarding` tinyint DEFAULT NULL,
   `user_id` int NOT NULL,

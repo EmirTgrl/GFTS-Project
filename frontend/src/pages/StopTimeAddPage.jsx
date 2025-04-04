@@ -17,6 +17,7 @@ const StopTimeAddPage = ({
 }) => {
   const { token } = useContext(AuthContext);
   const [stopData, setStopData] = useState({
+    stop_id: "",
     arrival_time: "",
     departure_time: "",
     stop_sequence: "",
@@ -68,7 +69,25 @@ const StopTimeAddPage = ({
     const { name, value } = e.target;
     setStopData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]:
+        name === "stop_lat" || name === "stop_lon"
+          ? value === ""
+            ? ""
+            : parseFloat(value)
+          : name === "stop_sequence" ||
+            name === "pickup_type" ||
+            name === "drop_off_type" ||
+            name === "timepoint" ||
+            name === "location_type" ||
+            name === "wheelchair_boarding"
+          ? value === ""
+            ? ""
+            : parseInt(value, 10)
+          : name === "shape_dist_traveled"
+          ? value === ""
+            ? ""
+            : parseFloat(value)
+          : value,
     }));
   };
 
@@ -80,6 +99,7 @@ const StopTimeAddPage = ({
       setIsNewStop(true);
       setStopData((prev) => ({
         ...prev,
+        stop_id: "",
         stop_code: "",
         stop_name: "",
         stop_desc: "",
@@ -93,11 +113,12 @@ const StopTimeAddPage = ({
     } else {
       setIsNewStop(false);
       const selectedStop = allStops.find(
-        (stop) => stop.stop_id === parseInt(newSelectedStopId)
+        (stop) => stop.stop_id === newSelectedStopId
       );
       if (selectedStop) {
         setStopData((prev) => ({
           ...prev,
+          stop_id: selectedStop.stop_id,
           stop_code: selectedStop.stop_code || "",
           stop_name: selectedStop.stop_name || "",
           stop_desc: selectedStop.stop_desc || "",
@@ -115,6 +136,20 @@ const StopTimeAddPage = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (
+      !stopData.stop_name ||
+      !stopData.stop_sequence ||
+      !stopData.arrival_time ||
+      !stopData.departure_time
+    ) {
+      Swal.fire(
+        "Hata!",
+        "Durak adı, sıra numarası, varış ve kalkış zamanı zorunludur!",
+        "error"
+      );
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Emin misiniz?",
       text: "Bu durak zamanını eklemek istediğinize emin misiniz?",
@@ -131,57 +166,44 @@ const StopTimeAddPage = ({
         let stopResponse;
 
         const stopDataForApi = {
+          stop_id: stopData.stop_id || `${trip_id}_${Date.now()}`, // Benzersiz bir stop_id oluştur
           stop_code: stopData.stop_code || null,
-          stop_name: stopData.stop_name || null,
+          stop_name: stopData.stop_name,
           stop_desc: stopData.stop_desc || null,
-          stop_lat: parseFloat(stopData.stop_lat) || null,
-          stop_lon: parseFloat(stopData.stop_lon) || null,
+          stop_lat: stopData.stop_lat || null,
+          stop_lon: stopData.stop_lon || null,
           stop_url: stopData.stop_url || null,
-          location_type: stopData.location_type
-            ? parseInt(stopData.location_type)
-            : null,
+          location_type: stopData.location_type || null,
           stop_timezone: stopData.stop_timezone || null,
-          wheelchair_boarding: stopData.wheelchair_boarding
-            ? parseInt(stopData.wheelchair_boarding)
-            : null,
-          project_id: project_id,
+          wheelchair_boarding: stopData.wheelchair_boarding || null,
+          project_id,
         };
 
         const stopTimeDataForApi = {
-          trip_id: trip_id,
+          trip_id,
+          stop_id: stopDataForApi.stop_id,
           arrival_time: stopData.arrival_time || null,
           departure_time: stopData.departure_time || null,
-          stop_sequence: stopData.stop_sequence
-            ? parseInt(stopData.stop_sequence)
-            : null,
+          stop_sequence: stopData.stop_sequence || null,
           stop_headsign: stopData.stop_headsign || null,
-          pickup_type: stopData.pickup_type
-            ? parseInt(stopData.pickup_type)
-            : null,
-          drop_off_type: stopData.drop_off_type
-            ? parseInt(stopData.drop_off_type)
-            : null,
-          shape_dist_traveled: stopData.shape_dist_traveled
-            ? parseFloat(stopData.shape_dist_traveled)
-            : null,
-          timepoint: stopData.timepoint ? parseInt(stopData.timepoint) : null,
-          project_id: project_id,
+          pickup_type: stopData.pickup_type || null,
+          drop_off_type: stopData.drop_off_type || null,
+          shape_dist_traveled: stopData.shape_dist_traveled || null,
+          timepoint: stopData.timepoint || null,
+          project_id,
         };
 
         if (isNewStop) {
           stopResponse = await saveStop(stopDataForApi, token);
+          stopTimeDataForApi.stop_id = stopResponse.stop_id;
         } else {
-          stopResponse = { stop_id: parseInt(selectedStopId) };
+          stopTimeDataForApi.stop_id = selectedStopId;
         }
 
-        stopTimeDataForApi.stop_id = stopResponse.stop_id;
-
-        // Mevcut stopsAndTimes'ı güncelle: Yeni sequence'e göre sıralama yap
         setStopsAndTimes((prevStops) => {
           const currentStops = Array.isArray(prevStops) ? [...prevStops] : [];
           const newSequence = parseInt(stopData.stop_sequence) || 1;
 
-          // Aynı veya daha büyük sequence'ları bir artır
           const updatedStops = currentStops.map((stop) => {
             if (
               stop.trip_id === trip_id &&
@@ -192,27 +214,20 @@ const StopTimeAddPage = ({
             return stop;
           });
 
-          // Yeni stop'u ekle
-          const newStop = {
-            ...stopDataForApi,
-            ...stopTimeDataForApi,
-            stop_id: stopResponse.stop_id,
-          };
+          const newStop = { ...stopDataForApi, ...stopTimeDataForApi };
           updatedStops.push(newStop);
 
-          // Sequence'e göre sırala
           return updatedStops.sort(
             (a, b) => (a.stop_sequence || 0) - (b.stop_sequence || 0)
           );
         });
 
-        // API'ye kaydet
         await saveStopTime(stopTimeDataForApi, token);
 
         Swal.fire("Eklendi!", "Durak zamanı başarıyla eklendi.", "success");
 
-        // Formu sıfırla
         setStopData({
+          stop_id: "",
           arrival_time: "",
           departure_time: "",
           stop_sequence: "",
@@ -273,6 +288,22 @@ const StopTimeAddPage = ({
             <option value="new">Yeni Durak Ekle</option>
           </select>
         </div>
+        {isNewStop && (
+          <div className="mb-2">
+            <label htmlFor="stop_id" className="form-label">
+              Durak ID (*)
+            </label>
+            <input
+              type="text"
+              id="stop_id"
+              name="stop_id"
+              className="form-control"
+              value={stopData.stop_id}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        )}
         <div className="mb-2">
           <label htmlFor="stop_code" className="form-label">
             Durak Kodu
@@ -419,7 +450,7 @@ const StopTimeAddPage = ({
         <h5>Stop time</h5>
         <div className="mb-2">
           <label htmlFor="arrival_time" className="form-label">
-            Varış Zamanı
+            Varış Zamanı (*)
           </label>
           <input
             type="text"
@@ -434,7 +465,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="departure_time" className="form-label">
-            Kalkış Zamanı
+            Kalkış Zamanı (*)
           </label>
           <input
             type="text"

@@ -20,8 +20,17 @@ const RouteEditPage = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const initialRouteData = routes.find((rt) => rt.route_id === route_id);
+        // routes.data varsa onu kullan, yoksa routes’u direkt al
+        const routeList = routes.data || routes;
+        const initialRouteData = routeList.find(
+          (rt) => rt.route_id === route_id
+        );
+        if (!initialRouteData) {
+          throw new Error("Rota bulunamadı");
+        }
+
         const prepareRouteData = (data) => ({
+          route_id: data?.route_id || "",
           agency_id: data?.agency_id || "",
           project_id: data?.project_id || project_id,
           route_short_name: data?.route_short_name || "",
@@ -64,13 +73,22 @@ const RouteEditPage = ({
         name === "continuous_drop_off"
           ? value === ""
             ? null
-            : parseInt(value, 10) || null
-          : value,
+            : parseInt(value, 10) || null // Sayısal alanlar için parseInt korundu
+          : value, // route_id dahil diğer alanlar string
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (
+      !routeData.route_short_name ||
+      !routeData.route_type ||
+      !routeData.agency_id
+    ) {
+      Swal.fire("Hata!", "Kısa ad, rota türü ve ajans zorunludur!", "error");
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Emin misiniz?",
       text: "Bu rotayı güncellemek istediğinize emin misiniz?",
@@ -86,12 +104,15 @@ const RouteEditPage = ({
       try {
         const updatedRouteData = { route_id, ...routeData };
         await updateRoute(updatedRouteData, token);
-        setRoutes((prev) => ({
-          ...prev,
-          data: prev.data.map((r) =>
-            r.route_id === route_id ? { ...r, ...updatedRouteData } : r
-          ),
-        }));
+        setRoutes((prev) => {
+          const routeList = prev.data || prev;
+          return {
+            ...prev,
+            data: routeList.map((r) =>
+              r.route_id === route_id ? { ...r, ...updatedRouteData } : r
+            ),
+          };
+        });
         Swal.fire("Güncellendi!", "Rota başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {
@@ -113,8 +134,21 @@ const RouteEditPage = ({
       <h5>Rota Düzenle</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
+          <label htmlFor="route_id" className="form-label">
+            Rota ID (Değiştirilemez)
+          </label>
+          <input
+            type="text"
+            id="route_id"
+            name="route_id"
+            className="form-control"
+            value={routeData.route_id}
+            disabled
+          />
+        </div>
+        <div className="mb-2">
           <label htmlFor="agency_id" className="form-label">
-            Ajans
+            Ajans (*)
           </label>
           <select
             id="agency_id"
@@ -134,7 +168,7 @@ const RouteEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="route_short_name" className="form-label">
-            Kısa Ad
+            Kısa Ad (*)
           </label>
           <input
             type="text"
@@ -161,7 +195,7 @@ const RouteEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="route_type" className="form-label">
-            Rota Türü
+            Rota Türü (*)
           </label>
           <select
             id="route_type"
@@ -247,10 +281,52 @@ const RouteEditPage = ({
 };
 
 RouteEditPage.propTypes = {
-  agencies: PropTypes.array.isRequired,
+  agencies: PropTypes.arrayOf(
+    PropTypes.shape({
+      agency_id: PropTypes.string.isRequired,
+      agency_name: PropTypes.string,
+    })
+  ).isRequired,
   project_id: PropTypes.string.isRequired,
   route_id: PropTypes.string.isRequired,
-  routes: PropTypes.array.isRequired,
+  routes: PropTypes.oneOfType([
+    PropTypes.arrayOf(
+      PropTypes.shape({
+        route_id: PropTypes.string.isRequired,
+        agency_id: PropTypes.string,
+        project_id: PropTypes.string,
+        route_short_name: PropTypes.string,
+        route_long_name: PropTypes.string,
+        route_desc: PropTypes.string,
+        route_type: PropTypes.string,
+        route_url: PropTypes.string,
+        route_color: PropTypes.string,
+        route_text_color: PropTypes.string,
+        route_sort_order: PropTypes.number,
+        continuous_pickup: PropTypes.number,
+        continuous_drop_off: PropTypes.number,
+      })
+    ),
+    PropTypes.shape({
+      data: PropTypes.arrayOf(
+        PropTypes.shape({
+          route_id: PropTypes.string.isRequired,
+          agency_id: PropTypes.string,
+          project_id: PropTypes.string,
+          route_short_name: PropTypes.string,
+          route_long_name: PropTypes.string,
+          route_desc: PropTypes.string,
+          route_type: PropTypes.string,
+          route_url: PropTypes.string,
+          route_color: PropTypes.string,
+          route_text_color: PropTypes.string,
+          route_sort_order: PropTypes.number,
+          continuous_pickup: PropTypes.number,
+          continuous_drop_off: PropTypes.number,
+        })
+      ).isRequired,
+    }),
+  ]).isRequired,
   onClose: PropTypes.func.isRequired,
   setRoutes: PropTypes.func.isRequired,
 };

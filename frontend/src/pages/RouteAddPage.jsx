@@ -7,7 +7,8 @@ import { AuthContext } from "../components/Auth/AuthContext";
 const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState({
-    agency_id: "",
+    route_id: "", // route_id ekledik, string olacak
+    agency_id: selectedAgency?.agency_id || "",
     project_id,
     route_short_name: "",
     route_long_name: "",
@@ -23,7 +24,6 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(name, value);
     setRouteData((prev) => ({
       ...prev,
       [name]:
@@ -32,14 +32,22 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         name === "continuous_drop_off"
           ? value === ""
             ? null
-            : parseInt(value, 10) || null
-          : value,
+            : parseInt(value, 10) || null // Sayısal alanlar için parseInt korundu
+          : value, // route_id dahil diğer alanlar string
     }));
   };
-  console.log(routeData);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (
+      !routeData.route_id ||
+      !routeData.route_short_name ||
+      !routeData.route_type
+    ) {
+      Swal.fire("Hata!", "Rota ID, kısa ad ve rota türü zorunludur!", "error");
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Emin misiniz?",
       text: "Bu rotayı eklemek istediğinize emin misiniz?",
@@ -50,12 +58,16 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
       confirmButtonText: "Evet, ekle!",
       cancelButtonText: "Hayır",
     });
+
     if (result.isConfirmed) {
       try {
         const newRoute = { ...routeData, agency_id: selectedAgency.agency_id };
         const response = await saveRoute(newRoute, token);
-        const route_id = response.route_id;
-        setRoutes((prev) => ({ ...prev, data: [...prev.data, { ...newRoute, route_id }] }));
+        const route_id = response.route_id; // Backend’ten dönen route_id’yi kullan
+        setRoutes((prev) => ({
+          ...prev,
+          data: [...prev.data, { ...newRoute, route_id }],
+        }));
         Swal.fire("Eklendi!", "Rota başarıyla eklendi.", "success");
         onClose();
       } catch (error) {
@@ -73,6 +85,20 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
       <h5>Yeni Rota Ekle</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
+          <label htmlFor="route_id" className="form-label">
+            Rota ID (*)
+          </label>
+          <input
+            type="text"
+            id="route_id"
+            name="route_id"
+            className="form-control"
+            value={routeData.route_id}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="mb-2">
           <label htmlFor="route_short_name" className="form-label">
             Kısa Ad (*)
           </label>
@@ -88,7 +114,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_long_name" className="form-label">
-            Uzun Ad (*)
+            Uzun Ad
           </label>
           <input
             type="text"
@@ -190,7 +216,9 @@ RouteAddPage.propTypes = {
   project_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setRoutes: PropTypes.func.isRequired,
-  selectedAgency: PropTypes.string.isRequired,
+  selectedAgency: PropTypes.shape({
+    agency_id: PropTypes.string.isRequired,
+  }), // selectedAgency opsiyonel ama agency_id string
 };
 
 export default RouteAddPage;

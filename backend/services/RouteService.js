@@ -27,7 +27,7 @@ const routeService = {
       if (validFields.includes(param)) {
         if (param === "route_long_name") {
           fields.push(`${param} LIKE ?`);
-          values.push(`%${req.query[param]}%`); 
+          values.push(`%${req.query[param]}%`);
         } else {
           fields.push(`${param} = ?`);
           values.push(req.query[param]);
@@ -89,12 +89,12 @@ const routeService = {
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },
+
   updateRoute: async (req, res) => {
     try {
       const user_id = req.user.id;
       const { route_id } = req.params;
       const validFields = [
-        "route_id",
         "project_id",
         "agency_id",
         "route_short_name",
@@ -105,7 +105,7 @@ const routeService = {
         "route_color",
         "route_text_color",
         "route_sort_order",
-      ];
+      ]; // route_id’yi validFields’dan çıkardık, çünkü WHERE’da kullanılıyor
       const { ...params } = req.body;
 
       const fields = [];
@@ -118,6 +118,10 @@ const routeService = {
         } else {
           console.warn(`unexpected field ${param}`);
         }
+      }
+
+      if (fields.length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
       }
 
       const query = `
@@ -135,16 +139,18 @@ const routeService = {
         return res.status(404).json({ error: "Route not found" });
       }
 
-      res.status(200).json({ message: "successfully updated" });
+      res.status(200).json({ message: "Successfully updated" });
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: "Server Error", details: e.message });
     }
   },
+
   saveRoute: async (req, res) => {
     try {
       const user_id = req.user.id;
       const validFields = [
+        "route_id", // route_id’yi ekledik, kullanıcıdan gelecek
         "project_id",
         "agency_id",
         "route_short_name",
@@ -156,11 +162,20 @@ const routeService = {
         "route_text_color",
         "route_sort_order",
       ];
-      const { ...params } = req.body;
+      const { route_id, ...params } = req.body;
+
+      // route_id’nin gelip gelmediğini kontrol et
+      if (!route_id) {
+        return res.status(400).json({ error: "route_id is required" });
+      }
 
       const fields = [];
       const values = [];
       const placeholders = [];
+
+      fields.push("route_id");
+      values.push(route_id);
+      placeholders.push("?");
 
       for (const param in params) {
         if (validFields.includes(param)) {
@@ -177,15 +192,15 @@ const routeService = {
       values.push(user_id);
 
       const query = `
-        INSERT INTO routes(${fields.join(", ")})
-        VALUES(${placeholders.join(", ")})
+        INSERT INTO routes (${fields.join(", ")})
+        VALUES (${placeholders.join(", ")})
       `;
 
       const [result] = await pool.execute(query, values);
 
       res.status(201).json({
         message: "Route saved successfully",
-        route_id: result.insertId,
+        route_id: route_id, // Kullanıcıdan gelen route_id’yi dön
       });
     } catch (error) {
       console.error(error);

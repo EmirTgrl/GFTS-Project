@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `calendar`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `calendar` (
-  `service_id` int NOT NULL AUTO_INCREMENT,
+  `service_id` VARCHAR(255) NOT NULL,
   `monday` tinyint NOT NULL,
   `tuesday` tinyint NOT NULL,
   `wednesday` tinyint NOT NULL,

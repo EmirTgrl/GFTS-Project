@@ -148,7 +148,6 @@ const MapView = ({
   const mapRef = useRef(null);
   const prevStopsAndTimesRef = useRef(null);
 
-  // stopsAndTimes veya shapes değiştiğinde güncelle
   useEffect(() => {
     if (!stopsAndTimes || stopsAndTimes.length === 0) return;
 
@@ -156,27 +155,24 @@ const MapView = ({
       JSON.stringify(stopsAndTimes) !==
       JSON.stringify(prevStopsAndTimesRef.current)
     ) {
-      console.log("Updating tempStopsAndTimes:", stopsAndTimes);
       const newStops = JSON.parse(JSON.stringify(stopsAndTimes));
       const newShapes = JSON.parse(JSON.stringify(shapes || []));
       setTempStopsAndTimes(newStops);
       setTempShapes(newShapes);
       prevStopsAndTimesRef.current = stopsAndTimes;
 
-      // İlk trip seçiminde shape’lerin görünmesini sağla
       if (selectedEntities.trip) {
         setVisibleShapes(newShapes);
       }
     }
   }, [stopsAndTimes, shapes, selectedEntities.trip]);
 
-  // Trip seçildiğinde sadece o trip’in duraklarına zoom yap ve shape’leri göster
   useEffect(() => {
     if (selectedEntities.trip && tempStopsAndTimes.length > 0) {
       const tripStops = tempStopsAndTimes.filter(
         (stop) => stop.trip_id === selectedEntities.trip.trip_id
       );
-      const tripShapes = tempShapes; // Şimdilik tüm shape’ler, filtre gerekirse ekleriz
+      const tripShapes = tempShapes;
 
       if (tripStops.length > 0) {
         const avgLat =
@@ -190,12 +186,11 @@ const MapView = ({
           mapRef.current.setView(newCenter, 12);
         }
         setVisibleStops(tripStops);
-        setVisibleShapes(tripShapes); // Her trip seçiminde shape’leri güncelle
+        setVisibleShapes(tripShapes);
       }
     }
   }, [selectedEntities.trip, tempStopsAndTimes, tempShapes]);
 
-  // Bounds ve zoom değiştiğinde görünür durakları ve shape’leri güncelle
   const handleBoundsChange = ({ bounds, zoom }) => {
     setCurrentBounds(bounds);
     setCurrentZoom(zoom);
@@ -219,15 +214,27 @@ const MapView = ({
 
   useEffect(() => {
     if (editorMode === "save") {
-      setStopsAndTimes(tempStopsAndTimes);
-      setShapes(tempShapes);
-      saveMultipleShapes(tempShapes, selectedEntities.trip.trip_id, token);
-      saveMultipleStopsAndTimes(tempStopsAndTimes, token);
-      setEditorMode("close");
-    } else if (editorMode === "close" && selectedEntities.trip) {
-      // Yeniden yükleme yok, mevcut veri korunuyor
+      const saveData = async () => {
+        try {
+          await saveMultipleShapes(
+            tempShapes,
+            selectedEntities.trip.trip_id,
+            token
+          );
+          await saveMultipleStopsAndTimes(tempStopsAndTimes, token);
+          setStopsAndTimes(tempStopsAndTimes);
+          setShapes(tempShapes);
+          Swal.fire("Başarılı!", "Duraklar ve şekiller kaydedildi.", "success");
+        } catch (error) {
+          console.error("Kaydetme hatası:", error);
+          Swal.fire("Hata!", "Kaydetme başarısız: " + error.message, "error");
+        } finally {
+          setEditorMode("close");
+        }
+      };
+      saveData();
     }
-  }, [editorMode, selectedEntities.trip, token]);
+  }, [editorMode, selectedEntities.trip, token, tempStopsAndTimes, tempShapes]);
 
   useEffect(() => {
     if (!clickedCoords || clickedCoords === prevClickedCoords.current) return;
@@ -307,9 +314,13 @@ const MapView = ({
       }).then((result) => {
         if (result.isConfirmed) {
           const stopName = result.value;
+          const newStopId = `${
+            selectedEntities.trip.trip_id
+          }_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
           setTempStopsAndTimes((prev) => [
             ...prev,
             {
+              stop_id: newStopId,
               trip_id: selectedEntities.trip?.trip_id,
               stop_name: stopName,
               stop_lat: clickedCoords.lat,
@@ -318,7 +329,7 @@ const MapView = ({
               departure_time: selectedEntities.trip ? "00:00:00" : undefined,
               stop_sequence:
                 prev.length > 0
-                  ? Math.max(...prev.map((s) => s.stop_sequence)) + 1
+                  ? Math.max(...prev.map((s) => s.stop_sequence || 0)) + 1
                   : 1,
               project_id: selectedEntities.trip?.project_id,
             },
@@ -437,7 +448,6 @@ const MapView = ({
       <MapUpdater mapCenter={mapCenter} zoom={zoom} />
       <BoundsTracker onBoundsChange={handleBoundsChange} />
 
-      {/* Duraklar: Trip seçiliyse trip’in durakları, değilse zoom/bounds’a bağlı */}
       {!selectedEntities.trip &&
       currentZoom < 10 &&
       tempStopsAndTimes.length > 0 ? (
@@ -459,7 +469,7 @@ const MapView = ({
         >
           {visibleStops.map((stopTime, index) => (
             <Marker
-              key={stopTime.stop_sequence || index}
+              key={stopTime.stop_id || index}
               position={[
                 parseFloat(stopTime.stop_lat),
                 parseFloat(stopTime.stop_lon),
@@ -490,7 +500,6 @@ const MapView = ({
         </MarkerClusterGroup>
       )}
 
-      {/* Şekiller: Trip seçiliyse trip’in shape’leri, değilse tüm shape’ler */}
       {visibleShapes.length > 0 && (
         <>
           <PolylineWithDirectionalArrows

@@ -21,7 +21,12 @@ const TripEditPage = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const trip = trips.filter((t) => t.trip_id === trip_id)[0];
+        const tripList = trips.data || trips; // trips.data veya direkt trips
+        const trip = tripList.find((t) => t.trip_id === trip_id);
+
+        if (!trip) {
+          throw new Error("Trip bulunamadı");
+        }
 
         setTripData({
           trip_id: trip.trip_id || trip_id,
@@ -31,14 +36,14 @@ const TripEditPage = ({
           trip_headsign: trip.trip_headsign || "",
           trip_short_name: trip.trip_short_name || "",
           direction_id:
-            trip.direction_id !== undefined ? trip.direction_id : "",
+            trip.direction_id !== undefined ? trip.direction_id : null,
           block_id: trip.block_id || "",
           wheelchair_accessible:
             trip.wheelchair_accessible !== undefined
               ? trip.wheelchair_accessible
-              : "",
+              : null,
           bikes_allowed:
-            trip.bikes_allowed !== undefined ? trip.bikes_allowed : "",
+            trip.bikes_allowed !== undefined ? trip.bikes_allowed : null,
         });
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -59,9 +64,9 @@ const TripEditPage = ({
         name === "wheelchair_accessible" ||
         name === "bikes_allowed"
           ? value === ""
-            ? ""
-            : parseInt(value, 10)
-          : value,
+            ? null
+            : parseInt(value, 10) || null // Sayısal alanlar için parseInt korundu
+          : value, // trip_id dahil diğer alanlar string
     }));
   };
 
@@ -86,6 +91,11 @@ const TripEditPage = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!tripData.service_id || !tripData.trip_headsign || !tripData.route_id) {
+      Swal.fire("Hata!", "Servis, trip başlığı ve rota zorunludur!", "error");
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Emin misiniz?",
       text: "Bu trip’i güncellemek istediğinize emin misiniz?",
@@ -101,10 +111,15 @@ const TripEditPage = ({
       try {
         const tripDataForApi = { ...tripData, project_id, trip_id };
         await updateTrip(tripDataForApi, token);
-        setTrips((prev) => ({
-          ...prev,
-          data: prev.data.map((t) => (t.trip_id === trip_id ? tripData : t)),
-        }));
+        setTrips((prev) => {
+          const tripList = prev.data || prev;
+          return {
+            ...prev,
+            data: tripList.map((t) =>
+              t.trip_id === trip_id ? { ...t, ...tripData } : t
+            ),
+          };
+        });
         Swal.fire("Güncellendi!", "Trip başarıyla güncellendi.", "success");
         onClose();
       } catch (error) {
@@ -126,8 +141,21 @@ const TripEditPage = ({
       <h5>Trip Düzenle</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
+          <label htmlFor="trip_id" className="form-label">
+            Trip ID (Değiştirilemez)
+          </label>
+          <input
+            type="text"
+            id="trip_id"
+            name="trip_id"
+            className="form-control"
+            value={tripData.trip_id}
+            disabled
+          />
+        </div>
+        <div className="mb-2">
           <label htmlFor="route_id" className="form-label">
-            Rota
+            Rota (*)
           </label>
           <select
             id="route_id"
@@ -149,7 +177,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="service_id" className="form-label">
-            Servis
+            Servis (*)
           </label>
           <select
             id="service_id"
@@ -169,7 +197,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_headsign" className="form-label">
-            Trip Başlığı
+            Trip Başlığı (*)
           </label>
           <input
             type="text"
@@ -202,7 +230,7 @@ const TripEditPage = ({
             id="direction_id"
             name="direction_id"
             className="form-control"
-            value={tripData.direction_id}
+            value={tripData.direction_id ?? ""}
             onChange={handleChange}
           >
             <option value="">Seçiniz</option>
@@ -231,7 +259,7 @@ const TripEditPage = ({
             id="wheelchair_accessible"
             name="wheelchair_accessible"
             className="form-control"
-            value={tripData.wheelchair_accessible}
+            value={tripData.wheelchair_accessible ?? ""}
             onChange={handleChange}
           >
             <option value="">Seçiniz</option>
@@ -248,7 +276,7 @@ const TripEditPage = ({
             id="bikes_allowed"
             name="bikes_allowed"
             className="form-control"
-            value={tripData.bikes_allowed}
+            value={tripData.bikes_allowed ?? ""}
             onChange={handleChange}
           >
             <option value="">Seçiniz</option>
@@ -275,9 +303,57 @@ TripEditPage.propTypes = {
   trip_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setTrips: PropTypes.func.isRequired,
-  calendars: PropTypes.array.isRequired,
-  routes: PropTypes.array.isRequired,
-  trips: PropTypes.array.isRequired,
+  calendars: PropTypes.arrayOf(
+    PropTypes.shape({
+      service_id: PropTypes.string.isRequired,
+      monday: PropTypes.number,
+      tuesday: PropTypes.number,
+      wednesday: PropTypes.number,
+      thursday: PropTypes.number,
+      friday: PropTypes.number,
+      saturday: PropTypes.number,
+      sunday: PropTypes.number,
+    })
+  ).isRequired,
+  routes: PropTypes.arrayOf(
+    PropTypes.shape({
+      route_id: PropTypes.string.isRequired,
+      route_long_name: PropTypes.string,
+      route_short_name: PropTypes.string,
+    })
+  ).isRequired,
+  trips: PropTypes.oneOfType([
+    PropTypes.arrayOf(
+      PropTypes.shape({
+        trip_id: PropTypes.string.isRequired,
+        service_id: PropTypes.string,
+        route_id: PropTypes.string,
+        project_id: PropTypes.string,
+        trip_headsign: PropTypes.string,
+        trip_short_name: PropTypes.string,
+        direction_id: PropTypes.number,
+        block_id: PropTypes.string,
+        wheelchair_accessible: PropTypes.number,
+        bikes_allowed: PropTypes.number,
+      })
+    ),
+    PropTypes.shape({
+      data: PropTypes.arrayOf(
+        PropTypes.shape({
+          trip_id: PropTypes.string.isRequired,
+          service_id: PropTypes.string,
+          route_id: PropTypes.string,
+          project_id: PropTypes.string,
+          trip_headsign: PropTypes.string,
+          trip_short_name: PropTypes.string,
+          direction_id: PropTypes.number,
+          block_id: PropTypes.string,
+          wheelchair_accessible: PropTypes.number,
+          bikes_allowed: PropTypes.number,
+        })
+      ).isRequired,
+    }),
+  ]).isRequired,
 };
 
 export default TripEditPage;

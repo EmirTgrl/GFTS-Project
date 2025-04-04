@@ -22,7 +22,7 @@ const agencyService = {
       if (validFields.includes(param)) {
         if (param === "agency_name") {
           fields.push(`${param} LIKE ?`);
-          values.push(`%${req.query[param]}%`); 
+          values.push(`%${req.query[param]}%`);
         } else {
           fields.push(`${param} = ?`);
           values.push(req.query[param]);
@@ -68,8 +68,8 @@ const agencyService = {
   saveAgency: async (req, res) => {
     try {
       const user_id = req.user.id;
-
       const validFields = [
+        "agency_id", // agency_id’yi zorunlu alan olarak ekledik
         "agency_name",
         "agency_url",
         "agency_timezone",
@@ -77,11 +77,20 @@ const agencyService = {
         "agency_phone",
         "project_id",
       ];
-      const { ...params } = req.body;
+      const { agency_id, ...params } = req.body;
+
+      // agency_id gelip gelmediğini kontrol et
+      if (!agency_id) {
+        return res.status(400).json({ error: "agency_id is required" });
+      }
 
       const fields = [];
       const values = [];
       const placeholders = [];
+
+      fields.push("agency_id");
+      values.push(agency_id);
+      placeholders.push("?");
 
       for (const param in params) {
         if (validFields.includes(param)) {
@@ -106,7 +115,7 @@ const agencyService = {
 
       res.status(201).json({
         message: "Agency saved successfully",
-        agency_id: result.insertId,
+        agency_id: agency_id, // Kullanıcıdan gelen agency_id’yi dön
       });
     } catch (error) {
       console.error("Error in saveAgency:", error);
