@@ -14,7 +14,7 @@ const BreadcrumbBar = ({
 }) => {
   const renderTooltip = (text) => (
     <Tooltip id={`tooltip-${text}`} className="custom-tooltip">
-      {text}
+      {text || "N/A"}
     </Tooltip>
   );
 
@@ -101,16 +101,59 @@ const BreadcrumbBar = ({
   };
 
   const truncateText = (text, maxLength = 12) => {
+    if (!text || typeof text !== "string") return "N/A";
     return text.length > maxLength
       ? `${text.substring(0, maxLength)}...`
       : text;
   };
 
+  const formatCalendarDays = (calendar) => {
+    if (!calendar) return "N/A";
+
+    const days = [
+      { key: "monday", label: "Pzt", value: calendar.monday },
+      { key: "tuesday", label: "Sal", value: calendar.tuesday },
+      { key: "wednesday", label: "Çar", value: calendar.wednesday },
+      { key: "thursday", label: "Per", value: calendar.thursday },
+      { key: "friday", label: "Cum", value: calendar.friday },
+      { key: "saturday", label: "Cmt", value: calendar.saturday },
+      { key: "sunday", label: "Paz", value: calendar.sunday },
+    ];
+
+    const activeDays = days
+      .filter((day) => day.value === "1")
+      .map((day) => day.label);
+
+    if (activeDays.length === 7) {
+      return "Her Gün";
+    } else if (
+      activeDays.length === 5 &&
+      activeDays.every((day) =>
+        ["Pzt", "Sal", "Çar", "Per", "Cum"].includes(day)
+      )
+    ) {
+      return "Hafta İçi";
+    } else if (
+      activeDays.length === 2 &&
+      activeDays.includes("Cmt") &&
+      activeDays.includes("Paz")
+    ) {
+      return "Hafta Sonu";
+    } else if (activeDays.length > 0) {
+      return activeDays.join("-");
+    } else {
+      return calendar.service_id || "N/A";
+    }
+  };
+
   const breadcrumbItems = [];
   if (selectedEntities.agency) {
     breadcrumbItems.push({
-      label: truncateText(selectedEntities.agency.agency_name),
-      fullLabel: selectedEntities.agency.agency_name,
+      label: truncateText(selectedEntities.agency?.agency_name),
+      fullLabel:
+        selectedEntities.agency?.agency_name ||
+        selectedEntities.agency?.agency_id ||
+        "Unknown Agency",
       category: "agency",
       entity: selectedEntities.agency,
     });
@@ -118,20 +161,22 @@ const BreadcrumbBar = ({
   if (selectedEntities.route) {
     breadcrumbItems.push({
       label: truncateText(
-        selectedEntities.route.route_long_name ||
-          selectedEntities.route.route_id
+        selectedEntities.route?.route_long_name ||
+          selectedEntities.route?.route_id
       ),
       fullLabel:
-        selectedEntities.route.route_long_name ||
-        selectedEntities.route.route_id,
+        selectedEntities.route?.route_long_name ||
+        selectedEntities.route?.route_id ||
+        "Unknown Route",
       category: "route",
       entity: selectedEntities.route,
     });
   }
   if (selectedEntities.calendar) {
+    const calendarLabel = formatCalendarDays(selectedEntities.calendar);
     breadcrumbItems.push({
-      label: truncateText(`Cal (${selectedEntities.calendar.service_id})`),
-      fullLabel: `Calendar (${selectedEntities.calendar.service_id})`,
+      label: truncateText(calendarLabel),
+      fullLabel: calendarLabel,
       category: "calendar",
       entity: selectedEntities.calendar,
     });
@@ -139,18 +184,22 @@ const BreadcrumbBar = ({
   if (selectedEntities.trip) {
     breadcrumbItems.push({
       label: truncateText(
-        selectedEntities.trip.trip_headsign || selectedEntities.trip.trip_id
+        selectedEntities.trip?.trip_headsign || selectedEntities.trip?.trip_id
       ),
       fullLabel:
-        selectedEntities.trip.trip_headsign || selectedEntities.trip.trip_id,
+        selectedEntities.trip?.trip_headsign ||
+        selectedEntities.trip?.trip_id ||
+        "Unknown Trip",
       category: "trip",
       entity: selectedEntities.trip,
     });
   }
   if (selectedEntities.shape) {
     breadcrumbItems.push({
-      label: truncateText(`Shp ${selectedEntities.shape.shape_pt_sequence}`),
-      fullLabel: `Shape Point ${selectedEntities.shape.shape_pt_sequence}`,
+      label: truncateText(`Shp ${selectedEntities.shape?.shape_pt_sequence}`),
+      fullLabel: `Shape Point ${
+        selectedEntities.shape?.shape_pt_sequence || "N/A"
+      }`,
       category: "shape",
       entity: selectedEntities.shape,
     });
@@ -158,10 +207,12 @@ const BreadcrumbBar = ({
   if (selectedEntities.stop) {
     breadcrumbItems.push({
       label: truncateText(
-        selectedEntities.stop.stop_name || selectedEntities.stop.stop_id
+        selectedEntities.stop?.stop_name || selectedEntities.stop?.stop_id
       ),
       fullLabel:
-        selectedEntities.stop.stop_name || selectedEntities.stop.stop_id,
+        selectedEntities.stop?.stop_name ||
+        selectedEntities.stop?.stop_id ||
+        "Unknown Stop",
       category: "stop",
       entity: selectedEntities.stop,
     });

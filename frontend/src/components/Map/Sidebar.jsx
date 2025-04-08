@@ -94,9 +94,10 @@ const Sidebar = ({
   setSelectedEntities,
   selectedCategory,
   setSelectedCategory,
+  activeKey,
+  setActiveKey,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeKey, setActiveKey] = useState("0");
   const [pageAgencies, setPageAgencies] = useState(1);
   const [pageRoutes, setPageRoutes] = useState(1);
   const [pageTrips, setPageTrips] = useState(1);
@@ -200,7 +201,6 @@ const Sidebar = ({
         );
         setCalendars(calendarData);
 
-        // Filtreleme varsa fetch’i atla, mevcut trips’i kullan
         if (isFiltered) {
           console.log(
             "Skipping fetch due to filtering, using current trips:",
@@ -475,7 +475,9 @@ const Sidebar = ({
   const handleSelectionChange = async (category, entity) => {
     switch (category) {
       case "agency": {
-        if (selectedEntities.agency?.agency_id === entity.agency_id) {
+        const currentAgencyId = String(selectedEntities.agency?.agency_id);
+        const clickedAgencyId = String(entity.agency_id);
+        if (currentAgencyId === clickedAgencyId) {
           setSelectedEntities((prev) => ({
             ...prev,
             agency: null,
@@ -486,6 +488,7 @@ const Sidebar = ({
             stop: null,
           }));
           setSelectedCategory("");
+          setActiveKey("0");
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -497,32 +500,36 @@ const Sidebar = ({
             stop: null,
           }));
           setSelectedCategory("agency");
+          setActiveKey("0");
           setIsFilterOpen(false);
           setIsFiltered(false);
         }
         break;
       }
       case "route": {
-        if (selectedEntities.route?.route_id === entity.route_id) {
+        const currentRouteId = String(selectedEntities.route?.route_id);
+        const clickedRouteId = String(entity.route_id);
+        if (currentRouteId === clickedRouteId) {
           setSelectedEntities((prev) => ({
             ...prev,
             route: null,
-            calendar: null,
             trip: null,
             shape: null,
             stop: null,
           }));
           setSelectedCategory("agency");
+          setActiveKey("1");
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
             route: entity,
-            calendar: null,
             trip: null,
             shape: null,
             stop: null,
           }));
           setSelectedCategory("route");
+          setActiveKey("1");
+          setIsFilterOpen(false);
           setIsFiltered(false);
         }
         break;
@@ -537,6 +544,7 @@ const Sidebar = ({
             stop: null,
           }));
           setSelectedCategory("route");
+          setActiveKey("2");
           const updatedTrips = applyTripFiltersAndSort(fullTrips);
           setTrips(updatedTrips);
         } else {
@@ -548,6 +556,7 @@ const Sidebar = ({
             stop: null,
           }));
           setSelectedCategory("calendar");
+          setActiveKey("2");
           const updatedTrips = applyTripFiltersAndSort(fullTrips);
           setTrips(updatedTrips);
         }
@@ -562,6 +571,7 @@ const Sidebar = ({
             stop: null,
           }));
           setSelectedCategory("calendar");
+          setActiveKey("3");
           setShapes([]);
           setStopsAndTimes([]);
         } else {
@@ -572,6 +582,7 @@ const Sidebar = ({
             stop: null,
           }));
           setSelectedCategory("trip");
+          setActiveKey("3");
 
           try {
             const shapesResponse = await fetchShapesByTripId(
@@ -607,9 +618,11 @@ const Sidebar = ({
         ) {
           setSelectedEntities((prev) => ({ ...prev, shape: null }));
           setSelectedCategory("trip");
+          setActiveKey("4");
         } else {
           setSelectedEntities((prev) => ({ ...prev, shape: entity }));
           setSelectedCategory("shape");
+          setActiveKey("4");
           if (entity.shape_pt_lat && entity.shape_pt_lon) {
             setMapCenter([
               parseFloat(entity.shape_pt_lat),
@@ -624,9 +637,11 @@ const Sidebar = ({
         if (selectedEntities.stop?.stop_id === entity.stop_id) {
           setSelectedEntities((prev) => ({ ...prev, stop: null }));
           setSelectedCategory("trip");
+          setActiveKey("5");
         } else {
           setSelectedEntities((prev) => ({ ...prev, stop: entity }));
           setSelectedCategory("stop");
+          setActiveKey("5");
           if (entity.stop_lat && entity.stop_lon) {
             setMapCenter([
               parseFloat(entity.stop_lat),
@@ -1376,6 +1391,8 @@ Sidebar.propTypes = {
   setSelectedEntities: PropTypes.func.isRequired,
   selectedCategory: PropTypes.string.isRequired,
   setSelectedCategory: PropTypes.func.isRequired,
+  activeKey: PropTypes.string.isRequired,
+  setActiveKey: PropTypes.func.isRequired,
 };
 
 export default Sidebar;

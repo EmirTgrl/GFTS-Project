@@ -173,12 +173,13 @@ const MapView = ({
           isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon))
         )
         .map((stop) => ({ ...stop }));
-      const newShapes = JSON.parse(JSON.stringify(shapes || []));
+      const newShapes = shapes ? [...shapes] : [];
+
       setTempStopsAndTimes(newStops);
       setTempShapes(newShapes);
       prevStopsAndTimesRef.current = stopsAndTimes;
 
-      if (selectedEntities.trip) {
+      if (selectedEntities.trip?.trip_id) {
         setVisibleShapes(
           newShapes.filter(
             (shape) => shape.shape_id === selectedEntities.trip.shape_id
@@ -186,7 +187,7 @@ const MapView = ({
         );
       }
     }
-  }, [stopsAndTimes, shapes, selectedEntities.trip]);
+  }, [stopsAndTimes, shapes, selectedEntities.trip?.trip_id]);
 
   useEffect(() => {
     if (selectedEntities.trip && tempStopsAndTimes.length > 0) {
@@ -654,6 +655,10 @@ MapView.propTypes = {
   setSelectedEntities: PropTypes.func.isRequired,
   setSelectedCategory: PropTypes.func.isRequired,
   token: PropTypes.string.isRequired,
+};
+
+BoundsTracker.propTypes = {
+  onBoundsChange: PropTypes.func.isRequired,
 };
 
 export default MapView;
