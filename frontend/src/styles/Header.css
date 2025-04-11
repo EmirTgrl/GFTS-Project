@@ -14,10 +14,19 @@
   color: #fff !important;
   padding: 0.4rem 0 !important;
   letter-spacing: 1px;
+  display: flex;
+  align-items: center; /* İkon ve metni hizalamak için */
 }
 
-.brand-highlight {
-  color: #ffd700;
+.home-icon {
+  color: #fff;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.home-icon:hover {
+  color: #ffd700; /* Hover efekti, diğer linklerle uyumlu */
+  transform: scale(1.1); /* Hafif bir büyüme efekti */
 }
 
 .nav-link-custom {

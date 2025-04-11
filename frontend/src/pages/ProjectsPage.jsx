@@ -15,15 +15,26 @@ import {
   Pagination,
   Row,
   Col,
+  Modal,
 } from "react-bootstrap";
-import { XCircle, Trash, Download, Eye } from "react-bootstrap-icons";
+import {
+  XCircle,
+  Trash,
+  Download,
+  Eye,
+  ExclamationTriangle,
+} from "react-bootstrap-icons";
 import Swal from "sweetalert2";
+import { MapContainer, TileLayer } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import "../styles/ProjectsPage.css";
 
 const ProjectsPage = () => {
   const [projects, setProjects] = useState([]);
   const [projectName, setProjectName] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [exportLoading, setExportLoading] = useState(false);
   const projectsPerPage = 6;
@@ -77,10 +88,10 @@ const ProjectsPage = () => {
       try {
         await deleteProject(projectId, token);
         setProjects((prev) => prev.filter((p) => p.project_id !== projectId));
-        Swal.fire("Deleted!", "Your project has been deleted.", "success");
+        Swal.fire("Deleted!", "Your GTFS file has been deleted.", "success");
       } catch (error) {
-        console.error("Error deleting project:", error);
-        Swal.fire("Error!", "Failed to delete the project.", "error");
+        console.error("Error deleting GTFS file:", error);
+        Swal.fire("Error!", "Failed to delete the GTFS file.", "error");
       }
     }
   };
@@ -106,6 +117,16 @@ const ProjectsPage = () => {
     }
   };
 
+  const handleShowValidation = (project) => {
+    setSelectedProject(project);
+    setShowValidationModal(true);
+  };
+
+  const handleCloseValidationModal = () => {
+    setShowValidationModal(false);
+    setSelectedProject(null);
+  };
+
   const handleOpenModal = () => {
     setShowModal(true);
   };
@@ -116,6 +137,10 @@ const ProjectsPage = () => {
 
   const handleInputChange = (e) => {
     setProjectName(e.target.value);
+  };
+
+  const handleRowClick = (projectId) => {
+    navigate(`/map/${projectId}`);
   };
 
   const indexOfLastProject = currentPage * projectsPerPage;
@@ -131,150 +156,328 @@ const ProjectsPage = () => {
   };
 
   return (
-    <Container fluid className="py-5 projects-page">
-      <Row className="justify-content-center">
-        <Col md={10} lg={8}>
-          <Card className="projects-card shadow-lg">
-            <Card.Body className="p-4">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="card-title h3 fw-bold">Your Projects</h2>
-                <Button variant="success" size="sm" onClick={handleOpenModal}>
-                  + New Project
-                </Button>
-              </div>
-              <hr className="mb-4" />
-              {currentProjects.length > 0 ? (
-                <>
-                  <Table striped bordered hover responsive>
-                    <thead>
-                      <tr>
-                        <th>Project Name</th>
-                        <th>Created Date</th>
-                        <th style={{ width: "150px" }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentProjects.map((project) => (
-                        <tr key={project.project_id}>
-                          <td>{project.file_name}</td>
-                          <td>
-                            {new Date(project.import_date).toLocaleDateString()}
-                          </td>
-                          <td className="d-flex justify-content-around">
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              onClick={() =>
-                                navigate(`/map/${project.project_id}`)
-                              }
-                              title="View"
-                            >
-                              <Eye size={16} />
-                            </Button>
-                            <Button
-                              variant="outline-success"
-                              size="sm"
-                              onClick={() =>
-                                handleExportProject(project.project_id)
-                              }
-                              disabled={exportLoading}
-                              title="Export"
-                            >
-                              {exportLoading ? (
-                                <span className="spinner-border spinner-border-sm me-1" />
-                              ) : (
-                                <Download size={16} />
-                              )}
-                            </Button>
-                            <Button
-                              variant="outline-danger"
-                              size="sm"
-                              onClick={() =>
-                                handleDeleteProject(
-                                  project.project_id,
-                                  project.file_name
-                                )
-                              }
-                              title="Delete"
-                            >
-                              <Trash size={16} />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                  {projects.length > projectsPerPage && (
-                    <div className="pagination-section mt-4 text-center">
-                      <Pagination className="justify-content-center mb-2">
-                        <Pagination.First
-                          onClick={() => handlePageChange(1)}
-                          disabled={currentPage === 1}
-                        />
-                        <Pagination.Prev
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          disabled={currentPage === 1}
-                        />
-                        {Array.from({ length: totalPages }, (_, index) => (
-                          <Pagination.Item
-                            key={index + 1}
-                            active={index + 1 === currentPage}
-                            onClick={() => handlePageChange(index + 1)}
-                          >
-                            {index + 1}
-                          </Pagination.Item>
-                        ))}
-                        <Pagination.Next
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          disabled={currentPage === totalPages}
-                        />
-                        <Pagination.Last
-                          onClick={() => handlePageChange(totalPages)}
-                          disabled={currentPage === totalPages}
-                        />
-                      </Pagination>
-                      <small className="text-muted">
-                        Page {currentPage} of {totalPages} (
-                        {indexOfFirstProject + 1}-
-                        {Math.min(indexOfLastProject, projects.length)} of{" "}
-                        {projects.length} projects)
-                      </small>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-muted text-center py-3 fw-medium">
-                  No projects yet. Create one or import a GTFS file!
-                </p>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+    <div className="projects-page-wrapper">
+      <MapContainer
+        center={[39.925533, 32.866287]}
+        zoom={6}
+        zoomControl={false}
+        scrollWheelZoom={true}
+        style={{
+          height: "100vh",
+          width: "100vw",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          zIndex: 1,
+        }}
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      </MapContainer>
 
-      {showModal && (
-        <div className={`popup ${showModal ? "show" : ""}`}>
-          <div className="popup-content">
-            <XCircle
-              size={24}
-              className="close-icon"
-              onClick={handleCloseModal}
-            />
-            <h2 className="h5 mb-3">Create New Project</h2>
-            <input
-              type="text"
-              placeholder="Project Name"
-              value={projectName}
-              onChange={handleInputChange}
-              className="form-control mb-3"
-            />
-            <Button variant="primary" onClick={handleCreateProject}>
-              Create
-            </Button>
+      <Container
+        fluid
+        className="py-5 projects-page"
+        style={{ position: "relative", zIndex: 2 }}
+      >
+        <Row className="justify-content-center">
+          <Col md={10} lg={8}>
+            <Card className="projects-card shadow-lg">
+              <Card.Body className="p-4">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <h2 className="card-title h3 fw-bold">Your GTFS Files</h2>
+                  <Button variant="success" size="sm" onClick={handleOpenModal}>
+                    + New Project
+                  </Button>
+                </div>
+                <hr className="mb-4" />
+                {currentProjects.length > 0 ? (
+                  <>
+                    <Table striped bordered hover responsive>
+                      <thead>
+                        <tr>
+                          <th>GTFS File Name</th>
+                          <th>Imported Date</th>
+                          <th style={{ width: "200px" }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentProjects.map((project) => (
+                          <tr
+                            key={project.project_id}
+                            className="project-row"
+                            onClick={() => handleRowClick(project.project_id)}
+                          >
+                            <td>{project.file_name}</td>
+                            <td>
+                              {new Date(
+                                project.import_date
+                              ).toLocaleDateString()}
+                            </td>
+                            <td
+                              className="d-flex justify-content-around"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                className="view-btn"
+                                onClick={() =>
+                                  navigate(`/map/${project.project_id}`)
+                                }
+                                title="View"
+                              >
+                                <Eye size={16} />
+                              </Button>
+                              <Button
+                                variant="outline-success"
+                                size="sm"
+                                className="export-btn"
+                                onClick={() =>
+                                  handleExportProject(project.project_id)
+                                }
+                                disabled={exportLoading}
+                                title="Export"
+                              >
+                                {exportLoading ? (
+                                  <span className="spinner-border spinner-border-sm me-1" />
+                                ) : (
+                                  <Download size={16} />
+                                )}
+                              </Button>
+                              <Button
+                                variant="outline-warning"
+                                size="sm"
+                                className="validation-btn"
+                                onClick={() => handleShowValidation(project)}
+                                title="Validation Report"
+                              >
+                                <ExclamationTriangle size={16} />
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                className="delete-btn"
+                                onClick={() =>
+                                  handleDeleteProject(
+                                    project.project_id,
+                                    project.file_name
+                                  )
+                                }
+                                title="Delete"
+                              >
+                                <Trash size={16} />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                    {projects.length > projectsPerPage && (
+                      <div className="pagination-section mt-4 text-center">
+                        <Pagination className="justify-content-center mb-2">
+                          <Pagination.First
+                            onClick={() => handlePageChange(1)}
+                            disabled={currentPage === 1}
+                          />
+                          <Pagination.Prev
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                          />
+                          {Array.from({ length: totalPages }, (_, index) => (
+                            <Pagination.Item
+                              key={index + 1}
+                              active={index + 1 === currentPage}
+                              onClick={() => handlePageChange(index + 1)}
+                            >
+                              {index + 1}
+                            </Pagination.Item>
+                          ))}
+                          <Pagination.Next
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                          />
+                          <Pagination.Last
+                            onClick={() => handlePageChange(totalPages)}
+                            disabled={currentPage === totalPages}
+                          />
+                        </Pagination>
+                        <small className="text-muted">
+                          Page {currentPage} of {totalPages} (
+                          {indexOfFirstProject + 1}-
+                          {Math.min(indexOfLastProject, projects.length)} of{" "}
+                          {projects.length} projects)
+                        </small>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-muted text-center py-3 fw-medium">
+                    No projects yet. Create one or import a GTFS file!
+                  </p>
+                )}
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Yeni Project Modal */}
+        {showModal && (
+          <div className={`popup ${showModal ? "show" : ""}`}>
+            <div className="popup-content">
+              <XCircle
+                size={24}
+                className="close-icon"
+                onClick={handleCloseModal}
+              />
+              <h2 className="h5 mb-3">Create New Project</h2>
+              <input
+                type="text"
+                placeholder="Project Name"
+                value={projectName}
+                onChange={handleInputChange}
+                className="form-control mb-3"
+              />
+              <Button variant="primary" onClick={handleCreateProject}>
+                Create
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
-    </Container>
+        )}
+
+        <Modal
+          show={showValidationModal}
+          onHide={handleCloseValidationModal}
+          size="lg"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Validation Report for {selectedProject?.file_name}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {selectedProject && selectedProject.validation_data ? (
+              <>
+                {selectedProject.validation_data.errors?.length > 0 && (
+                  <>
+                    <h5 className="text-danger">Errors</h5>
+                    <Table striped bordered hover size="sm" className="mt-2">
+                      <thead>
+                        <tr>
+                          <th>Code</th>
+                          <th>Total</th>
+                          <th>Location</th>
+                          <th>Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedProject.validation_data.errors.map(
+                          (err, index) =>
+                            err.samples.map((sample, i) => (
+                              <tr key={`${index}-${i}`}>
+                                {i === 0 && (
+                                  <>
+                                    <td rowSpan={err.samples.length}>
+                                      {err.code}
+                                    </td>
+                                    <td rowSpan={err.samples.length}>
+                                      {err.total}
+                                    </td>
+                                  </>
+                                )}
+                                <td>
+                                  {sample.filename &&
+                                    `File: ${sample.filename}`}
+                                  {sample.csvRowNumber &&
+                                    `, Row: ${sample.csvRowNumber}`}
+                                </td>
+                                <td>
+                                  {sample.fieldName && `${sample.fieldName}: `}
+                                  {sample.value && `"${sample.value}"`}
+                                  {!sample.fieldName &&
+                                    !sample.value &&
+                                    "No specific details"}
+                                </td>
+                              </tr>
+                            ))
+                        )}
+                      </tbody>
+                    </Table>
+                  </>
+                )}
+
+                {selectedProject.validation_data.warnings?.length > 0 && (
+                  <>
+                    <h5 className="text-warning">Warnings</h5>
+                    <Table striped bordered hover size="sm" className="mt-2">
+                      <thead>
+                        <tr>
+                          <th>Code</th>
+                          <th>Total</th>
+                          <th>Location</th>
+                          <th>Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedProject.validation_data.warnings.map(
+                          (warn, index) =>
+                            warn.samples.map((sample, i) => (
+                              <tr key={`${index}-${i}`}>
+                                {i === 0 && (
+                                  <>
+                                    <td rowSpan={warn.samples.length}>
+                                      {warn.code}
+                                    </td>
+                                    <td rowSpan={warn.samples.length}>
+                                      {warn.total}
+                                    </td>
+                                  </>
+                                )}
+                                <td>
+                                  {sample.filename &&
+                                    `File: ${sample.filename}`}
+                                  {sample.csvRowNumber &&
+                                    `, Row: ${sample.csvRowNumber}`}
+                                  {sample.serviceId &&
+                                    `, Service ID: ${sample.serviceId}`}
+                                </td>
+                                <td>
+                                  {sample.fieldName && `${sample.fieldName}: `}
+                                  {sample.value && `"${sample.value}"`}
+                                  {sample.currentDate &&
+                                    `Date: ${sample.currentDate}`}
+                                  {!sample.fieldName &&
+                                    !sample.value &&
+                                    !sample.currentDate &&
+                                    "No specific details"}
+                                </td>
+                              </tr>
+                            ))
+                        )}
+                      </tbody>
+                    </Table>
+                  </>
+                )}
+
+                {!selectedProject.validation_data.errors?.length &&
+                  !selectedProject.validation_data.warnings?.length && (
+                    <p className="text-muted">No errors or warnings found.</p>
+                  )}
+              </>
+            ) : (
+              <p className="text-muted">
+                No validation data available for this project.
+              </p>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCloseValidationModal}>
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </Container>
+    </div>
   );
 };
 

@@ -1,25 +1,57 @@
+.import-page-wrapper {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
 .import-page {
-  background-image: url("/src/assets/map.png"); 
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  padding: 2rem;
   min-height: 100vh;
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.centered-layout .col-md-6 {
+  max-width: 500px;
+}
+
+.split-layout .col-md-6 {
+  flex: 1;
+  min-width: 300px;
 }
 
 .import-card {
   border: none;
   border-radius: 10px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
+  max-width: 500px;
+  pointer-events: auto;
 }
 
-.custom-file-input{
+.validation-results {
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  max-height: 80vh;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.custom-file-input {
   padding: 0 !important;
 }
 
 .custom-file-input::file-selector-button {
   margin: 0 1rem 0 0 !important;
-  padding: 1rem !important; /*Adjust as needed*/
+  padding: 1rem !important;
 }
 
 .upload-btn {
@@ -30,4 +62,18 @@
 .progress {
   height: 1.5rem;
   border-radius: 5px;
+}
+
+.validation-results .accordion-button {
+  font-size: 1rem;
+}
+
+.validation-results .list-group-item {
+  padding: 0.5rem 1rem;
+}
+
+.validation-results pre {
+  margin: 0;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
 }

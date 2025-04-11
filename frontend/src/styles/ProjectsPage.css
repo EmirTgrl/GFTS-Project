@@ -1,46 +1,31 @@
+.projects-page-wrapper {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
 .projects-page {
-  background-image: url("/src/assets/map.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  min-height: 100vh;
   padding-top: 80px;
+  min-height: 100vh;
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .projects-card {
   border: none;
   border-radius: 15px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  pointer-events: auto;
 }
 
-.project-card {
-  border-radius: 10px;
+.project-row {
   transition: all 0.3s ease;
   cursor: pointer;
   background: #fff;
   border: 1px solid #e9ecef;
-}
-
-.project-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  border-color: #007bff;
-}
-
-.project-card .card-body {
-  padding: 1.25rem;
-}
-
-.project-card .card-title {
-  color: #343a40;
-  font-size: 1.1rem;
-}
-
-.project-card .card-text {
-  font-size: 0.85rem;
-  color: #6c757d;
 }
 
 .view-btn,
@@ -70,6 +55,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
+  z-index: 3;
 }
 
 .popup.show {
@@ -85,6 +71,7 @@
   max-width: 450px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   position: relative;
+  pointer-events: auto;
 }
 
 .close-icon {
@@ -118,4 +105,22 @@
 
 .pagination .page-link:hover {
   background-color: #e9ecef;
+}
+
+.modal-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.modal-body ul {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+
+.modal-body .text-danger {
+  font-weight: bold;
+}
+
+.modal-body .text-warning {
+  font-weight: bold;
 }

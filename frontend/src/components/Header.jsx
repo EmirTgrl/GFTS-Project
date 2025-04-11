@@ -2,7 +2,7 @@ import { useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "./Auth/AuthContext.js";
 import { Navbar, Nav, NavDropdown } from "react-bootstrap";
-import { PersonCircle, Upload } from "react-bootstrap-icons";
+import { PersonCircle, Upload, HouseDoor } from "react-bootstrap-icons";
 import "../styles/Header.css";
 
 const Header = () => {
@@ -24,6 +24,14 @@ const Header = () => {
         <Nav className="ms-auto align-items-center">
           {isAuthenticated ? (
             <>
+              <Nav.Link
+                as={Link}
+                to="/"
+                className="nav-link-custom"
+                title="Homepage"
+              >
+                <HouseDoor size={20} />
+              </Nav.Link>
               <Nav.Link
                 as={Link}
                 to="/import"

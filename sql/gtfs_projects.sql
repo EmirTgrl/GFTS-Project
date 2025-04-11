@@ -27,6 +27,7 @@ CREATE TABLE `projects` (
   `user_id` int DEFAULT NULL,
   `file_name` varchar(255) NOT NULL,
   `import_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `validation_data` JSON,
   PRIMARY KEY (`project_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)

@@ -13,7 +13,8 @@ export const fetchProjects = async (token) => {
       `HTTP error! Status: ${response.status}, Message: ${errorText}`
     );
   }
-  return response.json();
+  const projects = await response.json();
+  return projects;
 };
 
 export const deleteProject = async (projectId, token) => {

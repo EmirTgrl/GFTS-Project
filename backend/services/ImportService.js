@@ -5,6 +5,7 @@ const { pool } = require("../db.js");
 const fs = require("fs");
 const path = require("path");
 const { pipeline } = require("stream").promises;
+const { exec } = require("child_process");
 
 class ImportService {
   constructor() {
@@ -62,7 +63,28 @@ class ImportService {
       console.log("✅ Metadata inserted - ID:", result.insertId);
       return result.insertId;
     } catch (error) {
-      console.error("❌ Error inserting metadata:", error);
+      console.error("❌ Error inserting metadata:", error.message);
+      throw error;
+    }
+  }
+
+  async updateValidationData(projectId, validationData) {
+    try {
+      console.log(
+        "📝 Attempting to update validation data for project:",
+        projectId
+      );
+      console.log("Validation data to write:", JSON.stringify(validationData));
+      await pool.execute(
+        "UPDATE projects SET validation_data = ? WHERE project_id = ?",
+        [JSON.stringify(validationData), projectId]
+      );
+      console.log(
+        "✅ Validation data successfully updated for project:",
+        projectId
+      );
+    } catch (error) {
+      console.error("❌ Failed to update validation data:", error.message);
       throw error;
     }
   }
@@ -208,12 +230,88 @@ class ImportService {
     }
   }
 
+  async validateGTFS(filePath) {
+    return new Promise((resolve, reject) => {
+      const validatorPath = path.join(
+        __dirname,
+        "..",
+        "gtfs-validator-7.0.0-cli.jar"
+      );
+      console.log("Validator Path:", validatorPath);
+      if (!fs.existsSync(validatorPath)) {
+        reject(new Error(`JAR file not found at: ${validatorPath}`));
+        return;
+      }
+
+      const outputDir = path.join(this.tempDir, "validation-output");
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      const command = `java -jar "${validatorPath}" -i "${filePath}" -o "${outputDir}"`;
+
+      exec(command, { shell: true }, (error, stdout, stderr) => {
+        if (error) {
+          console.error("❌ GTFS Validation Error:", stderr);
+        } else {
+          console.log("✅ GTFS Validation completed");
+        }
+
+        const reportPath = path.join(outputDir, "report.json");
+        if (!fs.existsSync(reportPath)) {
+          console.error("❌ Validation report not found at:", reportPath);
+          reject(new Error("Validation report not found"));
+          return;
+        }
+
+        let validationResult;
+        try {
+          validationResult = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+          console.log("📜 Validation result:", validationResult);
+        } catch (parseError) {
+          console.error(
+            "❌ Error parsing validation report:",
+            parseError.message
+          );
+          reject(new Error("Failed to parse validation report"));
+          return;
+        }
+
+        const notices = validationResult?.notices || [];
+        const errors = notices.filter((notice) => notice.severity === "ERROR");
+        const warnings = notices.filter(
+          (notice) => notice.severity === "WARNING"
+        );
+
+        console.log(
+          `🔍 Found ${errors.length} errors and ${warnings.length} warnings`
+        );
+
+        resolve({
+          success: errors.length === 0,
+          errors: errors.map((notice) => ({
+            code: notice.code,
+            message: notice.message || "No description",
+            total: notice.totalNotices,
+            samples: notice.sampleNotices || [], // Tüm sampleNotices detaylarını koru
+          })),
+          warnings: warnings.map((notice) => ({
+            code: notice.code,
+            message: notice.message || "No description",
+            total: notice.totalNotices,
+            samples: notice.sampleNotices || [], // Tüm sampleNotices detaylarını koru
+          })),
+        });
+      });
+    });
+  }
+
   async importGTFSData(req, res) {
     try {
       const userId = req.user.id;
       const importMode = req.body.importMode || "parallel";
+      const forceImport = req.body.forceImport === "true";
       console.log(
-        `📤 Import request received from user: ${userId}, mode: ${importMode}`
+        `📤 Import request received from user: ${userId}, mode: ${importMode}, forceImport: ${forceImport}`
       );
 
       if (!req.file) {
@@ -222,33 +320,67 @@ class ImportService {
       }
 
       console.log("📁 Processing file:", req.file.filename);
-      console.log("📦 Starting ZIP extraction to disk...");
-
-      const [userExists] = await pool.query(
-        "SELECT COUNT(*) as count FROM users WHERE id = ?",
-        [userId]
-      );
-      if (userExists[0].count === 0) {
-        throw new Error(
-          `User with id ${userId} does not exist in the users table`
-        );
-      }
+      const zipPath = path.join(__dirname, "../uploads", req.file.filename);
 
       if (!fs.existsSync(this.tempDir)) {
         fs.mkdirSync(this.tempDir, { recursive: true });
       }
-
-      const zipPath = path.join(__dirname, "../uploads", req.file.filename);
       await fs
         .createReadStream(zipPath)
         .pipe(unzipper.Extract({ path: this.tempDir }))
         .promise();
       console.log("✅ ZIP extraction complete");
 
+      console.log("🔍 Validating GTFS data...");
+      let validationResult;
+      try {
+        validationResult = await this.validateGTFS(zipPath);
+      } catch (error) {
+        console.error("❌ Critical validation error:", error.message);
+        return res.status(500).json({
+          message: "Validation failed critically",
+          success: false,
+        });
+      }
+
+      const { success, errors, warnings } = validationResult;
+      console.log("📜 Validation result processed:", {
+        success,
+        errors,
+        warnings,
+      });
+
+      const validationData = {
+        success,
+        errors,
+        warnings,
+      };
+
+      if (!success && !forceImport) {
+        console.log("⚠️ Validation failed, waiting for user action");
+        fs.rm(this.tempDir, { recursive: true, force: true }, (err) => {
+          if (err) console.error("⚠️ Error cleaning temp directory:", err);
+          else console.log("🧹 Temporary directory cleaned");
+        });
+        fs.unlink(zipPath, (err) => {
+          if (err) console.error("⚠️ Error deleting ZIP file:", err);
+          else console.log("🧹 ZIP file deleted");
+        });
+        return res.status(200).json({
+          success: false,
+          actionRequired: true,
+          errors,
+          warnings,
+          message: "GTFS data contains validation errors. Continue anyway?",
+        });
+      }
+
       const projectId = await this.insertImportedData(
         userId,
         req.file.originalname
       );
+      await this.updateValidationData(projectId, validationData);
+
       console.log(
         `🚀 Starting ${importMode} file imports with projectId:`,
         projectId
@@ -289,6 +421,7 @@ class ImportService {
         message: "GTFS data import completed",
         success: true,
         projectId,
+        validationResult,
       });
     } catch (error) {
       console.error("❌ GTFS Import Error:", error.message);
