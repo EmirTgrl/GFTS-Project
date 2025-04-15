@@ -1,0 +1,57 @@
+.stats-dashboard {
+  padding: 10px;
+}
+
+.stats-dashboard h4 {
+  font-weight: bold;
+  color: #1c2526;
+}
+
+.stats-card {
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #ffffff, #e6e6e6);
+  transition: transform 0.2s ease-in-out;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.stats-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1c2526;
+  margin-bottom: 0.5rem;
+}
+
+.stats-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.text-primary {
+  color: #007bff !important;
+}
+
+.text-success {
+  color: #28a745 !important;
+}
+
+.text-info {
+  color: #17a2b8 !important;
+}
+
+.text-warning {
+  color: #ffc107 !important;
+}
+
+.text-purple {
+  color: #6f42c1 !important;
+}
+
+.text-teal {
+  color: #20c997 !important;
+}

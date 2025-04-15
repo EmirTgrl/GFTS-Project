@@ -266,7 +266,6 @@ class ImportService {
         let validationResult;
         try {
           validationResult = JSON.parse(fs.readFileSync(reportPath, "utf8"));
-          console.log("📜 Validation result:", validationResult);
         } catch (parseError) {
           console.error(
             "❌ Error parsing validation report:",
@@ -292,13 +291,13 @@ class ImportService {
             code: notice.code,
             message: notice.message || "No description",
             total: notice.totalNotices,
-            samples: notice.sampleNotices || [], // Tüm sampleNotices detaylarını koru
+            samples: notice.sampleNotices || [], 
           })),
           warnings: warnings.map((notice) => ({
             code: notice.code,
             message: notice.message || "No description",
             total: notice.totalNotices,
-            samples: notice.sampleNotices || [], // Tüm sampleNotices detaylarını koru
+            samples: notice.sampleNotices || [], 
           })),
         });
       });

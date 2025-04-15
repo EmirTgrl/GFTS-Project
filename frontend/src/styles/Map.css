@@ -6,7 +6,7 @@
   overflow: hidden;
 }
 
-.sidebar {
+/* .sidebar {
   width: 350px;
   background-color: #f7f7f7;
   padding: 20px;
@@ -42,9 +42,9 @@
   margin: 0;
   border-bottom: 2px solid #007bff;
   padding-bottom: 5px;
-}
+} */
 
-.toggle-btn {
+/* .toggle-btn {
   background: #007bff;
   border: none;
   font-size: 20px;
@@ -124,7 +124,7 @@
   max-height: 60vh;
   overflow-y: auto;
   padding-right: 5px;
-}
+} */
 
 .scrollable-section::-webkit-scrollbar {
   width: 6px;
@@ -168,7 +168,7 @@
   gap: 5px;
 }
 
-.action-btn {
+/* .action-btn {
   background: none;
   border: none;
   font-size: 14px;
@@ -181,23 +181,23 @@
   justify-content: center;
   border-radius: 50%;
   transition: background-color 0.2s ease;
-}
+} */
 
-.edit-btn {
+/* .edit-btn {
   color: #007bff;
-}
+} */
 
-.edit-btn:hover {
+/* .edit-btn:hover {
   background-color: #e6f0ff;
-}
+} */
 
-.delete-btn {
+/* .delete-btn {
   color: #dc3545;
-}
+} */
 
-.delete-btn:hover {
+/* .delete-btn:hover {
   background-color: #f8d7da;
-}
+} */
 
 .section-text {
   font-size: 14px;
@@ -252,7 +252,7 @@
   padding: 20px;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
-  z-index: 1001;
+  z-index: 999;
 }
 
 @media (max-width: 768px) {
@@ -374,10 +374,10 @@
   background-color: #e6f0ff;
 }
 
-.action-btn.add-btn {
+/* .action-btn.add-btn {
   color: #28a745;
 }
 
 .action-btn.add-btn:hover {
   background-color: #d4edda;
-}
+} */

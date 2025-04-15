@@ -8,7 +8,6 @@ import {
   Alert,
   Card,
   ProgressBar,
-  FormSelect,
   ListGroup,
   Accordion,
 } from "react-bootstrap";
@@ -21,13 +20,15 @@ const ImportPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [importMode, setImportMode] = useState("parallel");
   const [validationErrors, setValidationErrors] = useState([]);
   const [validationWarnings, setValidationWarnings] = useState([]);
   const [openErrorItems, setOpenErrorItems] = useState({});
   const [openWarningItems, setOpenWarningItems] = useState({});
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
+
+  // Import modu sabit olarak "parallel" tanımlanıyor
+  const importMode = "parallel";
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -45,10 +46,6 @@ const ImportPage = () => {
     setOpenWarningItems({});
   };
 
-  const handleModeChange = (e) => {
-    setImportMode(e.target.value);
-  };
-
   const handleUpload = async (e, forceImport = false) => {
     e.preventDefault();
     if (!file) {
@@ -61,7 +58,7 @@ const ImportPage = () => {
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("importMode", importMode);
+    formData.append("importMode", importMode); // Sabit "parallel"
     if (forceImport) {
       formData.append("forceImport", "true");
     }
@@ -206,19 +203,6 @@ const ImportPage = () => {
                     </Form.Text>
                   </Form.Group>
 
-                  <Form.Group className="mb-4">
-                    <Form.Label className="small">Import Mode</Form.Label>
-                    <FormSelect
-                      value={importMode}
-                      onChange={handleModeChange}
-                      disabled={loading}
-                      size="sm"
-                    >
-                      <option value="parallel">Parallel</option>
-                      <option value="sequential">Sequential</option>
-                    </FormSelect>
-                  </Form.Group>
-
                   {loading && (
                     <ProgressBar
                       animated
@@ -228,38 +212,42 @@ const ImportPage = () => {
                     />
                   )}
 
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={!file || loading}
-                    className="upload-btn w-100"
-                    size="sm"
-                  >
-                    {loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" />
-                        Loading...
-                      </>
-                    ) : (
-                      "Load GTFS Data"
-                    )}
-                  </Button>
+                  {/* Validation sonuçları yoksa Load GTFS Data butonunu göster */}
+                  {!hasValidationResults && (
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={!file || loading}
+                      className="upload-btn w-100"
+                      size="sm"
+                    >
+                      {loading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" />
+                          Loading...
+                        </>
+                      ) : (
+                        "Load GTFS Data"
+                      )}
+                    </Button>
+                  )}
 
+                  {/* Validation sonuçları varsa Continue ve Cancel butonlarını göster */}
                   {hasValidationResults && (
-                    <div className="mt-3 d-flex gap-2">
+                    <div className="mt-3 d-flex justify-content-between gap-2">
                       <Button
                         variant="outline-primary"
-                        className="w-50"
                         onClick={handleContinueImport}
                         disabled={loading}
+                        className="flex-grow-1"
                       >
-                        Continue Despite Mistakes
+                        Continue Despite Errors
                       </Button>
                       <Button
                         variant="outline-secondary"
-                        className="w-50"
                         onClick={handleCancelImport}
                         disabled={loading}
+                        className="flex-grow-1"
                       >
                         Cancel
                       </Button>

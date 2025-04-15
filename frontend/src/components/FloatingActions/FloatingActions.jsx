@@ -1,8 +1,5 @@
 import {
-  PlusLg,
-  Pencil,
   List,
-  Trash,
   Map,
   Floppy,
   Arrow90degLeft,
@@ -19,7 +16,6 @@ const FloatingActions = ({
   setAction,
   editorMode,
   setEditorMode,
-  selectedCategory,
   selectedEntities,
   createLink,
 }) => {
@@ -69,73 +65,9 @@ const FloatingActions = ({
                 </OverlayTrigger>
               </>
             )}
-            {selectedCategory && selectedCategory !== "" && (
-              <>
-                <OverlayTrigger
-                  placement="left"
-                  overlay={renderTooltip("Delete " + selectedCategory)}
-                  trigger={["hover", "focus"]}
-                >
-                  <button
-                    className="fab-secondary"
-                    onClick={() => setAction("delete")}
-                  >
-                    <Trash size={20} />
-                  </button>
-                </OverlayTrigger>
-                <OverlayTrigger
-                  placement="left"
-                  overlay={renderTooltip("Edit " + selectedCategory)}
-                  trigger={["hover", "focus"]}
-                >
-                  <button
-                    className="fab-secondary"
-                    onClick={() => setAction("edit")}
-                  >
-                    <Pencil size={20} />
-                  </button>
-                </OverlayTrigger>
-                <OverlayTrigger
-                  placement="left"
-                  overlay={renderTooltip("Add " + selectedCategory)}
-                  trigger={["hover", "focus"]}
-                >
-                  <button
-                    className="fab-secondary"
-                    onClick={() => setAction("add")}
-                  >
-                    <PlusLg size={20} />
-                  </button>
-                </OverlayTrigger>
-              </>
-            )}
           </>
         ) : (
           <>
-            <OverlayTrigger
-              placement="left"
-              overlay={renderTooltip("Delete " + selectedCategory)}
-              trigger={["hover", "focus"]}
-            >
-              <button
-                className="fab-secondary"
-                onClick={() => setAction("delete")}
-              >
-                <Trash size={20} />
-              </button>
-            </OverlayTrigger>
-            <OverlayTrigger
-              placement="left"
-              overlay={renderTooltip("Edit " + selectedCategory)}
-              trigger={["hover", "focus"]}
-            >
-              <button
-                className="fab-secondary"
-                onClick={() => setAction("edit")}
-              >
-                <Pencil size={20} />
-              </button>
-            </OverlayTrigger>
             <OverlayTrigger
               placement="left"
               overlay={renderTooltip("Add Stop")}
@@ -216,7 +148,6 @@ FloatingActions.propTypes = {
   setAction: PropTypes.func.isRequired,
   editorMode: PropTypes.string.isRequired,
   setEditorMode: PropTypes.func.isRequired,
-  selectedCategory: PropTypes.string,
   selectedEntities: PropTypes.shape({
     trip: PropTypes.any,
   }).isRequired,

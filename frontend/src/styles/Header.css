@@ -15,7 +15,7 @@
   padding: 0.4rem 0 !important;
   letter-spacing: 1px;
   display: flex;
-  align-items: center; /* İkon ve metni hizalamak için */
+  align-items: center; 
 }
 
 .home-icon {
@@ -25,14 +25,14 @@
 }
 
 .home-icon:hover {
-  color: #ffd700; /* Hover efekti, diğer linklerle uyumlu */
-  transform: scale(1.1); /* Hafif bir büyüme efekti */
+  color: #ffd700; 
+  transform: scale(1.1); 
 }
 
 .nav-link-custom {
   color: #fff !important;
   font-size: 0.9rem !important;
-  padding: 0.4rem 0.8rem !important;
+  /* padding: 0.4rem 0.8rem !important; */
   font-weight: 500;
   position: relative;
   transition: all 0.3s ease;

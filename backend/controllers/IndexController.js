@@ -13,6 +13,7 @@ const impExpController = require("./ImpExpController.js");
 const agencyController = require("./AgencyController.js");
 const adminController = require("./AdminController.js");
 const shapeController = require("./ShapeController.js");
+const statsController = require("./StatsController.js");
 
 // routes
 router.use("/auth", authController);
@@ -26,5 +27,6 @@ router.use("/io", impExpController);
 router.use("/agencies", agencyController);
 router.use("/shapes", shapeController);
 router.use("/admin", adminController);
+router.use("/stats", statsController);
 
 module.exports = router;

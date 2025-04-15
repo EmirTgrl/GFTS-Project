@@ -16,6 +16,7 @@ import {
   Row,
   Col,
   Modal,
+  Accordion,
 } from "react-bootstrap";
 import {
   XCircle,
@@ -23,6 +24,7 @@ import {
   Download,
   Eye,
   ExclamationTriangle,
+  PlusLg,
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import { MapContainer, TileLayer } from "react-leaflet";
@@ -320,7 +322,6 @@ const ProjectsPage = () => {
           </Col>
         </Row>
 
-        {/* Yeni Project Modal */}
         {showModal && (
           <div className={`popup ${showModal ? "show" : ""}`}>
             <div className="popup-content">
@@ -357,113 +358,141 @@ const ProjectsPage = () => {
           </Modal.Header>
           <Modal.Body>
             {selectedProject && selectedProject.validation_data ? (
-              <>
+              <Accordion defaultActiveKey={[]}>
+                {/* Errors Section */}
                 {selectedProject.validation_data.errors?.length > 0 && (
-                  <>
-                    <h5 className="text-danger">Errors</h5>
-                    <Table striped bordered hover size="sm" className="mt-2">
-                      <thead>
-                        <tr>
-                          <th>Code</th>
-                          <th>Total</th>
-                          <th>Location</th>
-                          <th>Details</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                  <Accordion.Item eventKey="errors">
+                    <Accordion.Header>
+                      <span className="text-danger me-2">
+                        Errors ({selectedProject.validation_data.errors.length})
+                      </span>
+                      <PlusLg size={16} />
+                    </Accordion.Header>
+                    <Accordion.Body>
+                      <Accordion defaultActiveKey={[]}>
                         {selectedProject.validation_data.errors.map(
-                          (err, index) =>
-                            err.samples.map((sample, i) => (
-                              <tr key={`${index}-${i}`}>
-                                {i === 0 && (
-                                  <>
-                                    <td rowSpan={err.samples.length}>
-                                      {err.code}
-                                    </td>
-                                    <td rowSpan={err.samples.length}>
-                                      {err.total}
-                                    </td>
-                                  </>
-                                )}
-                                <td>
-                                  {sample.filename &&
-                                    `File: ${sample.filename}`}
-                                  {sample.csvRowNumber &&
-                                    `, Row: ${sample.csvRowNumber}`}
-                                </td>
-                                <td>
-                                  {sample.fieldName && `${sample.fieldName}: `}
-                                  {sample.value && `"${sample.value}"`}
-                                  {!sample.fieldName &&
-                                    !sample.value &&
-                                    "No specific details"}
-                                </td>
-                              </tr>
-                            ))
+                          (err, index) => (
+                            <Accordion.Item
+                              key={`error-${index}`}
+                              eventKey={`error-${index}`}
+                            >
+                              <Accordion.Header className="inner-accordion-header">
+                                <span className="me-2">
+                                  {err.code} (Total: {err.total})
+                                </span>
+                                <PlusLg size={16} />
+                              </Accordion.Header>
+                              <Accordion.Body>
+                                <p className="mb-2">
+                                  <strong>Description:</strong>{" "}
+                                  {err.userFriendlyMessage}
+                                </p>
+                                <p className="mb-3">
+                                  <strong>Suggestion:</strong> {err.suggestion}
+                                </p>
+                                <div className="table-container">
+                                  <Table
+                                    striped
+                                    bordered
+                                    hover
+                                    size="sm"
+                                    className="mt-2"
+                                  >
+                                    <thead>
+                                      <tr>
+                                        <th>Location</th>
+                                        <th>Details</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {err.samples.map((sample, i) => (
+                                        <tr key={`${index}-${i}`}>
+                                          <td>{sample.location}</td>
+                                          <td>{sample.details}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </Table>
+                                </div>
+                              </Accordion.Body>
+                            </Accordion.Item>
+                          )
                         )}
-                      </tbody>
-                    </Table>
-                  </>
+                      </Accordion>
+                    </Accordion.Body>
+                  </Accordion.Item>
                 )}
 
+                {/* Warnings Section */}
                 {selectedProject.validation_data.warnings?.length > 0 && (
-                  <>
-                    <h5 className="text-warning">Warnings</h5>
-                    <Table striped bordered hover size="sm" className="mt-2">
-                      <thead>
-                        <tr>
-                          <th>Code</th>
-                          <th>Total</th>
-                          <th>Location</th>
-                          <th>Details</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                  <Accordion.Item eventKey="warnings">
+                    <Accordion.Header>
+                      <span className="text-warning me-2">
+                        Warnings (
+                        {selectedProject.validation_data.warnings.length})
+                      </span>
+                      <PlusLg size={16} />
+                    </Accordion.Header>
+                    <Accordion.Body>
+                      <Accordion defaultActiveKey={[]}>
                         {selectedProject.validation_data.warnings.map(
-                          (warn, index) =>
-                            warn.samples.map((sample, i) => (
-                              <tr key={`${index}-${i}`}>
-                                {i === 0 && (
-                                  <>
-                                    <td rowSpan={warn.samples.length}>
-                                      {warn.code}
-                                    </td>
-                                    <td rowSpan={warn.samples.length}>
-                                      {warn.total}
-                                    </td>
-                                  </>
-                                )}
-                                <td>
-                                  {sample.filename &&
-                                    `File: ${sample.filename}`}
-                                  {sample.csvRowNumber &&
-                                    `, Row: ${sample.csvRowNumber}`}
-                                  {sample.serviceId &&
-                                    `, Service ID: ${sample.serviceId}`}
-                                </td>
-                                <td>
-                                  {sample.fieldName && `${sample.fieldName}: `}
-                                  {sample.value && `"${sample.value}"`}
-                                  {sample.currentDate &&
-                                    `Date: ${sample.currentDate}`}
-                                  {!sample.fieldName &&
-                                    !sample.value &&
-                                    !sample.currentDate &&
-                                    "No specific details"}
-                                </td>
-                              </tr>
-                            ))
+                          (warn, index) => (
+                            <Accordion.Item
+                              key={`warning-${index}`}
+                              eventKey={`warning-${index}`}
+                            >
+                              <Accordion.Header className="inner-accordion-header">
+                                <span className="me-2">
+                                  {warn.code} (Total: {warn.total})
+                                </span>
+                                <PlusLg size={16} />
+                              </Accordion.Header>
+                              <Accordion.Body>
+                                <p className="mb-2">
+                                  <strong>Description:</strong>{" "}
+                                  {warn.userFriendlyMessage}
+                                </p>
+                                <p className="mb-3">
+                                  <strong>Suggestion:</strong> {warn.suggestion}
+                                </p>
+                                <div className="table-container">
+                                  <Table
+                                    striped
+                                    bordered
+                                    hover
+                                    size="sm"
+                                    className="mt-2"
+                                  >
+                                    <thead>
+                                      <tr>
+                                        <th>Location</th>
+                                        <th>Details</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {warn.samples.map((sample, i) => (
+                                        <tr key={`${index}-${i}`}>
+                                          <td>{sample.location}</td>
+                                          <td>{sample.details}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </Table>
+                                </div>
+                              </Accordion.Body>
+                            </Accordion.Item>
+                          )
                         )}
-                      </tbody>
-                    </Table>
-                  </>
+                      </Accordion>
+                    </Accordion.Body>
+                  </Accordion.Item>
                 )}
 
                 {!selectedProject.validation_data.errors?.length &&
                   !selectedProject.validation_data.warnings?.length && (
                     <p className="text-muted">No errors or warnings found.</p>
                   )}
-              </>
+              </Accordion>
             ) : (
               <p className="text-muted">
                 No validation data available for this project.

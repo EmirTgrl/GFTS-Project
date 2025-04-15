@@ -23,10 +23,12 @@ import {
   LifePreserver,
   TrainLightrailFront,
   SignRailroad,
-  BoundingBoxCircles,
   Funnel,
   SortUp,
   SortDown,
+  PlusLg,
+  Pencil,
+  Trash,
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import {
@@ -103,7 +105,7 @@ const Sidebar = ({
   const [pageTrips, setPageTrips] = useState(1);
   const [pageStops, setPageStops] = useState(1);
   const [pageCalendars, setPageCalendars] = useState(1);
-  const [pageShapes, setPageShapes] = useState(1);
+  // const [pageShapes, setPageShapes] = useState(1);
   const [formConfig, setFormConfig] = useState(null);
   const [searchTerms, setSearchTerms] = useState({
     agencies: "",
@@ -658,80 +660,112 @@ const Sidebar = ({
   };
 
   const handleDelete = async (category, entity) => {
-    try {
-      if (category === "agency") {
-        await deleteAgencyById(entity.agency_id, token);
-        setAgencies((prev) => ({
-          ...prev,
-          data: prev.data.filter((a) => a.agency_id !== entity.agency_id),
-        }));
-        setSelectedEntities((prev) => ({
-          ...prev,
-          agency: null,
-          route: null,
-          trip: null,
-          stop: null,
-          shape: null,
-        }));
-      } else if (category === "route") {
-        await deleteRouteById(entity.route_id, token);
-        setRoutes((prev) => ({
-          ...prev,
-          data: prev.data.filter((r) => r.route_id !== entity.route_id),
-        }));
-        setSelectedEntities((prev) => ({
-          ...prev,
-          route: null,
-          trip: null,
-          stop: null,
-          shape: null,
-        }));
-      } else if (category === "trip") {
-        await deleteTripById(entity.trip_id, token);
-        setFullTrips((prev) =>
-          prev.filter((t) => t.trip_id !== entity.trip_id)
-        );
-        setTrips((prev) => ({
-          ...prev,
-          data: prev.data.filter((t) => t.trip_id !== entity.trip_id),
-          total: prev.total - 1,
-        }));
-        setSelectedEntities((prev) => ({
-          ...prev,
-          trip: null,
-          stop: null,
-          shape: null,
-        }));
-        setTripTimes((prev) => {
-          const newTripTimes = { ...prev };
-          delete newTripTimes[entity.trip_id];
-          return newTripTimes;
-        });
-      } else if (category === "stop") {
-        await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
-        await deleteStopById(entity.stop_id, token);
-        setStopsAndTimes((prev) =>
-          prev ? prev.filter((s) => s.stop_id !== entity.stop_id) : []
-        );
-        setSelectedEntities((prev) => ({ ...prev, stop: null }));
-      } else if (category === "shape") {
-        await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
-        setShapes((prev) =>
-          prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
-        );
-        setSelectedEntities((prev) => ({ ...prev, shape: null }));
-      } else if (category === "calendar") {
-        await deleteCalendarById(entity.service_id, token);
-        setCalendars((prevCalendars) =>
-          prevCalendars.filter(
-            (calendar) => calendar.service_id !== entity.service_id
-          )
-        );
+    const entityName =
+      category === "agency"
+        ? entity.agency_name
+        : category === "route"
+        ? entity.route_long_name || entity.route_id
+        : category === "trip"
+        ? entity.trip_headsign || entity.trip_id
+        : category === "stop"
+        ? entity.stop_name || entity.stop_id
+        : category === "shape"
+        ? `Sequence ${entity.shape_pt_sequence}`
+        : category === "calendar"
+        ? getActiveDays(entity)
+        : category;
+
+    const result = await Swal.fire({
+      title: "Emin misiniz?",
+      text: `${
+        category.charAt(0).toUpperCase() + category.slice(1)
+      } "${entityName}" silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Evet, sil!",
+      cancelButtonText: "Hayır, iptal et",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        if (category === "agency") {
+          await deleteAgencyById(entity.agency_id, token);
+          setAgencies((prev) => ({
+            ...prev,
+            data: prev.data.filter((a) => a.agency_id !== entity.agency_id),
+          }));
+          setSelectedEntities((prev) => ({
+            ...prev,
+            agency: null,
+            route: null,
+            trip: null,
+            stop: null,
+            shape: null,
+          }));
+        } else if (category === "route") {
+          await deleteRouteById(entity.route_id, token);
+          setRoutes((prev) => ({
+            ...prev,
+            data: prev.data.filter((r) => r.route_id !== entity.route_id),
+          }));
+          setSelectedEntities((prev) => ({
+            ...prev,
+            route: null,
+            trip: null,
+            stop: null,
+            shape: null,
+          }));
+        } else if (category === "trip") {
+          await deleteTripById(entity.trip_id, token);
+          setFullTrips((prev) =>
+            prev.filter((t) => t.trip_id !== entity.trip_id)
+          );
+          setTrips((prev) => ({
+            ...prev,
+            data: prev.data.filter((t) => t.trip_id !== entity.trip_id),
+            total: prev.total - 1,
+          }));
+          setSelectedEntities((prev) => ({
+            ...prev,
+            trip: null,
+            stop: null,
+            shape: null,
+          }));
+          setTripTimes((prev) => {
+            const newTripTimes = { ...prev };
+            delete newTripTimes[entity.trip_id];
+            return newTripTimes;
+          });
+        } else if (category === "stop") {
+          await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
+          await deleteStopById(entity.stop_id, token);
+          setStopsAndTimes((prev) =>
+            prev ? prev.filter((s) => s.stop_id !== entity.stop_id) : []
+          );
+          setSelectedEntities((prev) => ({ ...prev, stop: null }));
+        } else if (category === "shape") {
+          await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
+          setShapes((prev) =>
+            prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
+          );
+          setSelectedEntities((prev) => ({ ...prev, shape: null }));
+        } else if (category === "calendar") {
+          await deleteCalendarById(entity.service_id, token);
+          setCalendars((prevCalendars) =>
+            prevCalendars.filter(
+              (calendar) => calendar.service_id !== entity.service_id
+            )
+          );
+        }
+        Swal.fire("Silindi!", `${category} başarıyla silindi.`, "success");
+      } catch (error) {
+        console.error("Error deleting entity:", error);
+        Swal.fire("Hata", `${category} silinirken bir hata oluştu.`, "error");
       }
-      Swal.fire("Deleted!", `${category} has been deleted.`, "success");
-    } catch (error) {
-      console.error("Error deleting entity:", error);
-      Swal.fire("Error", `Failed to delete ${category}.`, "error");
+    } else {
+      Swal.fire("İptal Edildi", `${category} silinmedi.`, "info");
     }
   };
 
@@ -968,6 +1002,105 @@ const Sidebar = ({
     setTrips({ data: sortedTrips, total: sortedTrips.length });
   };
 
+  const renderActionButtons = (category) => {
+    const isSelected = selectedEntities[category] != null;
+    return (
+      <div className="action-buttons-container">
+        <div className="overlay-trigger-wrapper">
+          <OverlayTrigger
+            placement="top"
+            overlay={renderTooltip(`Add ${category}`, `add-${category}`)}
+          >
+            <div
+              className="sidebar-action-btn add-btn custom-action-icon" // Yeni class eklendi
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveKey(
+                  Object.keys(categoryMap).find(
+                    (key) => categoryMap[key] === category
+                  )
+                );
+                setSelectedCategory(category);
+                setAction("add");
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  setActiveKey(
+                    Object.keys(categoryMap).find(
+                      (key) => categoryMap[key] === category
+                    )
+                  );
+                  setSelectedCategory(category);
+                  setAction("add");
+                }
+              }}
+            >
+              <PlusLg size={16} />
+            </div>
+          </OverlayTrigger>
+        </div>
+        {isSelected && (
+          <>
+            <div className="overlay-trigger-wrapper">
+              <OverlayTrigger
+                placement="top"
+                overlay={renderTooltip(`Edit ${category}`, `edit-${category}`)}
+              >
+                <div
+                  className="sidebar-action-btn edit-btn custom-action-icon" // Yeni class eklendi
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAction("edit");
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.stopPropagation();
+                      setAction("edit");
+                    }
+                  }}
+                >
+                  <Pencil size={16} />
+                </div>
+              </OverlayTrigger>
+            </div>
+            <div className="overlay-trigger-wrapper">
+              <OverlayTrigger
+                placement="top"
+                overlay={renderTooltip(
+                  `Delete ${category}`,
+                  `delete-${category}`
+                )}
+              >
+                <div
+                  className="sidebar-action-btn delete-btn custom-action-icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAction("delete");
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.stopPropagation();
+                      setAction("delete");
+                    }
+                  }}
+                >
+                  <Trash size={16} />
+                </div>
+              </OverlayTrigger>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const renderTripsAccordion = () => {
     const tripData = trips.data || [];
 
@@ -975,6 +1108,7 @@ const Sidebar = ({
       <Accordion.Item eventKey="3">
         <Accordion.Header>
           <BusFront size={20} className="me-2" /> Trips
+          {renderActionButtons("trip")}
           {selectedEntities.route && (
             <>
               <span
@@ -1079,6 +1213,7 @@ const Sidebar = ({
           <Accordion.Item eventKey="0">
             <Accordion.Header>
               <Building size={20} className="me-2" /> Agencies
+              {renderActionButtons("agency")}
             </Accordion.Header>
             <Accordion.Body>
               <Form.Group className="mb-3">
@@ -1120,6 +1255,7 @@ const Sidebar = ({
           <Accordion.Item eventKey="1">
             <Accordion.Header>
               <MapIcon size={20} className="me-2" /> Routes
+              {renderActionButtons("route")}
             </Accordion.Header>
             <Accordion.Body>
               <Form.Group className="mb-3">
@@ -1170,6 +1306,7 @@ const Sidebar = ({
           <Accordion.Item eventKey="2">
             <Accordion.Header>
               <Calendar size={20} className="me-2" /> Calendars
+              {renderActionButtons("calendar")}
             </Accordion.Header>
             <Accordion.Body>
               {calendars.data && calendars.data.length > 0 ? (
@@ -1206,15 +1343,16 @@ const Sidebar = ({
 
           {renderTripsAccordion()}
 
-          <Accordion.Item eventKey="4">
+          {/* <Accordion.Item eventKey="4">
             <Accordion.Header>
-              <BoundingBoxCircles size={20} className="me-2" /> Shapes
+              <SignRailroad size={20} className="me-2" /> Shapes
+              {renderActionButtons("shape")}
             </Accordion.Header>
             <Accordion.Body>
-              {shapes.length > 0 ? (
-                paginateItems(shapes, pageShapes).map((shape) => (
+              {shapes && shapes.length > 0 ? (
+                shapes.map((shape) => (
                   <Card
-                    key={`${shape.shape_id}-${shape.shape_pt_sequence}`}
+                    key={shape.shape_pt_sequence}
                     className={`mb-2 item-card ${
                       selectedEntities.shape?.shape_pt_sequence ===
                       shape.shape_pt_sequence
@@ -1227,30 +1365,27 @@ const Sidebar = ({
                       <OverlayTrigger
                         placement="top"
                         overlay={renderTooltip(
-                          `Shape Point ${shape.shape_pt_sequence}`
+                          `Sequence ${shape.shape_pt_sequence}`
                         )}
                       >
                         <span className="item-title">
-                          Point {shape.shape_pt_sequence}
+                          Sequence {shape.shape_pt_sequence}
                         </span>
                       </OverlayTrigger>
                     </Card.Body>
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">
-                  {selectedEntities.trip
-                    ? "No shapes found."
-                    : "Select a trip first."}
-                </p>
+                <p className="text-muted text-center">No shapes found.</p>
               )}
               {renderPagination(shapes.length, pageShapes, setPageShapes)}
             </Accordion.Body>
-          </Accordion.Item>
+          </Accordion.Item> */}
 
           <Accordion.Item eventKey="5">
             <Accordion.Header>
               <Clock size={20} className="me-2" /> Stops
+              {renderActionButtons("stop")}
             </Accordion.Header>
             <Accordion.Body>
               <Form.Group className="mb-3">

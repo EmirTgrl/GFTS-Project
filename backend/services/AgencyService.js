@@ -69,7 +69,7 @@ const agencyService = {
     try {
       const user_id = req.user.id;
       const validFields = [
-        "agency_id", // agency_id’yi zorunlu alan olarak ekledik
+        "agency_id",
         "agency_name",
         "agency_url",
         "agency_timezone",
@@ -79,7 +79,6 @@ const agencyService = {
       ];
       const { agency_id, ...params } = req.body;
 
-      // agency_id gelip gelmediğini kontrol et
       if (!agency_id) {
         return res.status(400).json({ error: "agency_id is required" });
       }
@@ -115,7 +114,7 @@ const agencyService = {
 
       res.status(201).json({
         message: "Agency saved successfully",
-        agency_id: agency_id, // Kullanıcıdan gelen agency_id’yi dön
+        agency_id: agency_id, 
       });
     } catch (error) {
       console.error("Error in saveAgency:", error);

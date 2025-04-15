@@ -6,7 +6,7 @@
   position: absolute;
   top: 10px;
   left: 360px;
-  z-index: 1000;
+  z-index: 998; /* Sidebar’ın altına getir (new-sidebar z-index: 1000) */
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
   font-size: 0.9em;
   height: 50px; /* Sabit bir yükseklik tanımlıyoruz */
@@ -22,7 +22,7 @@
   border-radius: 12px;
   transition: background-color 0.3s ease, color 0.3s ease;
   margin-right: 8px; /* Boşluk için */
-  height: 100%; /* Breadcrumb öğeleri barın tam yüksekliğini kaplasın */
+  height: 100%; /* Breadcrumb öğeleri barın tam yüksekliğini caplasın */
   justify-content: center; /* İçeriği dikeyde ortala */
 }
 

@@ -14,6 +14,7 @@
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "buffer": "^6.0.3",
+    "file-saver": "^2.0.5",
     "gtfs-utils": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
