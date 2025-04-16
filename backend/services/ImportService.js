@@ -74,7 +74,6 @@ class ImportService {
         "📝 Attempting to update validation data for project:",
         projectId
       );
-      console.log("Validation data to write:", JSON.stringify(validationData));
       await pool.execute(
         "UPDATE projects SET validation_data = ? WHERE project_id = ?",
         [JSON.stringify(validationData), projectId]
@@ -291,13 +290,13 @@ class ImportService {
             code: notice.code,
             message: notice.message || "No description",
             total: notice.totalNotices,
-            samples: notice.sampleNotices || [], 
+            samples: notice.sampleNotices || [],
           })),
           warnings: warnings.map((notice) => ({
             code: notice.code,
             message: notice.message || "No description",
             total: notice.totalNotices,
-            samples: notice.sampleNotices || [], 
+            samples: notice.sampleNotices || [],
           })),
         });
       });
@@ -343,11 +342,6 @@ class ImportService {
       }
 
       const { success, errors, warnings } = validationResult;
-      console.log("📜 Validation result processed:", {
-        success,
-        errors,
-        warnings,
-      });
 
       const validationData = {
         success,

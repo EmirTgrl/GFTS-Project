@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { Card, Row, Col, Alert } from "react-bootstrap";
 import {
-  HouseDoor,
-  GeoAlt, 
+  GeoAlt,
   Signpost,
-  Clock, 
+  Clock,
   BusFront,
   BarChart,
   Map,
+  Database,
+  Building,
 } from "react-bootstrap-icons";
 import "../styles/StatsDashboard.css";
 import { fetchGlobalStats } from "../api/statsApi";
@@ -23,6 +25,7 @@ const StatsDashboard = ({ token }) => {
       setError(null);
       try {
         const statsData = await fetchGlobalStats(token);
+        console.log("Stats Data:", statsData); // Veriyi kontrol için
         setStats(statsData);
       } catch (error) {
         setError(`Failed to load statistics: ${error.message}`);
@@ -37,7 +40,7 @@ const StatsDashboard = ({ token }) => {
   return (
     <div className="stats-dashboard">
       <h4 className="text-center mb-4">
-        <BarChart className="me-2" /> Global Statistics Dashboard
+        <BarChart className="me-2" /> Statistics Dashboard
       </h4>
 
       {error && (
@@ -52,12 +55,12 @@ const StatsDashboard = ({ token }) => {
           <p>Loading statistics...</p>
         </div>
       ) : stats ? (
-        <Row>
-          <Col md={4} className="mb-4">
+        <Row className="g-3">
+          <Col xs={12} sm={6} md={3} className="mb-3">
             <Card className="stats-card shadow-sm">
               <Card.Body className="d-flex align-items-center">
-                <HouseDoor size={40} className="me-3 text-primary" />
-                <div>
+                <Database size={30} className="me-2 text-primary" />
+                <div className="stats-content">
                   <Card.Title className="stats-value">
                     {stats.gtfsRegistered}
                   </Card.Title>
@@ -66,11 +69,26 @@ const StatsDashboard = ({ token }) => {
               </Card.Body>
             </Card>
           </Col>
-          <Col md={4} className="mb-4">
+          <Col xs={12} sm={6} md={3} className="mb-3">
             <Card className="stats-card shadow-sm">
               <Card.Body className="d-flex align-items-center">
-                <GeoAlt size={40} className="me-3 text-success" />
-                <div>
+                <Building size={30} className="me-2 text-danger" />
+                <div className="stats-content">
+                  <Card.Title className="stats-value">
+                    {stats.agencyRegistered}
+                  </Card.Title>
+                  <Card.Text className="stats-label">
+                    Agencies Registered
+                  </Card.Text>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col xs={12} sm={6} md={3} className="mb-3">
+            <Card className="stats-card shadow-sm">
+              <Card.Body className="d-flex align-items-center">
+                <GeoAlt size={30} className="me-2 text-success" />
+                <div className="stats-content">
                   <Card.Title className="stats-value">
                     {stats.stopsRegistered}
                   </Card.Title>
@@ -81,11 +99,11 @@ const StatsDashboard = ({ token }) => {
               </Card.Body>
             </Card>
           </Col>
-          <Col md={4} className="mb-4">
+          <Col xs={12} sm={6} md={3} className="mb-3">
             <Card className="stats-card shadow-sm">
               <Card.Body className="d-flex align-items-center">
-                <Signpost size={40} className="me-3 text-info" />
-                <div>
+                <Signpost size={30} className="me-2 text-info" />
+                <div className="stats-content">
                   <Card.Title className="stats-value">
                     {stats.routesRegistered}
                   </Card.Title>
@@ -96,11 +114,11 @@ const StatsDashboard = ({ token }) => {
               </Card.Body>
             </Card>
           </Col>
-          <Col md={4} className="mb-4">
+          <Col xs={12} sm={6} md={3} className="mb-3">
             <Card className="stats-card shadow-sm">
               <Card.Body className="d-flex align-items-center">
-                <Clock size={40} className="me-3 text-warning" />
-                <div>
+                <Clock size={30} className="me-2 text-warning" />
+                <div className="stats-content">
                   <Card.Title className="stats-value">
                     {stats.stopTimesRegistered}
                   </Card.Title>
@@ -111,11 +129,11 @@ const StatsDashboard = ({ token }) => {
               </Card.Body>
             </Card>
           </Col>
-          <Col md={4} className="mb-4">
+          <Col xs={12} sm={6} md={3} className="mb-3">
             <Card className="stats-card shadow-sm">
               <Card.Body className="d-flex align-items-center">
-                <BusFront size={40} className="me-3 text-purple" />
-                <div>
+                <BusFront size={30} className="me-2 text-purple" />
+                <div className="stats-content">
                   <Card.Title className="stats-value">
                     {stats.tripsRegistered}
                   </Card.Title>
@@ -126,11 +144,11 @@ const StatsDashboard = ({ token }) => {
               </Card.Body>
             </Card>
           </Col>
-          <Col md={4} className="mb-4">
+          <Col xs={12} sm={6} md={3} className="mb-3">
             <Card className="stats-card shadow-sm">
               <Card.Body className="d-flex align-items-center">
-                <Map size={40} className="me-3 text-teal" />
-                <div>
+                <Map size={30} className="me-2 text-teal" />
+                <div className="stats-content">
                   <Card.Title className="stats-value">
                     {stats.shapesRegistered}
                   </Card.Title>
@@ -151,6 +169,10 @@ const StatsDashboard = ({ token }) => {
       )}
     </div>
   );
+};
+
+StatsDashboard.propTypes = {
+  token: PropTypes.string.isRequired,
 };
 
 export default StatsDashboard;

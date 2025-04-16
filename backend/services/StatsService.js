@@ -5,6 +5,7 @@ const statsService = {
     try {
       const [
         gtfsResult,
+        agencyResult,
         stopsResult,
         routesResult,
         stopTimesResult,
@@ -12,6 +13,7 @@ const statsService = {
         shapesResult,
       ] = await Promise.all([
         pool.query("SELECT COUNT(*) AS total FROM projects"),
+        pool.query("SELECT COUNT(*) AS total FROM agency"),
         pool.query("SELECT COUNT(*) AS total FROM stops"),
         pool.query("SELECT COUNT(*) AS total FROM routes"),
         pool.query("SELECT COUNT(*) AS total FROM stop_times"),
@@ -20,6 +22,7 @@ const statsService = {
       ]);
 
       const gtfsRegistered = gtfsResult[0][0].total;
+      const agencyRegistered = agencyResult[0][0].total;
       const stopsRegistered = stopsResult[0][0].total;
       const routesRegistered = routesResult[0][0].total;
       const stopTimesRegistered = stopTimesResult[0][0].total;
@@ -28,6 +31,7 @@ const statsService = {
 
       res.status(200).json({
         gtfsRegistered,
+        agencyRegistered,
         stopsRegistered,
         routesRegistered,
         stopTimesRegistered,

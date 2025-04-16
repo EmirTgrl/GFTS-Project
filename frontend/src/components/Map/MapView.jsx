@@ -34,11 +34,11 @@ const stopIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-const summaryIcon = new L.DivIcon({
-  html: '<div style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 5px;">X Durak</div>',
-  iconSize: [50, 30],
-  iconAnchor: [25, 15],
-});
+// const summaryIcon = new L.DivIcon({
+//   html: '<div style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 5px;">X Durak</div>',
+//   iconSize: [50, 30],
+//   iconAnchor: [25, 15],
+// });
 
 const MapClickHandler = ({ onMapClick }) => {
   useMapEvents({
@@ -495,63 +495,45 @@ const MapView = ({
       <MapUpdater mapCenter={mapCenter} zoom={zoom} />
       <BoundsTracker onBoundsChange={handleBoundsChange} />
 
-      {!selectedEntities.trip &&
-      currentZoom < 10 &&
-      tempStopsAndTimes.length > 0 ? (
-        <Marker
-          position={
-            isValidLatLng(mapCenter[0], mapCenter[1])
-              ? mapCenter
-              : defaultCenter
-          }
-          icon={L.divIcon({
-            ...summaryIcon,
-            html: `<div style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 5px;">${tempStopsAndTimes.length} Durak</div>`,
-          })}
-        >
-          <Popup>{tempStopsAndTimes.length} durak bu bölgede.</Popup>
-        </Marker>
-      ) : (
-        <MarkerClusterGroup
-          maxClusterRadius={80}
-          disableClusteringAtZoom={15}
-          chunkedLoading={true}
-          showCoverageOnHover={false}
-        >
-          {visibleStops.map((stopTime, index) => {
-            const lat = parseFloat(stopTime.stop_lat);
-            const lon = parseFloat(stopTime.stop_lon);
-            if (!isValidLatLng(lat, lon)) return null;
-            return (
-              <Marker
-                key={stopTime.stop_id || index}
-                position={[lat, lon]}
-                icon={stopIcon}
-                draggable={editorMode !== "close"}
-                eventHandlers={{
-                  click: () => handleStopClick(stopTime),
-                  dragend: (e) => handleStopDrag(e, stopTime.stop_sequence),
-                }}
-              >
-                <Popup>
-                  <strong>
-                    {stopTime.stop_sequence || index + 1}.{" "}
-                    {stopTime.stop_name || "Bilinmeyen Durak"}
-                  </strong>
-                  <br />
-                  Varış:{" "}
-                  {stopTime.arrival_time ? stopTime.arrival_time : "Bilinmiyor"}
-                  <br />
-                  Kalkış:{" "}
-                  {stopTime.departure_time
-                    ? stopTime.departure_time
-                    : "Bilinmiyor"}
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MarkerClusterGroup>
-      )}
+      <MarkerClusterGroup
+        maxClusterRadius={80}
+        disableClusteringAtZoom={15}
+        chunkedLoading={true}
+        showCoverageOnHover={false}
+      >
+        {visibleStops.map((stopTime, index) => {
+          const lat = parseFloat(stopTime.stop_lat);
+          const lon = parseFloat(stopTime.stop_lon);
+          if (!isValidLatLng(lat, lon)) return null;
+          return (
+            <Marker
+              key={stopTime.stop_id || index}
+              position={[lat, lon]}
+              icon={stopIcon}
+              draggable={editorMode !== "close"}
+              eventHandlers={{
+                click: () => handleStopClick(stopTime),
+                dragend: (e) => handleStopDrag(e, stopTime.stop_sequence),
+              }}
+            >
+              <Popup>
+                <strong>
+                  {stopTime.stop_sequence || index + 1}.{" "}
+                  {stopTime.stop_name || "Bilinmeyen Durak"}
+                </strong>
+                <br />
+                Varış:{" "}
+                {stopTime.arrival_time ? stopTime.arrival_time : "Bilinmiyor"}
+                <br />
+                Kalkış:{" "}
+                {stopTime.departure_time
+                  ? stopTime.departure_time
+                  : "Bilinmiyor"}
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MarkerClusterGroup>
 
       {visibleShapes.length > 0 && (
         <>

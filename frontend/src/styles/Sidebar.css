@@ -316,9 +316,9 @@
 
 .trip-filter-panel {
   position: fixed;
-  top: 50px;
+  top: 112px;
   left: 350px;
-  width: 300px;
+  width: 250px;
   height: calc(100vh - 50px);
   background-color: #f8f9fa;
   padding: 15px;

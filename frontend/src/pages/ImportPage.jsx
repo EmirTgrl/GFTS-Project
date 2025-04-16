@@ -27,7 +27,6 @@ const ImportPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
 
-  // Import modu sabit olarak "parallel" tanımlanıyor
   const importMode = "parallel";
 
   useEffect(() => {
@@ -58,7 +57,7 @@ const ImportPage = () => {
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("importMode", importMode); // Sabit "parallel"
+    formData.append("importMode", importMode);
     if (forceImport) {
       formData.append("forceImport", "true");
     }
@@ -88,8 +87,6 @@ const ImportPage = () => {
       xhr.send(formData);
 
       const data = await promise;
-      console.log("Backend Response:", data);
-
       if (data.success) {
         setFile(null);
         setUploadProgress(0);
@@ -232,7 +229,6 @@ const ImportPage = () => {
                     </Button>
                   )}
 
-                  {/* Validation sonuçları varsa Continue ve Cancel butonlarını göster */}
                   {hasValidationResults && (
                     <div className="mt-3 d-flex justify-content-between gap-2">
                       <Button

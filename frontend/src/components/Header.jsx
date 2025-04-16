@@ -158,7 +158,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showValidationModal, setShowValidationModal] = useState(false);
-  const [showStatsModal, setShowStatsModal] = useState(false); // Stats modal için state
+  const [showStatsModal, setShowStatsModal] = useState(false); 
   const [validationResult, setValidationResult] = useState(null);
 
   const handleLogout = () => {
