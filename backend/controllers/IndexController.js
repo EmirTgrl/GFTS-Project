@@ -14,6 +14,7 @@ const agencyController = require("./AgencyController.js");
 const adminController = require("./AdminController.js");
 const shapeController = require("./ShapeController.js");
 const statsController = require("./StatsController.js");
+const fareController = require("./FareController.js");
 
 // routes
 router.use("/auth", authController);
@@ -28,5 +29,6 @@ router.use("/agencies", agencyController);
 router.use("/shapes", shapeController);
 router.use("/admin", adminController);
 router.use("/stats", statsController);
+router.use("/fares", fareController);
 
 module.exports = router;

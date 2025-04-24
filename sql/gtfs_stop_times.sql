@@ -23,26 +23,26 @@ DROP TABLE IF EXISTS `stop_times`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stop_times` (
-  `trip_id` VARCHAR(255) DEFAULT NULL,
+  `trip_id` varchar(255) DEFAULT NULL,
   `arrival_time` time DEFAULT NULL,
   `departure_time` time DEFAULT NULL,
-  `stop_id` VARCHAR(255) NOT NULL,
+  `stop_id` varchar(255) DEFAULT NULL,
   `stop_sequence` int NOT NULL,
-  `stop_headsign` VARCHAR(255) DEFAULT NULL,
+  `stop_headsign` varchar(255) DEFAULT NULL,
   `pickup_type` tinyint DEFAULT NULL,
   `drop_off_type` tinyint DEFAULT NULL,
   `shape_dist_traveled` float DEFAULT NULL,
   `timepoint` tinyint DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  KEY `trip_id` (`trip_id`),
-  KEY `stop_id` (`stop_id`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
-  CONSTRAINT `stop_times_ibfk_1` FOREIGN KEY (`trip_id`) REFERENCES `trips` (`trip_id`) ON DELETE SET NULL,
-  CONSTRAINT `stop_times_ibfk_2` FOREIGN KEY (`stop_id`) REFERENCES `stops` (`stop_id`) ON DELETE CASCADE,
+  KEY `trip_id` (`user_id`,`project_id`),
+  KEY `stop_times_ibfk_trip` (`trip_id`),
+  KEY `stop_times_ibfk_stop` (`stop_id`),
   CONSTRAINT `stop_times_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `stop_times_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
+  CONSTRAINT `stop_times_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`),
+  CONSTRAINT `stop_times_ibfk_stop` FOREIGN KEY (`stop_id`) REFERENCES `stops` (`stop_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -64,4 +64,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-05 14:20:34
+-- Dump completed on 2025-04-23  0:05:01

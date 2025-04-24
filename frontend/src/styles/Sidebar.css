@@ -1,4 +1,3 @@
-
 .sidebar-container {
   position: relative;
   display: flex;
@@ -85,12 +84,12 @@
 .action-buttons-container {
   display: flex;
   align-items: center;
-  gap: 8px; 
-  margin-left: 8px; 
-  position: relative; 
-  z-index: 1002; 
-  overflow: visible; 
-  flex-shrink: 0; 
+  gap: 8px;
+  margin-left: 8px;
+  position: relative;
+  z-index: 1002;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .sidebar-action-btn {
@@ -101,83 +100,83 @@
 }
 
 .custom-action-icon {
-  width: 24px !important; 
-  height: 24px !important; 
-  padding: 4px; 
+  width: 24px !important;
+  height: 24px !important;
+  padding: 4px;
   background-color: transparent !important;
-  border: none !important; 
-  display: flex !important; 
-  align-items: center !important; 
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
   justify-content: center !important;
-  cursor: pointer !important; 
-  transition: transform 0.3s !important; 
-  color: #333 !important; 
-  opacity: 1 !important; 
-  visibility: visible !important; 
-  position: relative !important; 
-  z-index: 1003 !important; 
-  flex-shrink: 0 !important; 
-  box-sizing: content-box !important; 
+  cursor: pointer !important;
+  transition: transform 0.3s !important;
+  color: #333 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: relative !important;
+  z-index: 1003 !important;
+  flex-shrink: 0 !important;
+  box-sizing: content-box !important;
 }
 
 .custom-action-icon::after,
 .custom-action-icon::before {
-  content: none !important; 
-  display: none !important; 
-  width: 0 !important; 
-  height: 0 !important; 
+  content: none !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .custom-action-icon.delete-btn {
   color: #333 !important;
-  opacity: 1 !important; 
-  visibility: visible !important; 
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .custom-action-icon:hover {
-  transform: scale(1.1) !important; 
+  transform: scale(1.1) !important;
 }
 
 .accordion-button:not(.collapsed) .custom-action-icon {
-  color: white !important; 
+  color: white !important;
 }
 
 .accordion-button:not(.collapsed) .custom-action-icon.delete-btn {
-  color: white !important; 
-  opacity: 1 !important; 
-  visibility: visible !important; 
+  color: white !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .action-buttons-container .overlay-trigger-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px !important; 
+  width: 24px !important;
   height: 24px !important;
-  margin: 0 !important; 
+  margin: 0 !important;
   padding: 0 !important;
-  background: transparent !important; 
-  opacity: 1 !important; 
+  background: transparent !important;
+  opacity: 1 !important;
   visibility: visible !important;
-  position: relative !important; 
-  z-index: 1003 !important; 
+  position: relative !important;
+  z-index: 1003 !important;
   overflow: visible !important;
-  flex-shrink: 0 !important; 
+  flex-shrink: 0 !important;
   box-sizing: border-box !important;
 }
 
 .action-buttons-container .overlay-trigger-wrapper::after,
 .action-buttons-container .overlay-trigger-wrapper::before {
-  content: none !important; 
-  display: none !important; 
+  content: none !important;
+  display: none !important;
   width: 0 !important;
-  height: 0 !important; 
+  height: 0 !important;
 }
 
 .custom-action-icon.add-btn,
 .custom-action-icon.edit-btn,
 .custom-action-icon.delete-btn {
-  background-color: transparent !important; 
+  background-color: transparent !important;
 }
 
 .item-card {
@@ -340,4 +339,75 @@
 
 .new-sidebar.closed ~ .trip-filter-panel {
   left: 0;
+}
+
+/* Yeni Eklenen Stiller (GTFS-Fares V2 Özellikleri) */
+.nav-tabs {
+  border-bottom: 1px solid #dee2e6;
+  margin-bottom: 15px;
+}
+
+.nav-tabs .nav-link {
+  color: #333;
+  font-weight: 500;
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #007bff;
+  border-bottom: 2px solid #007bff;
+}
+
+.nav-tabs .nav-link.active {
+  color: #007bff;
+  border-bottom: 2px solid #007bff;
+  background: transparent;
+}
+
+.cost-calculation-panel {
+  position: fixed;
+  top: 112px;
+  left: 350px;
+  width: 300px;
+  background: #ffffff;
+  padding: 20px;
+  border-left: 1px solid #dee2e6;
+  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  overflow-y: auto;
+  max-height: calc(100vh - 112px);
+}
+
+.cost-calculation-panel h5 {
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.cost-calculation-panel .form-control {
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.cost-calculation-panel .btn-primary {
+  width: 100%;
+  padding: 8px;
+  font-size: 0.9rem;
+  border-radius: 4px;
+}
+
+.new-sidebar.closed + .cost-calculation-panel {
+  transform: translateX(-350px);
+}
+
+.new-sidebar.closed ~ .cost-calculation-panel {
+  left: 0;
+}
+
+.fare-details {
+  font-size: 0.8em;
+  color: #666;
 }

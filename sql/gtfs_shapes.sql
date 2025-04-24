@@ -30,7 +30,7 @@ CREATE TABLE `shapes` (
   `shape_dist_traveled` float DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
-  PRIMARY KEY (`shape_id`, `shape_pt_sequence`),
+  PRIMARY KEY (`shape_id`,`shape_pt_sequence`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
   CONSTRAINT `shapes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
@@ -56,4 +56,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-05 14:20:35
+-- Dump completed on 2025-04-23  0:05:02

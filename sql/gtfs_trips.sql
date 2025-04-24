@@ -23,9 +23,9 @@ DROP TABLE IF EXISTS `trips`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `trips` (
-  `route_id` VARCHAR(255) DEFAULT NULL,
-  `service_id` VARCHAR(255) DEFAULT NULL,
-  `trip_id` VARCHAR(255) NOT NULL,
+  `route_id` varchar(255) DEFAULT NULL,
+  `service_id` varchar(255) DEFAULT NULL,
+  `trip_id` varchar(255) NOT NULL,
   `trip_headsign` varchar(255) DEFAULT NULL,
   `trip_short_name` varchar(255) DEFAULT NULL,
   `direction_id` tinyint DEFAULT NULL,
@@ -36,15 +36,15 @@ CREATE TABLE `trips` (
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
   PRIMARY KEY (`trip_id`),
-  KEY `route_id` (`route_id`),
-  KEY `service_id` (`service_id`),
-  KEY `shape_id` (`shape_id`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
-  CONSTRAINT `trips_ibfk_1` FOREIGN KEY (`route_id`) REFERENCES `routes` (`route_id`) ON DELETE SET NULL,
-  CONSTRAINT `trips_ibfk_2` FOREIGN KEY (`service_id`) REFERENCES `calendar` (`service_id`) ON DELETE SET NULL,
+  KEY `route_id` (`user_id`,`project_id`),
+  KEY `trips_ibfk_route` (`route_id`),
+  KEY `trips_ibfk_service` (`service_id`),
   CONSTRAINT `trips_ibfk_4` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `trips_ibfk_5` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
+  CONSTRAINT `trips_ibfk_5` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`),
+  CONSTRAINT `trips_ibfk_route` FOREIGN KEY (`route_id`) REFERENCES `routes` (`route_id`),
+  CONSTRAINT `trips_ibfk_service` FOREIGN KEY (`service_id`) REFERENCES `calendar` (`service_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -66,4 +66,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-05 14:20:35
+-- Dump completed on 2025-04-23  0:05:02

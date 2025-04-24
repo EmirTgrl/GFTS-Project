@@ -22,6 +22,7 @@ const ImportPage = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [validationErrors, setValidationErrors] = useState([]);
   const [validationWarnings, setValidationWarnings] = useState([]);
+  const [showValidationAction, setShowValidationAction] = useState(false);
   const [openErrorItems, setOpenErrorItems] = useState({});
   const [openWarningItems, setOpenWarningItems] = useState({});
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ const ImportPage = () => {
     setUploadProgress(0);
     setValidationErrors([]);
     setValidationWarnings([]);
+    setShowValidationAction(false);
     setOpenErrorItems({});
     setOpenWarningItems({});
   };
@@ -48,12 +50,13 @@ const ImportPage = () => {
   const handleUpload = async (e, forceImport = false) => {
     e.preventDefault();
     if (!file) {
-      setError("Please Select a file to upload.");
+      setError("Please select a file to upload.");
       return;
     }
 
     setLoading(true);
     setError("");
+    setShowValidationAction(false);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -92,20 +95,33 @@ const ImportPage = () => {
         setUploadProgress(0);
         setValidationErrors([]);
         setValidationWarnings([]);
+        setShowValidationAction(false);
         setOpenErrorItems({});
         setOpenWarningItems({});
         navigate("/projects");
       } else if (data.actionRequired) {
         setValidationErrors(data.errors || []);
         setValidationWarnings(data.warnings || []);
+        setShowValidationAction(true);
       } else {
+        // success: false durumunda, yalnızca hata mesajı gösterilecek
         setError(data.message || "An error occurred during import!");
+        setValidationErrors([]);
+        setValidationWarnings([]);
+        setShowValidationAction(false);
+        setOpenErrorItems({});
+        setOpenWarningItems({});
       }
     } catch (error) {
       console.error("Loading Error:", error.message);
       setError(
-        error.message || "Failed to connect to server. Please try again.."
+        error.message || "Failed to connect to server. Please try again."
       );
+      setValidationErrors([]);
+      setValidationWarnings([]);
+      setShowValidationAction(false);
+      setOpenErrorItems({});
+      setOpenWarningItems({});
     } finally {
       setLoading(false);
     }
@@ -121,6 +137,7 @@ const ImportPage = () => {
     setUploadProgress(0);
     setValidationErrors([]);
     setValidationWarnings([]);
+    setShowValidationAction(false);
     setOpenErrorItems({});
     setOpenWarningItems({});
   };
@@ -139,8 +156,8 @@ const ImportPage = () => {
     }));
   };
 
-  const hasValidationResults =
-    validationErrors.length > 0 || validationWarnings.length > 0;
+  // Doğrulama sonuçları yalnızca showValidationAction true olduğunda gösterilecek
+  const hasValidationResults = showValidationAction;
 
   return (
     <div className="import-page-wrapper">
@@ -209,8 +226,7 @@ const ImportPage = () => {
                     />
                   )}
 
-                  {/* Validation sonuçları yoksa Load GTFS Data butonunu göster */}
-                  {!hasValidationResults && (
+                  {!showValidationAction && (
                     <Button
                       type="submit"
                       variant="primary"
@@ -229,7 +245,7 @@ const ImportPage = () => {
                     </Button>
                   )}
 
-                  {hasValidationResults && (
+                  {showValidationAction && (
                     <div className="mt-3 d-flex justify-content-between gap-2">
                       <Button
                         variant="outline-primary"
@@ -286,13 +302,31 @@ const ImportPage = () => {
                                       variant="flush"
                                       className="small"
                                     >
-                                      {err.samples.map((sample, sIndex) => (
-                                        <ListGroup.Item key={sIndex}>
-                                          <pre>
-                                            {JSON.stringify(sample, null, 2)}
-                                          </pre>
-                                        </ListGroup.Item>
-                                      ))}
+                                      {err.samples.map((sample, sIndex) =>
+                                        "sampleNotices" in sample ? (
+                                          sample.sampleNotices.map(
+                                            (subSample, subIndex) => (
+                                              <ListGroup.Item
+                                                key={`${sIndex}-${subIndex}`}
+                                              >
+                                                <pre>
+                                                  {JSON.stringify(
+                                                    subSample,
+                                                    null,
+                                                    2
+                                                  )}
+                                                </pre>
+                                              </ListGroup.Item>
+                                            )
+                                          )
+                                        ) : (
+                                          <ListGroup.Item key={sIndex}>
+                                            <pre>
+                                              {JSON.stringify(sample, null, 2)}
+                                            </pre>
+                                          </ListGroup.Item>
+                                        )
+                                      )}
                                     </ListGroup>
                                   ) : openErrorItems[index] ? (
                                     <p>No details found.</p>
@@ -334,13 +368,31 @@ const ImportPage = () => {
                                       variant="flush"
                                       className="small"
                                     >
-                                      {warn.samples.map((sample, sIndex) => (
-                                        <ListGroup.Item key={sIndex}>
-                                          <pre>
-                                            {JSON.stringify(sample, null, 2)}
-                                          </pre>
-                                        </ListGroup.Item>
-                                      ))}
+                                      {warn.samples.map((sample, sIndex) =>
+                                        "sampleNotices" in sample ? (
+                                          sample.sampleNotices.map(
+                                            (subSample, subIndex) => (
+                                              <ListGroup.Item
+                                                key={`${sIndex}-${subIndex}`}
+                                              >
+                                                <pre>
+                                                  {JSON.stringify(
+                                                    subSample,
+                                                    null,
+                                                    2
+                                                  )}
+                                                </pre>
+                                              </ListGroup.Item>
+                                            )
+                                          )
+                                        ) : (
+                                          <ListGroup.Item key={sIndex}>
+                                            <pre>
+                                              {JSON.stringify(sample, null, 2)}
+                                            </pre>
+                                          </ListGroup.Item>
+                                        )
+                                      )}
                                     </ListGroup>
                                   ) : openWarningItems[index] ? (
                                     <p>Details Not Found.</p>

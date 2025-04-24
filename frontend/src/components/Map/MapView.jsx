@@ -266,10 +266,10 @@ const MapView = ({
           await saveMultipleStopsAndTimes(tempStopsAndTimes, token);
           setStopsAndTimes(tempStopsAndTimes);
           setShapes(tempShapes);
-          Swal.fire("Başarılı!", "Duraklar ve şekiller kaydedildi.", "success");
+          Swal.fire("Success!", "Stops and shapes are saved.", "success");
         } catch (error) {
-          console.error("Kaydetme hatası:", error);
-          Swal.fire("Hata!", "Kaydetme başarısız: " + error.message, "error");
+          console.error("Saving error:", error);
+          Swal.fire("Hata!", "Saving unsuccessful: " + error.message, "error");
         } finally {
           setEditorMode("close");
         }

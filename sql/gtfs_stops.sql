@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `stops`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stops` (
-  `stop_id` VARCHAR(255) NOT NULL,
+  `stop_id` varchar(255) NOT NULL,
   `stop_code` varchar(255) DEFAULT NULL,
   `stop_name` varchar(255) NOT NULL,
   `stop_desc` varchar(255) DEFAULT NULL,
@@ -32,18 +32,19 @@ CREATE TABLE `stops` (
   `zone_id` varchar(255) DEFAULT NULL,
   `stop_url` varchar(255) DEFAULT NULL,
   `location_type` tinyint DEFAULT NULL,
-  `parent_station` VARCHAR(255) DEFAULT NULL,
+  `parent_station` varchar(255) DEFAULT NULL,
   `stop_timezone` varchar(255) DEFAULT NULL,
   `wheelchair_boarding` tinyint DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
   PRIMARY KEY (`stop_id`),
-  KEY `parent_station` (`parent_station`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
-  CONSTRAINT `stops_ibfk_1` FOREIGN KEY (`parent_station`) REFERENCES `stops` (`stop_id`) ON DELETE SET NULL,
+  KEY `parent_station` (`user_id`,`project_id`),
+  KEY `stops_ibfk_parent` (`parent_station`),
   CONSTRAINT `stops_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `stops_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
+  CONSTRAINT `stops_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`),
+  CONSTRAINT `stops_ibfk_parent` FOREIGN KEY (`parent_station`) REFERENCES `stops` (`stop_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -65,4 +66,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-05 14:20:34
+-- Dump completed on 2025-04-23  0:05:01

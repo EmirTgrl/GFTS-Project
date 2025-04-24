@@ -8,6 +8,7 @@ import {
   Card,
   OverlayTrigger,
   Tooltip,
+  Button,
 } from "react-bootstrap";
 import {
   List,
@@ -29,6 +30,7 @@ import {
   PlusLg,
   Pencil,
   Trash,
+  CashStack,
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import {
@@ -56,6 +58,7 @@ import {
 } from "../../api/stopTimeApi";
 import { deleteStopById, fetchStopsByProjectId } from "../../api/stopApi";
 import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
+import { fetchDetailedFareForTrip } from "../../api/fareApi.js";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -68,6 +71,7 @@ import CalendarAddPage from "../../pages/CalendarAddPage";
 import CalendarEditPage from "../../pages/CalendarEditPage";
 import ShapeAddPage from "../../pages/ShapeAddPage";
 import ShapeEditPage from "../../pages/ShapeEditPage";
+// import FareAddPage from "../../pages/FareAddPage";
 import TripFilterPanel from "./TripFilterPanel.jsx";
 import "../../styles/Sidebar.css";
 
@@ -105,7 +109,6 @@ const Sidebar = ({
   const [pageTrips, setPageTrips] = useState(1);
   const [pageStops, setPageStops] = useState(1);
   const [pageCalendars, setPageCalendars] = useState(1);
-  // const [pageShapes, setPageShapes] = useState(1);
   const [formConfig, setFormConfig] = useState(null);
   const [searchTerms, setSearchTerms] = useState({
     agencies: "",
@@ -119,6 +122,7 @@ const Sidebar = ({
   const [isFiltered, setIsFiltered] = useState(false);
   const [fullTrips, setFullTrips] = useState([]);
   const [sortDirection, setSortDirection] = useState("asc");
+  const [fareDetails, setFareDetails] = useState(null);
   const itemsPerPage = 8;
 
   const categoryMap = {
@@ -128,6 +132,7 @@ const Sidebar = ({
     3: "trip",
     4: "shape",
     5: "stop",
+    6: "fare",
   };
 
   const sortTripsByDeparture = (tripsData) => {
@@ -289,6 +294,7 @@ const Sidebar = ({
         setShapes([]);
         setStopsAndTimes([]);
         setTripTimes({});
+        setFareDetails(null);
       }
     };
 
@@ -491,6 +497,7 @@ const Sidebar = ({
           }));
           setSelectedCategory("");
           setActiveKey("0");
+          setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -505,6 +512,7 @@ const Sidebar = ({
           setActiveKey("0");
           setIsFilterOpen(false);
           setIsFiltered(false);
+          setFareDetails(null);
         }
         break;
       }
@@ -521,6 +529,7 @@ const Sidebar = ({
           }));
           setSelectedCategory("agency");
           setActiveKey("1");
+          setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -533,6 +542,7 @@ const Sidebar = ({
           setActiveKey("1");
           setIsFilterOpen(false);
           setIsFiltered(false);
+          setFareDetails(null);
         }
         break;
       }
@@ -549,6 +559,7 @@ const Sidebar = ({
           setActiveKey("2");
           const updatedTrips = applyTripFiltersAndSort(fullTrips);
           setTrips(updatedTrips);
+          setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -561,6 +572,7 @@ const Sidebar = ({
           setActiveKey("2");
           const updatedTrips = applyTripFiltersAndSort(fullTrips);
           setTrips(updatedTrips);
+          setFareDetails(null);
         }
         break;
       }
@@ -576,6 +588,7 @@ const Sidebar = ({
           setActiveKey("3");
           setShapes([]);
           setStopsAndTimes([]);
+          setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -587,6 +600,7 @@ const Sidebar = ({
           setActiveKey("3");
 
           try {
+            // Yolculuğa ait şekilleri çek
             const shapesResponse = await fetchShapesByTripId(
               project_id,
               entity.shape_id,
@@ -594,6 +608,7 @@ const Sidebar = ({
             );
             setShapes(shapesResponse || []);
 
+            // Yolculuğa ait durakları ve durak zamanlarını çek
             const stopsResponse = await fetchStopsAndStopTimesByTripId(
               entity.trip_id,
               project_id,
@@ -601,6 +616,15 @@ const Sidebar = ({
             );
             setStopsAndTimes(stopsResponse || []);
 
+            // Yolculuğa ait ücret detaylarını çek
+            const fareResponse = await fetchDetailedFareForTrip(
+              entity.trip_id,
+              project_id,
+              token
+            );
+            setFareDetails(fareResponse || null);
+
+            // Harita merkezini ayarla
             const center = calculateCenter(shapesResponse, stopsResponse);
             if (center) {
               setMapCenter(center);
@@ -610,6 +634,12 @@ const Sidebar = ({
             console.error("Trip seçilirken veriler yüklenemedi:", error);
             setShapes([]);
             setStopsAndTimes([]);
+            setFareDetails(null);
+            Swal.fire(
+              "Hata",
+              "Veriler yüklenemedi. Lütfen daha sonra tekrar deneyin.",
+              "error"
+            );
           }
         }
         break;
@@ -621,6 +651,7 @@ const Sidebar = ({
           setSelectedEntities((prev) => ({ ...prev, shape: null }));
           setSelectedCategory("trip");
           setActiveKey("4");
+          setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({ ...prev, shape: entity }));
           setSelectedCategory("shape");
@@ -632,6 +663,7 @@ const Sidebar = ({
             ]);
             setZoom(18);
           }
+          setFareDetails(null);
         }
         break;
       }
@@ -640,6 +672,7 @@ const Sidebar = ({
           setSelectedEntities((prev) => ({ ...prev, stop: null }));
           setSelectedCategory("trip");
           setActiveKey("5");
+          setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({ ...prev, stop: entity }));
           setSelectedCategory("stop");
@@ -651,7 +684,14 @@ const Sidebar = ({
             ]);
             setZoom(18);
           }
+          setFareDetails(null);
         }
+        break;
+      }
+      case "fare": {
+        setFormConfig({ action: "add", category: "fare" });
+        setSelectedCategory("fare");
+        setActiveKey("6");
         break;
       }
       default:
@@ -738,6 +778,7 @@ const Sidebar = ({
             delete newTripTimes[entity.trip_id];
             return newTripTimes;
           });
+          setFareDetails(null);
         } else if (category === "stop") {
           await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
           await deleteStopById(entity.stop_id, token);
@@ -745,12 +786,14 @@ const Sidebar = ({
             prev ? prev.filter((s) => s.stop_id !== entity.stop_id) : []
           );
           setSelectedEntities((prev) => ({ ...prev, stop: null }));
+          setFareDetails(null);
         } else if (category === "shape") {
           await deleteShape(entity.shape_id, entity.shape_pt_sequence, token);
           setShapes((prev) =>
             prev.filter((s) => s.shape_pt_sequence !== entity.shape_pt_sequence)
           );
           setSelectedEntities((prev) => ({ ...prev, shape: null }));
+          setFareDetails(null);
         } else if (category === "calendar") {
           await deleteCalendarById(entity.service_id, token);
           setCalendars((prevCalendars) =>
@@ -758,6 +801,7 @@ const Sidebar = ({
               (calendar) => calendar.service_id !== entity.service_id
             )
           );
+          setFareDetails(null);
         }
         Swal.fire("Silindi!", `${category} başarıyla silindi.`, "success");
       } catch (error) {
@@ -831,8 +875,29 @@ const Sidebar = ({
               clickedCoords={clickedCoords}
             />
           );
-        default:
-          return null;
+        // case "fare":
+        //   return (
+        //     <FareAddPage
+        //       project_id={project_id}
+        //       trip_id={selectedEntities.trip?.trip_id}
+        //       onClose={() => setFormConfig(null)}
+        //       onFareAdded={async () => {
+        //         try {
+        //           const fareResponse = await fetchDetailedFareForTrip(
+        //             selectedEntities.trip.trip_id,
+        //             project_id,
+        //             token
+        //           );
+        //           setFareDetails(fareResponse || null);
+        //         } catch (error) {
+        //           console.error("Ücret güncellenemedi:", error);
+        //           Swal.fire("Hata", "Ücret bilgileri güncellenemedi.", "error");
+        //         }
+        //       }}
+        //     />
+        //   );
+        // default:
+        //   return null;
       }
     } else if (action === "edit") {
       switch (category) {
@@ -1012,7 +1077,7 @@ const Sidebar = ({
             overlay={renderTooltip(`Add ${category}`, `add-${category}`)}
           >
             <div
-              className="sidebar-action-btn add-btn custom-action-icon" // Yeni class eklendi
+              className="sidebar-action-btn add-btn custom-action-icon"
               onClick={(e) => {
                 e.stopPropagation();
                 setActiveKey(
@@ -1050,7 +1115,7 @@ const Sidebar = ({
                 overlay={renderTooltip(`Edit ${category}`, `edit-${category}`)}
               >
                 <div
-                  className="sidebar-action-btn edit-btn custom-action-icon" // Yeni class eklendi
+                  className="sidebar-action-btn edit-btn custom-action-icon"
                   onClick={(e) => {
                     e.stopPropagation();
                     setAction("edit");
@@ -1194,6 +1259,112 @@ const Sidebar = ({
             <p className="text-muted text-center">No trips found.</p>
           )}
           {renderPagination(trips.total || 0, pageTrips, setPageTrips)}
+        </Accordion.Body>
+      </Accordion.Item>
+    );
+  };
+
+  const renderFareAccordion = () => {
+    return (
+      <Accordion.Item eventKey="6">
+        <Accordion.Header>
+          <CashStack size={20} className="me-2" /> Ücretler
+          {selectedEntities.trip && renderActionButtons("fare")}
+        </Accordion.Header>
+        <Accordion.Body>
+          {selectedEntities.trip ? (
+            fareDetails ? (
+              <div>
+                <h6>{fareDetails.route_name} Ücret Bilgileri</h6>
+                <div className="mb-3">
+                  <div>
+                    <strong>Hat:</strong> {fareDetails.route_name}
+                  </div>
+                  <div>
+                    <strong>Başlangıç Bölgesi:</strong>{" "}
+                    {fareDetails.from_area_name}
+                  </div>
+                  <div>
+                    <strong>Bitiş Bölgesi:</strong> {fareDetails.to_area_name}
+                  </div>
+                  <div>
+                    <strong>Ağ:</strong> {fareDetails.network_name}
+                  </div>
+                </div>
+
+                <h6>Yolcu Kategorilerine Göre Ücretler</h6>
+                {fareDetails.fare_leg_rules &&
+                fareDetails.fare_leg_rules.length > 0 ? (
+                  fareDetails.fare_leg_rules.map((rule, index) => (
+                    <Card key={index} className="mb-2">
+                      <Card.Body className="p-2">
+                        <div>
+                          <strong>Kategori:</strong>{" "}
+                          {rule.category_name || "Tanımsız"}
+                        </div>
+                        <div>
+                          <strong>Ücret:</strong> {rule.amount} {rule.currency}
+                        </div>
+                        <div>
+                          <strong>Ücret Türü:</strong>{" "}
+                          {rule.product_name || "N/A"}
+                        </div>
+                        <div>
+                          <strong>Ödeme Yöntemi:</strong>{" "}
+                          {rule.media_name || "Belirtilmemiş"}
+                        </div>
+                        <div>
+                          <strong>Zaman Aralığı:</strong>{" "}
+                          {rule.start_time && rule.end_time
+                            ? `${rule.start_time} - ${rule.end_time}`
+                            : "Tüm gün"}
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  ))
+                ) : (
+                  <p className="text-muted">
+                    Bu yolculuk için ücret kuralı tanımlanmamış.
+                  </p>
+                )}
+
+                {fareDetails.joined_leg_rules &&
+                  fareDetails.joined_leg_rules.length > 0 && (
+                    <>
+                      <h6>Transfer Ücret Kuralları</h6>
+                      {fareDetails.joined_leg_rules.map((joinedRule, index) => (
+                        <Card key={index} className="mb-2">
+                          <Card.Body className="p-2">
+                            <div>
+                              <strong>İlk Ücret Türü:</strong>{" "}
+                              {joinedRule.first_leg_product || "Tanımsız"}
+                            </div>
+                            <div>
+                              <strong>İkinci Ücret Türü:</strong>{" "}
+                              {joinedRule.second_leg_product || "Tanımsız"}
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      ))}
+                    </>
+                  )}
+              </div>
+            ) : (
+              <div>
+                <p className="text-muted">
+                  Bu yolculuk için ücret bilgisi bulunamadı.
+                </p>
+                <Button
+                  variant="primary"
+                  onClick={() => handleSelectionChange("fare", {})}
+                >
+                  Ücret Kuralı Ekle
+                </Button>
+              </div>
+            )
+          ) : (
+            <p className="text-muted text-center">Lütfen bir yolculuk seçin.</p>
+          )}
         </Accordion.Body>
       </Accordion.Item>
     );
@@ -1343,44 +1514,7 @@ const Sidebar = ({
 
           {renderTripsAccordion()}
 
-          {/* <Accordion.Item eventKey="4">
-            <Accordion.Header>
-              <SignRailroad size={20} className="me-2" /> Shapes
-              {renderActionButtons("shape")}
-            </Accordion.Header>
-            <Accordion.Body>
-              {shapes && shapes.length > 0 ? (
-                shapes.map((shape) => (
-                  <Card
-                    key={shape.shape_pt_sequence}
-                    className={`mb-2 item-card ${
-                      selectedEntities.shape?.shape_pt_sequence ===
-                      shape.shape_pt_sequence
-                        ? "active"
-                        : ""
-                    }`}
-                    onClick={() => handleSelectionChange("shape", shape)}
-                  >
-                    <Card.Body className="d-flex align-items-center p-2">
-                      <OverlayTrigger
-                        placement="top"
-                        overlay={renderTooltip(
-                          `Sequence ${shape.shape_pt_sequence}`
-                        )}
-                      >
-                        <span className="item-title">
-                          Sequence {shape.shape_pt_sequence}
-                        </span>
-                      </OverlayTrigger>
-                    </Card.Body>
-                  </Card>
-                ))
-              ) : (
-                <p className="text-muted text-center">No shapes found.</p>
-              )}
-              {renderPagination(shapes.length, pageShapes, setPageShapes)}
-            </Accordion.Body>
-          </Accordion.Item> */}
+          {renderFareAccordion()}
 
           <Accordion.Item eventKey="5">
             <Accordion.Header>

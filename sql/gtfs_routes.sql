@@ -23,8 +23,8 @@ DROP TABLE IF EXISTS `routes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `routes` (
-  `route_id` VARCHAR(255) NOT NULL,
-  `agency_id` int DEFAULT NULL,
+  `route_id` varchar(255) NOT NULL,
+  `agency_id` varchar(255) DEFAULT NULL,
   `route_short_name` varchar(255) NOT NULL,
   `route_long_name` varchar(255) NOT NULL,
   `route_desc` varchar(255) DEFAULT NULL,
@@ -35,13 +35,17 @@ CREATE TABLE `routes` (
   `route_sort_order` int DEFAULT NULL,
   `user_id` int NOT NULL,
   `project_id` int NOT NULL,
+  `network_id` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`route_id`),
-  KEY `agency_id` (`agency_id`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
-  CONSTRAINT `routes_ibfk_1` FOREIGN KEY (`agency_id`) REFERENCES `agency` (`agency_id`) ON DELETE SET NULL,
+  KEY `agency_id` (`user_id`,`project_id`),
+  KEY `fk_routes_networks` (`network_id`),
+  KEY `routes_ibfk_agency` (`agency_id`),
+  CONSTRAINT `fk_routes_networks` FOREIGN KEY (`network_id`) REFERENCES `route_networks` (`network_id`),
   CONSTRAINT `routes_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `routes_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
+  CONSTRAINT `routes_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`),
+  CONSTRAINT `routes_ibfk_agency` FOREIGN KEY (`agency_id`) REFERENCES `agency` (`agency_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -63,4 +67,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-05 14:20:34
+-- Dump completed on 2025-04-23  0:05:01

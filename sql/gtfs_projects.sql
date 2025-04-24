@@ -27,7 +27,7 @@ CREATE TABLE `projects` (
   `user_id` int DEFAULT NULL,
   `file_name` varchar(255) NOT NULL,
   `import_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `validation_data` JSON,
+  `validation_data` json DEFAULT NULL,
   PRIMARY KEY (`project_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
@@ -52,4 +52,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-05 14:20:35
+-- Dump completed on 2025-04-23  0:05:01

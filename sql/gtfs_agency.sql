@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `agency`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `agency` (
-  `agency_id` VARCHAR(255) NOT NULL,
+  `agency_id` varchar(255) NOT NULL,
   `agency_name` varchar(255) NOT NULL,
   `agency_url` varchar(255) NOT NULL,
   `agency_timezone` varchar(255) NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE `agency` (
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
   CONSTRAINT `agency_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `agency_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE NO ACTION
+  CONSTRAINT `agency_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -57,4 +57,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-05 14:20:34
+-- Dump completed on 2025-04-23  0:05:01

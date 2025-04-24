@@ -348,10 +348,10 @@ const MapPage = () => {
 
       <Modal show={showUrlModal} onHide={() => setShowUrlModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Oluşturulan Bağlantı</Modal.Title>
+          <Modal.Title>Link Created</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>Bu URL’yi kullanarak seçiminize geri dönebilirsiniz:</p>
+          <p>You can return to your selection using this URL:</p>
           <input
             type="text"
             value={generatedUrl}
@@ -359,12 +359,12 @@ const MapPage = () => {
             className="form-control mb-3"
           />
           <Button variant="primary" onClick={copyToClipboard}>
-            URL’yi Kopyala
+            Copy URL
           </Button>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowUrlModal(false)}>
-            Kapat
+            Close
           </Button>
         </Modal.Footer>
       </Modal>
