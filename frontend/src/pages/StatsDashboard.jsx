@@ -25,7 +25,7 @@ const StatsDashboard = ({ token }) => {
       setError(null);
       try {
         const statsData = await fetchGlobalStats(token);
-        console.log("Stats Data:", statsData); // Veriyi kontrol için
+        console.log("Stats Data:", statsData);
         setStats(statsData);
       } catch (error) {
         setError(`Failed to load statistics: ${error.message}`);
@@ -37,6 +37,51 @@ const StatsDashboard = ({ token }) => {
     loadStats();
   }, [token]);
 
+  const cards = [
+    {
+      icon: <Database size={30} />,
+      label: "GTFS Registered",
+      value: stats?.gtfsRegistered,
+      color: "primary",
+    },
+    {
+      icon: <Building size={30} />,
+      label: "Agencies Registered",
+      value: stats?.agencyRegistered,
+      color: "danger",
+    },
+    {
+      icon: <GeoAlt size={30} />,
+      label: "Stops Registered",
+      value: stats?.stopsRegistered,
+      color: "success",
+    },
+    {
+      icon: <Signpost size={30} />,
+      label: "Routes Registered",
+      value: stats?.routesRegistered,
+      color: "info",
+    },
+    {
+      icon: <Clock size={30} />,
+      label: "Stop Times Registered",
+      value: stats?.stopTimesRegistered,
+      color: "warning",
+    },
+    {
+      icon: <BusFront size={30} />,
+      label: "Trips Registered",
+      value: stats?.tripsRegistered,
+      color: "purple",
+    },
+    {
+      icon: <Map size={30} />,
+      label: "Shapes Registered",
+      value: stats?.shapesRegistered,
+      color: "teal",
+    },
+  ];
+
   return (
     <div className="stats-dashboard">
       <h4 className="text-center mb-4">
@@ -44,8 +89,8 @@ const StatsDashboard = ({ token }) => {
       </h4>
 
       {error && (
-        <Alert variant="danger" className="error-alert text-center">
-          <p>{error}</p>
+        <Alert variant="danger" className="text-center">
+          {error}
         </Alert>
       )}
 
@@ -54,118 +99,26 @@ const StatsDashboard = ({ token }) => {
           <div className="spinner"></div>
           <p>Loading statistics...</p>
         </div>
-      ) : stats ? (
-        <Row className="g-3">
-          <Col xs={12} sm={6} md={3} className="mb-3">
-            <Card className="stats-card shadow-sm">
-              <Card.Body className="d-flex align-items-center">
-                <Database size={30} className="me-2 text-primary" />
-                <div className="stats-content">
-                  <Card.Title className="stats-value">
-                    {stats.gtfsRegistered}
-                  </Card.Title>
-                  <Card.Text className="stats-label">GTFS Registered</Card.Text>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col xs={12} sm={6} md={3} className="mb-3">
-            <Card className="stats-card shadow-sm">
-              <Card.Body className="d-flex align-items-center">
-                <Building size={30} className="me-2 text-danger" />
-                <div className="stats-content">
-                  <Card.Title className="stats-value">
-                    {stats.agencyRegistered}
-                  </Card.Title>
-                  <Card.Text className="stats-label">
-                    Agencies Registered
-                  </Card.Text>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col xs={12} sm={6} md={3} className="mb-3">
-            <Card className="stats-card shadow-sm">
-              <Card.Body className="d-flex align-items-center">
-                <GeoAlt size={30} className="me-2 text-success" />
-                <div className="stats-content">
-                  <Card.Title className="stats-value">
-                    {stats.stopsRegistered}
-                  </Card.Title>
-                  <Card.Text className="stats-label">
-                    Stops Registered
-                  </Card.Text>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col xs={12} sm={6} md={3} className="mb-3">
-            <Card className="stats-card shadow-sm">
-              <Card.Body className="d-flex align-items-center">
-                <Signpost size={30} className="me-2 text-info" />
-                <div className="stats-content">
-                  <Card.Title className="stats-value">
-                    {stats.routesRegistered}
-                  </Card.Title>
-                  <Card.Text className="stats-label">
-                    Routes Registered
-                  </Card.Text>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col xs={12} sm={6} md={3} className="mb-3">
-            <Card className="stats-card shadow-sm">
-              <Card.Body className="d-flex align-items-center">
-                <Clock size={30} className="me-2 text-warning" />
-                <div className="stats-content">
-                  <Card.Title className="stats-value">
-                    {stats.stopTimesRegistered}
-                  </Card.Title>
-                  <Card.Text className="stats-label">
-                    Stop Times Registered
-                  </Card.Text>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col xs={12} sm={6} md={3} className="mb-3">
-            <Card className="stats-card shadow-sm">
-              <Card.Body className="d-flex align-items-center">
-                <BusFront size={30} className="me-2 text-purple" />
-                <div className="stats-content">
-                  <Card.Title className="stats-value">
-                    {stats.tripsRegistered}
-                  </Card.Title>
-                  <Card.Text className="stats-label">
-                    Trips Registered
-                  </Card.Text>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col xs={12} sm={6} md={3} className="mb-3">
-            <Card className="stats-card shadow-sm">
-              <Card.Body className="d-flex align-items-center">
-                <Map size={30} className="me-2 text-teal" />
-                <div className="stats-content">
-                  <Card.Title className="stats-value">
-                    {stats.shapesRegistered}
-                  </Card.Title>
-                  <Card.Text className="stats-label">
-                    Shapes Registered
-                  </Card.Text>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
       ) : (
-        !error && (
-          <p className="text-center text-muted">
-            Statistics data is not available.
-          </p>
-        )
+        <Row className="g-4 justify-content-center">
+          {cards.map((card, idx) => (
+            <Col xs={12} sm={6} md={4} lg={3} key={idx}>
+              <Card className={`stats-card border-top-${card.color}`}>
+                <Card.Body className="d-flex align-items-center">
+                  <div className={`stats-icon text-${card.color}`}>
+                    {card.icon}
+                  </div>
+                  <div className="stats-content">
+                    <Card.Title className="stats-value">
+                      {card.value}
+                    </Card.Title>
+                    <Card.Text className="stats-label">{card.label}</Card.Text>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
       )}
     </div>
   );

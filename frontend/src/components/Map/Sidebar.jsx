@@ -9,6 +9,7 @@ import {
   OverlayTrigger,
   Tooltip,
   Button,
+  Collapse,
 } from "react-bootstrap";
 import {
   List,
@@ -31,6 +32,8 @@ import {
   Pencil,
   Trash,
   CashStack,
+  ChevronDown,
+  ChevronUp,
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import {
@@ -58,7 +61,7 @@ import {
 } from "../../api/stopTimeApi";
 import { deleteStopById, fetchStopsByProjectId } from "../../api/stopApi";
 import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
-import { fetchDetailedFareForTrip } from "../../api/fareApi.js";
+import { fetchDetailedFareForRoute } from "../../api/fareApi.js";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -123,6 +126,8 @@ const Sidebar = ({
   const [fullTrips, setFullTrips] = useState([]);
   const [sortDirection, setSortDirection] = useState("asc");
   const [fareDetails, setFareDetails] = useState(null);
+  const [expandedFare, setExpandedFare] = useState(null);
+  const [expandedTransfer, setExpandedTransfer] = useState(null);
   const itemsPerPage = 8;
 
   const categoryMap = {
@@ -284,6 +289,17 @@ const Sidebar = ({
           setStopsAndTimes(stopsResponse.data || stopsResponse || []);
           setShapes([]);
         }
+
+        if (selectedEntities.route) {
+          const fareResponse = await fetchDetailedFareForRoute(
+            selectedEntities.route.route_id,
+            project_id,
+            token
+          );
+          setFareDetails(fareResponse || null);
+        } else {
+          setFareDetails(null);
+        }
       } catch (error) {
         console.error("Veri yüklenirken hata oluştu:", error);
         setAgencies({ data: [], total: 0 });
@@ -307,7 +323,10 @@ const Sidebar = ({
     pageTrips,
     pageStops,
     itemsPerPage,
-    searchTerms,
+    searchTerms.agencies,
+    searchTerms.routes,
+    searchTerms.trips,
+    searchTerms.stops,
     selectedEntities.agency,
     selectedEntities.route,
     selectedEntities.calendar,
@@ -617,8 +636,8 @@ const Sidebar = ({
             setStopsAndTimes(stopsResponse || []);
 
             // Yolculuğa ait ücret detaylarını çek
-            const fareResponse = await fetchDetailedFareForTrip(
-              entity.trip_id,
+            const fareResponse = await fetchDetailedFareForRoute(
+              entity.route_id,
               project_id,
               token
             );
@@ -684,7 +703,6 @@ const Sidebar = ({
             ]);
             setZoom(18);
           }
-          setFareDetails(null);
         }
         break;
       }
@@ -1265,94 +1283,280 @@ const Sidebar = ({
   };
 
   const renderFareAccordion = () => {
+    const toggleFareExpand = (index) => {
+      setExpandedFare(expandedFare === index ? null : index);
+    };
+
+    const toggleTransferExpand = (index) => {
+      setExpandedTransfer(expandedTransfer === index ? null : index);
+    };
+
+    const getTransferCategory = (transferRule) => {
+      if (!fareDetails.fixed_fares) return "Belirtilmemiş";
+      const relatedFareRule = fareDetails.fixed_fares.find(
+        (rule) =>
+          rule.leg_group_id === transferRule.from_leg_group_id ||
+          rule.leg_group_id === transferRule.to_leg_group_id
+      );
+      return relatedFareRule?.rider_category_name || "Belirtilmemiş";
+    };
+
     return (
       <Accordion.Item eventKey="6">
         <Accordion.Header>
-          <CashStack size={20} className="me-2" /> Ücretler
-          {selectedEntities.trip && renderActionButtons("fare")}
+          <CashStack size={20} className="me-2" /> Fares
+          {selectedEntities.route && renderActionButtons("fare")}
         </Accordion.Header>
         <Accordion.Body>
-          {selectedEntities.trip ? (
+          {selectedEntities.route ? (
             fareDetails ? (
               <div>
-                <h6>{fareDetails.route_name} Ücret Bilgileri</h6>
-                <div className="mb-3">
-                  <div>
-                    <strong>Hat:</strong> {fareDetails.route_name}
+                {/* Hat Bilgileri */}
+                <div className="mb-4 border-bottom pb-2">
+                  <h6 className="mb-3">Hat Bilgileri</h6>
+                  <div className="mb-2">
+                    <strong>Hat:</strong>{" "}
+                    {fareDetails.route_name || "Belirtilmemiş"}
                   </div>
-                  <div>
-                    <strong>Başlangıç Bölgesi:</strong>{" "}
-                    {fareDetails.from_area_name}
-                  </div>
-                  <div>
-                    <strong>Bitiş Bölgesi:</strong> {fareDetails.to_area_name}
-                  </div>
-                  <div>
-                    <strong>Ağ:</strong> {fareDetails.network_name}
+                  <div className="mb-2">
+                    <strong>Ağ:</strong>{" "}
+                    {fareDetails.network_name || "Bilinmeyen Ağ"}
                   </div>
                 </div>
 
-                <h6>Yolcu Kategorilerine Göre Ücretler</h6>
-                {fareDetails.fare_leg_rules &&
-                fareDetails.fare_leg_rules.length > 0 ? (
-                  fareDetails.fare_leg_rules.map((rule, index) => (
-                    <Card key={index} className="mb-2">
-                      <Card.Body className="p-2">
-                        <div>
-                          <strong>Kategori:</strong>{" "}
-                          {rule.category_name || "Tanımsız"}
-                        </div>
-                        <div>
-                          <strong>Ücret:</strong> {rule.amount} {rule.currency}
-                        </div>
-                        <div>
-                          <strong>Ücret Türü:</strong>{" "}
-                          {rule.product_name || "N/A"}
-                        </div>
-                        <div>
-                          <strong>Ödeme Yöntemi:</strong>{" "}
-                          {rule.media_name || "Belirtilmemiş"}
-                        </div>
-                        <div>
-                          <strong>Zaman Aralığı:</strong>{" "}
-                          {rule.start_time && rule.end_time
-                            ? `${rule.start_time} - ${rule.end_time}`
-                            : "Tüm gün"}
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  ))
-                ) : (
-                  <p className="text-muted">
-                    Bu yolculuk için ücret kuralı tanımlanmamış.
-                  </p>
-                )}
-
-                {fareDetails.joined_leg_rules &&
-                  fareDetails.joined_leg_rules.length > 0 && (
-                    <>
-                      <h6>Transfer Ücret Kuralları</h6>
-                      {fareDetails.joined_leg_rules.map((joinedRule, index) => (
-                        <Card key={index} className="mb-2">
-                          <Card.Body className="p-2">
+                {/* İndi-Bindi Ücretlendirme */}
+                <div className="mb-4">
+                  <h6 className="mb-3">Normal Ücretlendirme</h6>
+                  {fareDetails.fixed_fares &&
+                  fareDetails.fixed_fares.length > 0 ? (
+                    fareDetails.fixed_fares.map((fare, index) => (
+                      <div key={index} className="mb-2">
+                        <Card
+                          className="fare-card"
+                          onClick={() => toggleFareExpand(index)}
+                          style={{
+                            cursor: "pointer",
+                            border: "1px solid #e0e0e0",
+                            borderRadius: "8px",
+                          }}
+                        >
+                          <Card.Body className="p-2 d-flex justify-content-between align-items-center">
                             <div>
-                              <strong>İlk Ücret Türü:</strong>{" "}
-                              {joinedRule.first_leg_product || "Tanımsız"}
+                              <strong>
+                                {fare.rider_category_name || "Belirtilmemiş"}
+                              </strong>{" "}
+                              -{" "}
+                              {fare.amount
+                                ? `${fare.amount} ${fare.currency}`
+                                : "N/A"}
                             </div>
-                            <div>
-                              <strong>İkinci Ücret Türü:</strong>{" "}
-                              {joinedRule.second_leg_product || "Tanımsız"}
-                            </div>
+                            {expandedFare === index ? (
+                              <ChevronUp size={16} />
+                            ) : (
+                              <ChevronDown size={16} />
+                            )}
                           </Card.Body>
                         </Card>
-                      ))}
-                    </>
+                        <Collapse in={expandedFare === index}>
+                          <div
+                            className="fare-details p-2"
+                            style={{
+                              backgroundColor: "#f9f9f9",
+                              borderRadius: "0 0 8px 8px",
+                              border: "1px solid #e0e0e0",
+                              borderTop: "none",
+                            }}
+                          >
+                            <div className="mb-1">
+                              <strong>Ödeme Yöntemi:</strong>{" "}
+                              {fare.fare_media_name || "Belirtilmemiş"}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Zaman Aralığı:</strong>{" "}
+                              {fare.start_time && fare.end_time
+                                ? `${fare.start_time} - ${fare.end_time}`
+                                : "Tüm gün"}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Başlangıç Alanı:</strong>{" "}
+                              {fare.from_area_name || "Belirtilmemiş"}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Bitiş Alanı:</strong>{" "}
+                              {fare.to_area_name || "Belirtilmemiş"}
+                            </div>
+                          </div>
+                        </Collapse>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted mb-0">
+                      Bu hat için indi-bindi ücret kuralı tanımlanmamış.
+                    </p>
                   )}
+                </div>
+
+                {/* Mesafeye Dayalı Ücretlendirme */}
+                <div className="mb-4">
+                  <h6 className="mb-3">
+                    Mesafeye Dayalı Ücretlendirme (Gittiğin Kadar Öde)
+                  </h6>
+                  {fareDetails.distance_based_fares &&
+                  fareDetails.distance_based_fares.length > 0 ? (
+                    fareDetails.distance_based_fares.map((fare, index) => (
+                      <div key={index} className="mb-2">
+                        <Card
+                          className="fare-card"
+                          onClick={() => toggleFareExpand(`distance-${index}`)}
+                          style={{
+                            cursor: "pointer",
+                            border: "1px solid #e0e0e0",
+                            borderRadius: "8px",
+                          }}
+                        >
+                          <Card.Body className="p-2 d-flex justify-content-between align-items-center">
+                            <div>
+                              <strong>
+                                {fare.rider_category_name || "Belirtilmemiş"}
+                              </strong>{" "}
+                              -{" "}
+                              {fare.amount
+                                ? `${fare.amount} ${fare.currency}`
+                                : "N/A"}{" "}
+                              ({fare.from_area_name || "Belirtilmemiş"} →{" "}
+                              {fare.to_area_name || "Belirtilmemiş"})
+                            </div>
+                            {expandedFare === `distance-${index}` ? (
+                              <ChevronUp size={16} />
+                            ) : (
+                              <ChevronDown size={16} />
+                            )}
+                          </Card.Body>
+                        </Card>
+                        <Collapse in={expandedFare === `distance-${index}`}>
+                          <div
+                            className="fare-details p-2"
+                            style={{
+                              backgroundColor: "#f9f9f9",
+                              borderRadius: "0 0 8px 8px",
+                              border: "1px solid #e0e0e0",
+                              borderTop: "none",
+                            }}
+                          >
+                            <div className="mb-1">
+                              <strong>Ücret Ürünü:</strong>{" "}
+                              {fare.fare_product_name || "Belirtilmemiş"}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Başlangıç Alanı:</strong>{" "}
+                              {fare.from_area_name || "Belirtilmemiş"}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Bitiş Alanı:</strong>{" "}
+                              {fare.to_area_name || "Belirtilmemiş"}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Not:</strong> Bu ücret, gidilen mesafeye
+                              göre hesaplanır.
+                            </div>
+                          </div>
+                        </Collapse>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted mb-0">
+                      Bu hat için mesafeye dayalı ücret kuralı tanımlanmamış.
+                    </p>
+                  )}
+                </div>
+
+                {/* Transfer Ücret Kuralları */}
+                <div className="mb-4">
+                  <h6 className="mb-3">Transfer Ücret Kuralları</h6>
+                  {fareDetails.transfer_rules &&
+                  fareDetails.transfer_rules.length > 0 ? (
+                    fareDetails.transfer_rules.map((rule, index) => (
+                      <div key={index} className="mb-2">
+                        <Card
+                          className="transfer-card"
+                          onClick={() => toggleTransferExpand(index)}
+                          style={{
+                            cursor: "pointer",
+                            border: "1px solid #e0e0e0",
+                            borderRadius: "8px",
+                          }}
+                        >
+                          <Card.Body className="p-2 d-flex justify-content-between align-items-center">
+                            <div>
+                              <strong>{getTransferCategory(rule)}</strong> -{" "}
+                              {rule.transfer_amount
+                                ? `${rule.transfer_amount} ${rule.transfer_currency}`
+                                : "Ücretsiz"}
+                            </div>
+                            {expandedTransfer === index ? (
+                              <ChevronUp size={16} />
+                            ) : (
+                              <ChevronDown size={16} />
+                            )}
+                          </Card.Body>
+                        </Card>
+                        <Collapse in={expandedTransfer === index}>
+                          <div
+                            className="transfer-details p-2"
+                            style={{
+                              backgroundColor: "#f9f9f9",
+                              borderRadius: "0 0 8px 8px",
+                              border: "1px solid #e0e0e0",
+                              borderTop: "none",
+                            }}
+                          >
+                            <div className="mb-1">
+                              <strong>Nereden:</strong>{" "}
+                              {`${rule.from_network_name || "Belirtilmemiş"} (${
+                                rule.from_stop_name || "Bilinmeyen Durak"
+                              } → ${
+                                rule.from_to_stop_name || "Bilinmeyen Durak"
+                              })`}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Nereye:</strong>{" "}
+                              {`${rule.to_network_name || "Belirtilmemiş"} (${
+                                rule.to_from_stop_name || "Bilinmeyen Durak"
+                              } → ${rule.to_stop_name || "Bilinmeyen Durak"})`}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Transfer Sayısı:</strong>{" "}
+                              {rule.transfer_count || "1"}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Süre Limiti:</strong>{" "}
+                              {rule.duration_limit
+                                ? `${rule.duration_limit / 60} dakika`
+                                : "Sınırsız"}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Süre Türü:</strong>{" "}
+                              {rule.duration_limit_type || "Belirtilmemiş"}
+                            </div>
+                            <div className="mb-1">
+                              <strong>Transfer Türü:</strong>{" "}
+                              {rule.fare_transfer_type || "Belirtilmemiş"}
+                            </div>
+                          </div>
+                        </Collapse>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted mb-0">
+                      Bu hat için transfer kuralı tanımlanmamış.
+                    </p>
+                  )}
+                </div>
               </div>
             ) : (
               <div>
                 <p className="text-muted">
-                  Bu yolculuk için ücret bilgisi bulunamadı.
+                  Bu hat için ücret bilgisi bulunamadı.
                 </p>
                 <Button
                   variant="primary"
@@ -1363,7 +1567,7 @@ const Sidebar = ({
               </div>
             )
           ) : (
-            <p className="text-muted text-center">Lütfen bir yolculuk seçin.</p>
+            <p className="text-muted text-center">Lütfen bir hat seçin.</p>
           )}
         </Accordion.Body>
       </Accordion.Item>

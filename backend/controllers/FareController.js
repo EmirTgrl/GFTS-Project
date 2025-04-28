@@ -1,3 +1,4 @@
+// FareController.js
 const express = require("express");
 const router = express.Router();
 
@@ -6,9 +7,9 @@ const authService = require("../services/AuthService.js");
 
 router.use(authService.auth);
 
-// Belirli bir trip için ücret detaylarını getir
-const getFareDetailsForTrip = async (req, res) => {
-  const { trip_id } = req.params;
+// Belirli bir rota için ücret detaylarını getir
+const getFareDetailsForRoute = async (req, res) => {
+  const { route_id } = req.params;
   const { project_id } = req.query;
   const user_id = req.user.id;
 
@@ -17,8 +18,8 @@ const getFareDetailsForTrip = async (req, res) => {
   }
 
   try {
-    const fareDetails = await fareService.getDetailedFareForTrip(
-      trip_id,
+    const fareDetails = await fareService.getDetailedFareForRoute(
+      route_id,
       user_id,
       project_id
     );
@@ -29,7 +30,7 @@ const getFareDetailsForTrip = async (req, res) => {
     }
     res.json(fareDetails);
   } catch (error) {
-    console.error("getFareDetailsForTrip error:", error.message);
+    console.error("getFareDetailsForRoute error:", error.message);
     res.status(500).json({
       message: `Sunucu hatası: Ücret detayları alınamadı.`,
       details: error.message,
@@ -37,7 +38,6 @@ const getFareDetailsForTrip = async (req, res) => {
   }
 };
 
-// Fare products listesi
 const getFareProducts = async (req, res) => {
   const { project_id } = req.query;
   const user_id = req.user.id;
@@ -58,7 +58,6 @@ const getFareProducts = async (req, res) => {
   }
 };
 
-// Fare media listesi
 const getFareMedia = async (req, res) => {
   const { project_id } = req.query;
   const user_id = req.user.id;
@@ -79,7 +78,6 @@ const getFareMedia = async (req, res) => {
   }
 };
 
-// Rider categories listesi
 const getRiderCategories = async (req, res) => {
   const { project_id } = req.query;
   const user_id = req.user.id;
@@ -100,7 +98,6 @@ const getRiderCategories = async (req, res) => {
   }
 };
 
-// Network listesi
 const getNetworks = async (req, res) => {
   const { project_id } = req.query;
   const user_id = req.user.id;
@@ -121,7 +118,6 @@ const getNetworks = async (req, res) => {
   }
 };
 
-// Trip için ücret oluştur
 const createFare = async (req, res) => {
   const user_id = req.user.id;
   const { project_id } = req.query;
@@ -160,7 +156,7 @@ const createFare = async (req, res) => {
 };
 
 // RESTful rotalar
-router.get("/trip/:trip_id", getFareDetailsForTrip);
+router.get("/route/:route_id", getFareDetailsForRoute); 
 router.get("/products", getFareProducts);
 router.get("/media", getFareMedia);
 router.get("/categories", getRiderCategories);

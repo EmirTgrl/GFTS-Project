@@ -11,15 +11,25 @@ export const fetchStopsByRoute = async (route_id, token) => {
 export const fetchStopsAndStopTimesByTripId = async (
   tripId,
   projectId,
-  token
+  token,
+  searchTerm = ""
 ) => {
-  const response = await fetch(
-    `${API_BASE_URL}?project_id=${projectId}&trip_id=${tripId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-  if (!response.ok) throw new Error("Failed to fetch stops and stop times");
+  const url = new URL(`${API_BASE_URL}`);
+  url.searchParams.append("project_id", projectId);
+  url.searchParams.append("trip_id", tripId);
+  if (searchTerm) url.searchParams.append("stop_name", searchTerm);
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(
+      "HTTP error in fetchStopsAndStopTimesByTripId!",
+      response.status,
+      errorText
+    );
+    throw new Error(`Failed to fetch stops and stop times: ${errorText}`);
+  }
   return response.json();
 };
 
@@ -119,7 +129,7 @@ export const calculateRouteBetweenStops = async (
   const url = `${osrmUrl}/route/v1/driving/${coordinates}?steps=true&geometries=geojson&overview=full`;
 
   const response = await fetch(url, {
-    method: "GET"
+    method: "GET",
   });
 
   if (!response.ok) {
@@ -136,7 +146,7 @@ export const calculateRouteBetweenStops = async (
   const route = data.routes[0];
   return {
     distance: route.distance / 1000,
-    duration: route.duration / 60, 
-    geometry: route.geometry.coordinates, 
+    duration: route.duration / 60,
+    geometry: route.geometry.coordinates,
   };
 };

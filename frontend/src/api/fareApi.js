@@ -1,9 +1,14 @@
+// fareApi.js
 const API_BASE_URL = "http://localhost:5000/api/fares";
 
-// 1. Fare verilerini trip için detaylı al
-export const fetchDetailedFareForTrip = async (trip_id, project_id, token) => {
+// 1. Fare verilerini rota için detaylı al
+export const fetchDetailedFareForRoute = async (
+  route_id,
+  project_id,
+  token
+) => {
   const response = await fetch(
-    `${API_BASE_URL}/trip/${trip_id}?project_id=${project_id}`,
+    `${API_BASE_URL}/route/${route_id}?project_id=${project_id}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -14,16 +19,16 @@ export const fetchDetailedFareForTrip = async (trip_id, project_id, token) => {
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error("fetchDetailedFareForTrip error:", errorData);
+    console.error("fetchDetailedFareForRoute error:", errorData);
     throw new Error(
-      errorData.message || "Yolculuk için ücret detayları alınamadı."
+      errorData.message || "Rota için ücret detayları alınamadı."
     );
   }
 
   return response.json();
 };
 
-// 2. Tüm fare_products'ı al
+// Mevcut diğer fonksiyonlar (fetchAllFareProducts, fetchAllFareMedia, vb.) değişmeden kalacak
 export const fetchAllFareProducts = async (project_id, token) => {
   const response = await fetch(
     `${API_BASE_URL}/products?project_id=${project_id}`,
@@ -44,7 +49,6 @@ export const fetchAllFareProducts = async (project_id, token) => {
   return response.json();
 };
 
-// 3. Tüm fare_media'ları al
 export const fetchAllFareMedia = async (project_id, token) => {
   const response = await fetch(
     `${API_BASE_URL}/media?project_id=${project_id}`,
@@ -65,7 +69,6 @@ export const fetchAllFareMedia = async (project_id, token) => {
   return response.json();
 };
 
-// 4. Tüm rider_categories'leri al
 export const fetchAllRiderCategories = async (project_id, token) => {
   const response = await fetch(
     `${API_BASE_URL}/categories?project_id=${project_id}`,
@@ -86,7 +89,6 @@ export const fetchAllRiderCategories = async (project_id, token) => {
   return response.json();
 };
 
-// 5. Tüm networks'ü al
 export const fetchAllNetworks = async (project_id, token) => {
   const response = await fetch(
     `${API_BASE_URL}/networks?project_id=${project_id}`,
@@ -107,7 +109,6 @@ export const fetchAllNetworks = async (project_id, token) => {
   return response.json();
 };
 
-// 6. Fare ekle
 export const createFareForTrip = async (
   project_id,
   trip_id,
@@ -127,7 +128,11 @@ export const createFareForTrip = async (
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        fareProductData,
+        fareProductData: {
+          fare_product_name: fareProductData.fare_product_name,
+          amount: fareProductData.amount,
+          currency: fareProductData.currency,
+        },
         rider_category_id,
         media_id,
         timeframe_id,

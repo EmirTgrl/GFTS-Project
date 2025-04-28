@@ -62,6 +62,9 @@ const stopTimeService = {
       if (validFieldsStopTime.includes(param)) {
         fields.push(`stop_times.${param} = ?`);
         values.push(req.query[param]);
+      } else if (param === "stop_name") {
+        fields.push(`stops.stop_name LIKE ?`);
+        values.push(`%${req.query[param]}%`);
       } else if (validFieldsStop.includes(param)) {
         fields.push(`stops.${param} = ?`);
         values.push(req.query[param]);
@@ -75,6 +78,7 @@ const stopTimeService = {
       FROM stop_times
       JOIN stops ON stop_times.stop_id = stops.stop_id
       WHERE ${fields.join(" AND ")}
+      ORDER BY stop_times.stop_sequence
     `;
 
     try {

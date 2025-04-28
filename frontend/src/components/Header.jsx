@@ -406,7 +406,6 @@ const Header = () => {
         </Modal>
       )}
 
-      {/* Statistics Modal */}
       {showStatsModal && (
         <Modal
           show={showStatsModal}
@@ -414,9 +413,6 @@ const Header = () => {
           size="lg"
           centered
         >
-          <Modal.Header closeButton>
-            <Modal.Title>Statistics Dashboard</Modal.Title>
-          </Modal.Header>
           <Modal.Body>
             <StatsDashboard token={token} />
           </Modal.Body>

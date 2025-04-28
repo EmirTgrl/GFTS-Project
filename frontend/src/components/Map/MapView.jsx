@@ -16,7 +16,7 @@ import {
   saveMultipleStopsAndTimes,
   calculateRouteBetweenStops,
 } from "../../api/stopTimeApi.js";
-import { saveMultipleShapes } from "../../api/shapeApi.js";
+import { saveMultipleShapes, snapShapesToRoads } from "../../api/shapeApi.js";
 import { CaretUpFill } from "react-bootstrap-icons";
 import { renderToString } from "react-dom/server";
 import MarkerClusterGroup from "react-leaflet-cluster";
@@ -33,12 +33,6 @@ const stopIcon = new L.Icon({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   shadowSize: [41, 41],
 });
-
-// const summaryIcon = new L.DivIcon({
-//   html: '<div style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 5px;">X Durak</div>',
-//   iconSize: [50, 30],
-//   iconAnchor: [25, 15],
-// });
 
 const MapClickHandler = ({ onMapClick }) => {
   useMapEvents({
@@ -451,10 +445,28 @@ const MapView = ({
     }
 
     try {
+      // İlk olarak stoplar arasındaki rotayı OSRM ile hesapla
       const routeData = await calculateRouteBetweenStops(
         tempStopsAndTimes,
         token
       );
+
+      // OSRM ile şekilleri yola snap et
+      const snappedShapes = await snapShapesToRoads(
+        tempShapes.length > 0
+          ? tempShapes
+          : routeData.geometry.map((coord, index) => ({
+              shape_id: parseInt(`1000${Date.now()}`),
+              shape_pt_lat: coord[1],
+              shape_pt_lon: coord[0],
+              shape_pt_sequence: index + 1,
+              project_id: selectedEntities.trip.project_id,
+              shape_dist_traveled: null,
+            })),
+        token
+      );
+
+      setTempShapes(snappedShapes);
       Swal.fire(
         "Route Snap Success",
         `Distance: ${routeData.distance.toFixed(
@@ -462,19 +474,13 @@ const MapView = ({
         )} km\nDuration: ${routeData.duration.toFixed(2)} min`,
         "success"
       );
-
-      const routeShapes = routeData.geometry.map((coord, index) => ({
-        shape_id: tempShapes[0]?.shape_id || parseInt(`1000${Date.now()}`),
-        shape_pt_lat: coord[1],
-        shape_pt_lon: coord[0],
-        shape_pt_sequence: index + 1,
-        project_id: selectedEntities.trip.project_id,
-        shape_dist_traveled: null,
-      }));
-      setTempShapes(routeShapes);
     } catch (error) {
       console.error("Error snapping route:", error);
-      Swal.fire("Error", "Failed to snap route between stops.", "error");
+      Swal.fire(
+        "Error",
+        `Failed to snap route between stops: ${error.message}`,
+        "error"
+      );
     }
   };
 
