@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import {
   Modal,
@@ -10,6 +10,8 @@ import {
   Tooltip,
   Button,
   Collapse,
+  Overlay,
+  Popover,
 } from "react-bootstrap";
 import {
   List,
@@ -74,7 +76,9 @@ import CalendarAddPage from "../../pages/CalendarAddPage";
 import CalendarEditPage from "../../pages/CalendarEditPage";
 import ShapeAddPage from "../../pages/ShapeAddPage";
 import ShapeEditPage from "../../pages/ShapeEditPage";
-// import FareAddPage from "../../pages/FareAddPage";
+import FareProductsAddPage from "../../pages/FareProductsAddPage.jsx";
+import FareMediaAddPage from "../../pages/FareMediaAddPage.jsx";
+import RiderCategoriesAddPage from "../../pages/RiderCategoriesAddPage.jsx";
 import TripFilterPanel from "./TripFilterPanel.jsx";
 import "../../styles/Sidebar.css";
 
@@ -128,6 +132,11 @@ const Sidebar = ({
   const [fareDetails, setFareDetails] = useState(null);
   const [expandedFare, setExpandedFare] = useState(null);
   const [expandedTransfer, setExpandedTransfer] = useState(null);
+  const [showFareForms, setShowFareForms] = useState(false);
+  const [fareMediaList, setFareMediaList] = useState([]);
+  const [riderCategories, setRiderCategories] = useState([]);
+  const [showFloatingFareForms, setShowFloatingFareForms] = useState(false);
+  const fareButtonRef = useRef(null);
   const itemsPerPage = 8;
 
   const categoryMap = {
@@ -168,6 +177,15 @@ const Sidebar = ({
       pageTrips * itemsPerPage
     );
     return { data: paginatedTrips, total: sortedTrips.length };
+  };
+
+  // Yeni eklenen rider category ve fare media'yı güncelle
+  const handleAddRiderCategory = (newCategory) => {
+    setRiderCategories((prev) => [...prev, newCategory]);
+  };
+
+  const handleAddFareMedia = (newMedia) => {
+    setFareMediaList((prev) => [...prev, newMedia]);
   };
 
   useEffect(() => {
@@ -619,7 +637,6 @@ const Sidebar = ({
           setActiveKey("3");
 
           try {
-            // Yolculuğa ait şekilleri çek
             const shapesResponse = await fetchShapesByTripId(
               project_id,
               entity.shape_id,
@@ -627,7 +644,6 @@ const Sidebar = ({
             );
             setShapes(shapesResponse || []);
 
-            // Yolculuğa ait durakları ve durak zamanlarını çek
             const stopsResponse = await fetchStopsAndStopTimesByTripId(
               entity.trip_id,
               project_id,
@@ -635,7 +651,6 @@ const Sidebar = ({
             );
             setStopsAndTimes(stopsResponse || []);
 
-            // Yolculuğa ait ücret detaylarını çek
             const fareResponse = await fetchDetailedFareForRoute(
               entity.route_id,
               project_id,
@@ -643,7 +658,6 @@ const Sidebar = ({
             );
             setFareDetails(fareResponse || null);
 
-            // Harita merkezini ayarla
             const center = calculateCenter(shapesResponse, stopsResponse);
             if (center) {
               setMapCenter(center);
@@ -707,7 +721,11 @@ const Sidebar = ({
         break;
       }
       case "fare": {
-        setFormConfig({ action: "add", category: "fare" });
+        if (!selectedEntities.route) {
+          Swal.fire("Hata!", "Lütfen önce bir hat seçin.", "error");
+          return;
+        }
+        setShowFareForms(true);
         setSelectedCategory("fare");
         setActiveKey("6");
         break;
@@ -893,29 +911,28 @@ const Sidebar = ({
               clickedCoords={clickedCoords}
             />
           );
-        // case "fare":
-        //   return (
-        //     <FareAddPage
-        //       project_id={project_id}
-        //       trip_id={selectedEntities.trip?.trip_id}
-        //       onClose={() => setFormConfig(null)}
-        //       onFareAdded={async () => {
-        //         try {
-        //           const fareResponse = await fetchDetailedFareForTrip(
-        //             selectedEntities.trip.trip_id,
-        //             project_id,
-        //             token
-        //           );
-        //           setFareDetails(fareResponse || null);
-        //         } catch (error) {
-        //           console.error("Ücret güncellenemedi:", error);
-        //           Swal.fire("Hata", "Ücret bilgileri güncellenemedi.", "error");
-        //         }
-        //       }}
-        //     />
-        //   );
-        // default:
-        //   return null;
+        case "fare":
+          return (
+            <div className="d-flex gap-3">
+              <FareProductsAddPage
+                project_id={project_id}
+                onClose={() => setFormConfig(null)}
+                selectedRoute={selectedEntities.route}
+              />
+              <FareMediaAddPage
+                project_id={project_id}
+                onClose={() => setFormConfig(null)}
+                onAdd={handleAddFareMedia}
+              />
+              <RiderCategoriesAddPage
+                project_id={project_id}
+                onClose={() => setFormConfig(null)}
+                onAdd={handleAddRiderCategory}
+              />
+            </div>
+          );
+        default:
+          return null;
       }
     } else if (action === "edit") {
       switch (category) {
@@ -1089,7 +1106,10 @@ const Sidebar = ({
     const isSelected = selectedEntities[category] != null;
     return (
       <div className="action-buttons-container">
-        <div className="overlay-trigger-wrapper">
+        <div
+          className="overlay-trigger-wrapper"
+          ref={category === "fare" ? fareButtonRef : null}
+        >
           <OverlayTrigger
             placement="top"
             overlay={renderTooltip(`Add ${category}`, `add-${category}`)}
@@ -1305,7 +1325,24 @@ const Sidebar = ({
       <Accordion.Item eventKey="6">
         <Accordion.Header>
           <CashStack size={20} className="me-2" /> Fares
-          {selectedEntities.route && renderActionButtons("fare")}
+          {selectedEntities.route && (
+            <div className="overlay-trigger-wrapper">
+              <OverlayTrigger
+                placement="top"
+                overlay={renderTooltip("Add Fares")}
+              >
+                <div
+                  className="sidebar-action-btn add-btn custom-action-icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowFloatingFareForms(true);
+                  }}
+                >
+                  <PlusLg size={16} />
+                </div>
+              </OverlayTrigger>
+            </div>
+          )}
         </Accordion.Header>
         <Accordion.Body>
           {selectedEntities.route ? (
@@ -1376,14 +1413,6 @@ const Sidebar = ({
                               {fare.start_time && fare.end_time
                                 ? `${fare.start_time} - ${fare.end_time}`
                                 : "Tüm gün"}
-                            </div>
-                            <div className="mb-1">
-                              <strong>Başlangıç Alanı:</strong>{" "}
-                              {fare.from_area_name || "Belirtilmemiş"}
-                            </div>
-                            <div className="mb-1">
-                              <strong>Bitiş Alanı:</strong>{" "}
-                              {fare.to_area_name || "Belirtilmemiş"}
                             </div>
                           </div>
                         </Collapse>
@@ -1539,7 +1568,7 @@ const Sidebar = ({
                               {rule.duration_limit_type || "Belirtilmemiş"}
                             </div>
                             <div className="mb-1">
-                              <strong>Transfer Türü:</strong>{" "}
+                              <strong>Transfer Türü:</strong>
                               {rule.fare_transfer_type || "Belirtilmemiş"}
                             </div>
                           </div>
@@ -1814,6 +1843,65 @@ const Sidebar = ({
       >
         <List size={30} />
       </span>
+      {showFareForms && (
+        <Overlay
+          show={showFareForms}
+          target={fareButtonRef.current}
+          placement="top"
+          rootClose
+          onHide={() => setShowFareForms(false)}
+        >
+          <Popover id="fare-forms-popover" style={{ maxWidth: "1000px" }}>
+            <Popover.Header as="h3">Ücret Kuralları Ekle</Popover.Header>
+            <Popover.Body>
+              <div className="d-flex gap-3">
+                <FareProductsAddPage
+                  project_id={project_id}
+                  onClose={() => setShowFareForms(false)}
+                  selectedRoute={selectedEntities.route}
+                  fareMediaList={fareMediaList} // Yeni prop
+                  riderCategories={riderCategories} // Yeni prop
+                />
+                <FareMediaAddPage
+                  project_id={project_id}
+                  onClose={() => setShowFareForms(false)}
+                  onAdd={handleAddFareMedia}
+                />
+                <RiderCategoriesAddPage
+                  project_id={project_id}
+                  onClose={() => setShowFareForms(false)}
+                  onAdd={handleAddRiderCategory}
+                />
+              </div>
+
+              <div className="fare-form">
+                <h5>Fare Products</h5>
+                <FareProductsAddPage
+                  project_id={project_id}
+                  onClose={async (updatedFareDetails) => {
+                    setShowFloatingFareForms(false);
+                    if (updatedFareDetails) {
+                      console.log("Updated fareDetails:", updatedFareDetails);
+                      setFareDetails(updatedFareDetails);
+                    } else if (selectedEntities.route) {
+                      const fareResponse = await fetchDetailedFareForRoute(
+                        selectedEntities.route.route_id,
+                        project_id,
+                        token
+                      );
+                      console.log("Fetched fareResponse:", fareResponse);
+                      setFareDetails(fareResponse || null);
+                    }
+                  }}
+                  selectedRoute={selectedEntities.route}
+                  fareMediaList={fareMediaList} // Yeni prop
+                  riderCategories={riderCategories} // Yeni prop
+                />
+              </div>
+            </Popover.Body>
+          </Popover>
+        </Overlay>
+      )}
       {formConfig && (
         <Modal show onHide={() => setFormConfig(null)}>
           <Modal.Header closeButton>
@@ -1824,6 +1912,60 @@ const Sidebar = ({
           </Modal.Header>
           <Modal.Body>{getFormComponent()}</Modal.Body>
         </Modal>
+      )}
+      {showFloatingFareForms && (
+        <div className="floating-fare-forms">
+          <div className="forms-header">
+            <h4>Add Fare Rules</h4>
+            <Button
+              variant="link"
+              className="close-button"
+              onClick={() => setShowFloatingFareForms(false)}
+            >
+              ×
+            </Button>
+          </div>
+          <div className="forms-container">
+            <div className="fare-form">
+              <h5>Fare Products</h5>
+              <FareProductsAddPage
+                project_id={project_id}
+                onClose={async (updatedFareDetails) => {
+                  setShowFloatingFareForms(false);
+                  if (updatedFareDetails) {
+                    console.log("Updated fareDetails:", updatedFareDetails);
+                    setFareDetails(updatedFareDetails);
+                  } else if (selectedEntities.route) {
+                    const fareResponse = await fetchDetailedFareForRoute(
+                      selectedEntities.route.route_id,
+                      project_id,
+                      token
+                    );
+                    console.log("Fetched fareResponse:", fareResponse);
+                    setFareDetails(fareResponse || null);
+                  }
+                }}
+                selectedRoute={selectedEntities.route}
+              />
+            </div>
+            <div className="fare-form">
+              <h5>Fare Media</h5>
+              <FareMediaAddPage
+                project_id={project_id}
+                onClose={() => setShowFloatingFareForms(false)}
+                onAdd={handleAddFareMedia}
+              />
+            </div>
+            <div className="fare-form">
+              <h5>Rider Categories</h5>
+              <RiderCategoriesAddPage
+                project_id={project_id}
+                onClose={() => setShowFloatingFareForms(false)}
+                onAdd={handleAddRiderCategory}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

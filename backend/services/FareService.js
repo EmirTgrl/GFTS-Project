@@ -16,10 +16,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
   try {
-    console.log(
-      `Fetching fare details for route_id: ${route_id}, user_id: ${user_id}, project_id: ${project_id}`
-    );
-
     // user_id ve project_id kontrolü
     if (!user_id || !project_id) {
       console.error("Missing user_id or project_id:", { user_id, project_id });
@@ -377,133 +373,270 @@ const getAllNetworks = async (user_id, project_id) => {
   return rows;
 };
 
-// Yolculuk için ücret kuralı ekleme
-const createFareForTrip = async (
+// Yeni ekleme fonksiyonları
+const addFareProduct = async (
   user_id,
   project_id,
-  trip_id,
-  fareProductData,
-  rider_category_id,
-  media_id = null,
-  timeframe_id = null,
-  network_name = "Default Network"
+  fare_product_name,
+  amount,
+  currency,
+  rider_category_id = null,
+  fare_media_id = null,
+  network_id = null,
+  route_id = null
 ) => {
   try {
+    // user_id ve project_id kontrolü
     if (!user_id || !project_id) {
+      console.error("Missing user_id or project_id:", { user_id, project_id });
       throw new Error("Kullanıcı kimliği veya proje kimliği eksik.");
     }
 
     user_id = parseInt(user_id, 10);
     project_id = parseInt(project_id, 10);
 
-    if (
-      !fareProductData.fare_product_name ||
-      fareProductData.amount < 0 ||
-      !fareProductData.currency
-    ) {
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Geçersiz kullanıcı kimliği veya proje kimliği.");
+    }
+
+    // Gerekli alanların kontrolü
+    if (!fare_product_name || amount < 0 || !currency) {
       throw new Error(
         "Geçersiz ücret verisi: İsim, miktar ve para birimi zorunlu."
       );
     }
 
-    const [trip] = await pool.query(
-      "SELECT * FROM trips WHERE trip_id = ? AND user_id = ? AND project_id = ?",
-      [trip_id, user_id, project_id]
-    );
-    if (!trip.length) throw new Error("Yolculuk bulunamadı.");
-
-    const route_id = trip[0].route_id;
-
-    const [stops] = await pool.query(
-      `SELECT stop_id FROM stop_times 
-         WHERE trip_id = ? AND user_id = ? AND project_id = ? 
-         ORDER BY stop_sequence`,
-      [trip_id, user_id, project_id]
-    );
-    if (stops.length < 2) throw new Error("Yolculukta yeterli durak yok.");
-
-    const from_stop_id = stops[0].stop_id;
-    const to_stop_id = stops[stops.length - 1].stop_id;
-
-    const [[fromStopArea]] = await pool.query(
-      "SELECT area_id FROM stop_areas WHERE stop_id = ? AND user_id = ? AND project_id = ?",
-      [from_stop_id, user_id, project_id]
-    );
-    const [[toStopArea]] = await pool.query(
-      "SELECT area_id FROM stop_areas WHERE stop_id = ? AND user_id = ? AND project_id = ?",
-      [to_stop_id, user_id, project_id]
-    );
-
-    const from_area_id = fromStopArea ? fromStopArea.area_id : null;
-    const to_area_id = toStopArea ? toStopArea.area_id : null;
-
-    let network_id;
-    const [existingNetwork] = await pool.query(
-      "SELECT network_id FROM networks WHERE network_name = ? AND user_id = ? AND project_id = ?",
-      [network_name, user_id, project_id]
-    );
-    if (existingNetwork.length) {
-      network_id = existingNetwork[0].network_id;
-    } else {
-      const newNetworkId = `network_${Date.now()}`;
-      await pool.query(
-        "INSERT INTO networks (network_id, network_name, user_id, project_id) VALUES (?, ?, ?, ?)",
-        [newNetworkId, network_name, user_id, project_id]
-      );
-      network_id = newNetworkId;
-    }
-
-    await pool.query(
-      "INSERT IGNORE INTO route_networks (route_id, network_id, user_id, project_id) VALUES (?, ?, ?, ?)",
-      [route_id, network_id, user_id, project_id]
-    );
-
+    // Benzersiz fare_product_id oluştur
     const fare_product_id = `fare_product_${Date.now()}`;
-    await pool.query(
-      `INSERT INTO fare_products 
-         (fare_product_id, fare_product_name, amount, currency, rider_category_id, fare_media_id, user_id, project_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+
+    // fare_products tablosuna ekleme
+    const [result] = await pool.query(
+      `
+        INSERT INTO fare_products 
+        (fare_product_id, fare_product_name, amount, currency, rider_category_id, fare_media_id, user_id, project_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       [
         fare_product_id,
-        fareProductData.fare_product_name,
-        fareProductData.amount,
-        fareProductData.currency,
+        fare_product_name,
+        amount,
+        currency,
         rider_category_id,
-        media_id,
+        fare_media_id,
         user_id,
         project_id,
       ]
     );
 
-    const leg_group_id = `leg_group_${fare_product_id}_${Date.now()}`;
+    // route_id sağlandıysa, fare_leg_rules tablosuna otomatik kayıt ekle
+    if (route_id) {
+      // Route'a bağlı network_id'yi al
+      const [[routeData]] = await pool.query(
+        `
+          SELECT rn.network_id
+          FROM routes r
+          LEFT JOIN route_networks rn ON r.route_id = rn.route_id
+          WHERE r.route_id = ? AND r.user_id = ? AND r.project_id = ?
+        `,
+        [route_id, user_id, project_id]
+      );
+
+      if (!routeData || !routeData.network_id) {
+        console.error("Network ID bulunamadı:", {
+          route_id,
+          user_id,
+          project_id,
+        });
+        throw new Error("Seçilen rota için ağ bilgisi bulunamadı.");
+      }
+
+      const network_id = routeData.network_id;
+      const leg_group_id = `leg_group_${Date.now()}`;
+
+      // Rota için başlangıç ve bitiş alanlarını (from_area_id, to_area_id) al
+      const [stopAreas] = await pool.query(
+        `
+          SELECT sa.area_id
+          FROM stop_times st
+          JOIN stops s ON st.stop_id = s.stop_id
+          JOIN stop_areas sa ON s.stop_id = sa.stop_id
+          JOIN trips t ON st.trip_id = t.trip_id
+          WHERE t.route_id = ? AND t.user_id = ? AND t.project_id = ?
+          GROUP BY sa.area_id
+          ORDER BY MIN(st.stop_sequence)
+        `,
+        [route_id, user_id, project_id]
+      );
+
+      if (stopAreas.length === 0) {
+        console.error("Rota için durak alanı bulunamadı:", {
+          route_id,
+          user_id,
+          project_id,
+        });
+        throw new Error(
+          "Rota için durak alanı tanımlı değil. Lütfen durak alanlarını kontrol edin."
+        );
+      }
+
+      let from_area_id = stopAreas[0].area_id; // İlk durak alanı
+      let to_area_id = stopAreas[stopAreas.length - 1].area_id; // Son durak alanı
+
+      // fare_leg_rules tablosuna ekleme (route_id olmadan)
+      await pool.query(
+        `
+          INSERT INTO fare_leg_rules 
+          (leg_group_id, network_id, fare_product_id, from_area_id, to_area_id, user_id, project_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          leg_group_id,
+          network_id,
+          fare_product_id,
+          from_area_id,
+          to_area_id,
+          user_id,
+          project_id,
+        ]
+      );
+    }
+
+    return {
+      message: "Ücret ürünü başarılı şekilde eklendi.",
+      fare_product_id,
+      fare_product_name,
+      amount,
+      currency,
+      rider_category_id,
+      fare_media_id,
+    };
+  } catch (error) {
+    console.error("addFareProduct error:", error.message);
+    throw new Error(`Ücret ürünü eklenemedi: ${error.message}`);
+  }
+};
+
+const addFareMedia = async (
+  user_id,
+  project_id,
+  fare_media_name,
+  fare_media_type
+) => {
+  try {
+    // user_id ve project_id kontrolü
+    if (!user_id || !project_id) {
+      console.error("Missing user_id or project_id:", { user_id, project_id });
+      throw new Error("Kullanıcı kimliği veya proje kimliği eksik.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Geçersiz kullanıcı kimliği veya proje kimliği.");
+    }
+
+    // Gerekli alanların kontrolü
+    if (!fare_media_name || fare_media_type == null) {
+      throw new Error("Ödeme yöntemi adı ve türü zorunlu alanlardır.");
+    }
+
+    // fare_media_type kontrolü (0: none, 1: paper ticket, 2: transit card, 3: cEMV, 4: mobile app)
+    if (![0, 1, 2, 3, 4].includes(fare_media_type)) {
+      throw new Error(
+        "Geçersiz ödeme yöntemi türü. Geçerli seçenekler: Hiçbiri (0), Kağıt Bilet (1), Transit Kart (2), Temassız Kart (3), Mobil Uygulama (4)."
+      );
+    }
+
+    // Benzersiz fare_media_id oluştur
+    const fare_media_id = `fare_media_${Date.now()}`;
+
+    // fare_media tablosuna ekleme
     await pool.query(
-      `INSERT INTO fare_leg_rules 
-         (leg_group_id, fare_product_id, network_id, from_area_id, to_area_id, from_timeframe_group_id, to_timeframe_group_id, user_id, project_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `
+        INSERT INTO fare_media 
+        (fare_media_id, fare_media_name, fare_media_type, user_id, project_id)
+        VALUES (?, ?, ?, ?, ?)
+      `,
+      [fare_media_id, fare_media_name, fare_media_type, user_id, project_id]
+    );
+
+    return {
+      message: "Ödeme yöntemi başarılı şekilde eklendi.",
+      fare_media_id,
+      fare_media_name,
+      fare_media_type,
+    };
+  } catch (error) {
+    console.error("addFareMedia error:", error.message);
+    throw new Error(`Ödeme yöntemi eklenemedi: ${error.message}`);
+  }
+};
+
+const addRiderCategory = async (
+  user_id,
+  project_id,
+  rider_category_name,
+  is_default_fare_category = 0,
+  eligibility_url = null
+) => {
+  try {
+    // user_id ve project_id kontrolü
+    if (!user_id || !project_id) {
+      console.error("Missing user_id or project_id:", { user_id, project_id });
+      throw new Error("Kullanıcı kimliği veya proje kimliği eksik.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Geçersiz kullanıcı kimliği veya proje kimliği.");
+    }
+
+    // Gerekli alanların kontrolü
+    if (!rider_category_name) {
+      throw new Error("Geçersiz yolcu kategorisi verisi: İsim zorunlu.");
+    }
+
+    // is_default_fare_category kontrolü
+    if (![0, 1].includes(is_default_fare_category)) {
+      throw new Error("Geçersiz varsayılan kategori değeri. (0 veya 1 olmalı)");
+    }
+
+    // Benzersiz rider_category_id oluştur
+    const rider_category_id = `rider_category_${Date.now()}`;
+
+    // rider_categories tablosuna ekleme
+    await pool.query(
+      `
+        INSERT INTO rider_categories 
+        (rider_category_id, rider_category_name, is_default_fare_category, eligibility_url, user_id, project_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `,
       [
-        leg_group_id,
-        fare_product_id,
-        network_id,
-        from_area_id,
-        to_area_id,
-        timeframe_id,
-        timeframe_id,
+        rider_category_id,
+        rider_category_name,
+        is_default_fare_category,
+        eligibility_url,
         user_id,
         project_id,
       ]
     );
 
     return {
-      message: "Ücret başarılı şekilde eklendi.",
-      fare_product_id,
-      leg_group_id,
-      from_area_id,
-      to_area_id,
-      network_id,
+      message: "Yolcu kategorisi başarılı şekilde eklendi.",
+      rider_category_id,
+      rider_category_name,
+      is_default_fare_category,
+      eligibility_url,
     };
   } catch (error) {
-    console.error("createFareForTrip error:", error.message);
-    throw error;
+    console.error("addRiderCategory error:", error.message);
+    throw new Error(`Yolcu kategorisi eklenemedi: ${error.message}`);
   }
 };
 
@@ -513,5 +646,7 @@ module.exports = {
   getAllFareMedia,
   getAllRiderCategories,
   getAllNetworks,
-  createFareForTrip,
+  addFareProduct,
+  addFareMedia,
+  addRiderCategory,
 };

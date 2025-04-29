@@ -1,4 +1,3 @@
-// FareController.js
 const express = require("express");
 const router = express.Router();
 
@@ -38,6 +37,7 @@ const getFareDetailsForRoute = async (req, res) => {
   }
 };
 
+// Tüm ücret ürünlerini getir
 const getFareProducts = async (req, res) => {
   const { project_id } = req.query;
   const user_id = req.user.id;
@@ -58,6 +58,7 @@ const getFareProducts = async (req, res) => {
   }
 };
 
+// Tüm ücret ortamlarını getir
 const getFareMedia = async (req, res) => {
   const { project_id } = req.query;
   const user_id = req.user.id;
@@ -78,6 +79,7 @@ const getFareMedia = async (req, res) => {
   }
 };
 
+// Tüm yolcu kategorilerini getir
 const getRiderCategories = async (req, res) => {
   const { project_id } = req.query;
   const user_id = req.user.id;
@@ -98,6 +100,7 @@ const getRiderCategories = async (req, res) => {
   }
 };
 
+// Tüm ağları getir
 const getNetworks = async (req, res) => {
   const { project_id } = req.query;
   const user_id = req.user.id;
@@ -118,49 +121,126 @@ const getNetworks = async (req, res) => {
   }
 };
 
-const createFare = async (req, res) => {
+// Yeni ücret ürünü ekle
+const addFareProduct = async (req, res) => {
   const user_id = req.user.id;
   const { project_id } = req.query;
-  const { trip_id } = req.params;
   const {
-    fareProductData,
+    fare_product_name,
+    amount,
+    currency,
     rider_category_id,
-    media_id,
-    timeframe_id,
-    network_name,
+    fare_media_id,
+    network_id,
+    route_id,
   } = req.body;
 
   if (!project_id) {
     return res.status(400).json({ message: "project_id zorunlu." });
   }
 
+  if (!fare_product_name || amount == null || !currency) {
+    return res.status(400).json({
+      message: "fare_product_name, amount ve currency zorunlu.",
+    });
+  }
+
   try {
-    const result = await fareService.createFareForTrip(
+    const result = await fareService.addFareProduct(
       user_id,
       project_id,
-      trip_id,
-      fareProductData,
+      fare_product_name,
+      amount,
+      currency,
       rider_category_id,
-      media_id,
-      timeframe_id,
-      network_name
+      fare_media_id,
+      network_id,
+      route_id
     );
     res.status(201).json(result);
   } catch (error) {
-    console.error("createFare error:", error.message);
+    console.error("addFareProduct error:", error.message);
     res.status(400).json({
-      message: `Ücret oluşturulamadı: ${error.message}`,
+      message: `Ücret ürünü eklenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Yeni ücret ortamı ekle
+const addFareMedia = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { fare_media_name, fare_media_type } = req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!fare_media_name || fare_media_type == null) {
+    return res
+      .status(400)
+      .json({ message: "fare_media_name ve fare_media_type zorunlu." });
+  }
+
+  try {
+    const result = await fareService.addFareMedia(
+      user_id,
+      project_id,
+      fare_media_name,
+      fare_media_type
+    );
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("addFareMedia error:", error.message);
+    res.status(400).json({
+      message: `Ücret ortamı eklenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Yeni yolcu kategorisi ekle
+const addRiderCategory = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { rider_category_name, is_default_fare_category, eligibility_url } =
+    req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!rider_category_name) {
+    return res.status(400).json({ message: "rider_category_name zorunlu." });
+  }
+
+  try {
+    const result = await fareService.addRiderCategory(
+      user_id,
+      project_id,
+      rider_category_name,
+      is_default_fare_category || 0,
+      eligibility_url
+    );
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("addRiderCategory error:", error.message);
+    res.status(400).json({
+      message: `Yolcu kategorisi eklenemedi: ${error.message}`,
       details: error.message,
     });
   }
 };
 
 // RESTful rotalar
-router.get("/route/:route_id", getFareDetailsForRoute); 
+router.get("/route/:route_id", getFareDetailsForRoute);
 router.get("/products", getFareProducts);
 router.get("/media", getFareMedia);
 router.get("/categories", getRiderCategories);
 router.get("/networks", getNetworks);
-router.post("/trip/:trip_id", createFare);
+router.post("/products", addFareProduct);
+router.post("/media", addFareMedia);
+router.post("/categories", addRiderCategory);
 
 module.exports = router;

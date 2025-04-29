@@ -28,7 +28,7 @@ export const fetchDetailedFareForRoute = async (
   return response.json();
 };
 
-// Mevcut diğer fonksiyonlar (fetchAllFareProducts, fetchAllFareMedia, vb.) değişmeden kalacak
+// 2. Tüm ücret ürünlerini al
 export const fetchAllFareProducts = async (project_id, token) => {
   const response = await fetch(
     `${API_BASE_URL}/products?project_id=${project_id}`,
@@ -49,6 +49,7 @@ export const fetchAllFareProducts = async (project_id, token) => {
   return response.json();
 };
 
+// 3. Tüm ödeme yöntemlerini al
 export const fetchAllFareMedia = async (project_id, token) => {
   const response = await fetch(
     `${API_BASE_URL}/media?project_id=${project_id}`,
@@ -69,6 +70,7 @@ export const fetchAllFareMedia = async (project_id, token) => {
   return response.json();
 };
 
+// 4. Tüm yolcu kategorilerini al
 export const fetchAllRiderCategories = async (project_id, token) => {
   const response = await fetch(
     `${API_BASE_URL}/categories?project_id=${project_id}`,
@@ -89,6 +91,7 @@ export const fetchAllRiderCategories = async (project_id, token) => {
   return response.json();
 };
 
+// 5. Tüm ağları al
 export const fetchAllNetworks = async (project_id, token) => {
   const response = await fetch(
     `${API_BASE_URL}/networks?project_id=${project_id}`,
@@ -109,9 +112,94 @@ export const fetchAllNetworks = async (project_id, token) => {
   return response.json();
 };
 
-export const createFareForTrip = async (
+// 6. Yeni ücret ürünü ekle
+export const addFareProduct = async (project_id, token, fareProductData) => {
+  const response = await fetch(
+    `${API_BASE_URL}/products?project_id=${project_id}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fare_product_name: fareProductData.fare_product_name,
+        amount: parseFloat(fareProductData.amount),
+        currency: fareProductData.currency,
+        rider_category_id: fareProductData.rider_category_id || null,
+        fare_media_id: fareProductData.fare_media_id || null,
+        network_id: fareProductData.network_id,
+        route_id: fareProductData.route_id,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("addFareProduct error:", errorData);
+    throw new Error(errorData.message || "Ücret ürünü eklenemedi.");
+  }
+
+  return response.json();
+};
+
+// 7. Yeni ödeme yöntemi ekle
+export const addFareMedia = async (project_id, token, fareMediaData) => {
+  const response = await fetch(
+    `${API_BASE_URL}/media?project_id=${project_id}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fare_media_name: fareMediaData.fare_media_name,
+        fare_media_type: fareMediaData.fare_media_type,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("addFareMedia error:", errorData);
+    throw new Error(errorData.message || "Ödeme yöntemi eklenemedi.");
+  }
+
+  return response.json();
+};
+
+// 8. Yeni yolcu kategorisi ekle
+export const addRiderCategory = async (
   project_id,
-  trip_id,
+  token,
+  riderCategoryData
+) => {
+  const response = await fetch(
+    `${API_BASE_URL}/categories?project_id=${project_id}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(riderCategoryData),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("addRiderCategory error:", errorData);
+    throw new Error(errorData.message || "Yolcu kategorisi eklenemedi.");
+  }
+
+  return response.json();
+};
+
+// Mevcut diğer fonksiyonlar (fetchAllFareProducts, fetchAllFareMedia, vb.) değişmeden kalacak
+export const createFareForRoute = async (
+  project_id,
+  route_id,
   fareProductData,
   rider_category_id,
   media_id = null,
@@ -120,7 +208,7 @@ export const createFareForTrip = async (
   token
 ) => {
   const response = await fetch(
-    `${API_BASE_URL}/trip/${trip_id}?project_id=${project_id}`,
+    `${API_BASE_URL}/route/${route_id}?project_id=${project_id}`,
     {
       method: "POST",
       headers: {
@@ -143,7 +231,7 @@ export const createFareForTrip = async (
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error("createFareForTrip error:", errorData);
+    console.error("createFareForRoute error:", errorData);
     throw new Error(errorData.message || "Ücret oluşturulamadı.");
   }
 

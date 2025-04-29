@@ -7,7 +7,7 @@ import { AuthContext } from "../components/Auth/AuthContext";
 const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState({
-    route_id: "", // route_id ekledik, string olacak
+    route_id: "", 
     agency_id: selectedAgency?.agency_id || "",
     project_id,
     route_short_name: "",
@@ -32,8 +32,8 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         name === "continuous_drop_off"
           ? value === ""
             ? null
-            : parseInt(value, 10) || null // Sayısal alanlar için parseInt korundu
-          : value, // route_id dahil diğer alanlar string
+            : parseInt(value, 10) || null
+          : value, 
     }));
   };
 
@@ -63,7 +63,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
       try {
         const newRoute = { ...routeData, agency_id: selectedAgency.agency_id };
         const response = await saveRoute(newRoute, token);
-        const route_id = response.route_id; // Backend’ten dönen route_id’yi kullan
+        const route_id = response.route_id; 
         setRoutes((prev) => ({
           ...prev,
           data: [...prev.data, { ...newRoute, route_id }],
@@ -218,7 +218,7 @@ RouteAddPage.propTypes = {
   setRoutes: PropTypes.func.isRequired,
   selectedAgency: PropTypes.shape({
     agency_id: PropTypes.string.isRequired,
-  }), // selectedAgency opsiyonel ama agency_id string
+  }), 
 };
 
 export default RouteAddPage;
