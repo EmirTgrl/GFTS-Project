@@ -196,7 +196,6 @@ export const addRiderCategory = async (
   return response.json();
 };
 
-// Mevcut diğer fonksiyonlar (fetchAllFareProducts, fetchAllFareMedia, vb.) değişmeden kalacak
 export const createFareForRoute = async (
   project_id,
   route_id,

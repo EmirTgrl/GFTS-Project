@@ -341,78 +341,10 @@
   left: 0;
 }
 
-/* Yeni Eklenen Stiller (GTFS-Fares V2 Özellikleri) */
-.nav-tabs {
-  border-bottom: 1px solid #dee2e6;
-  margin-bottom: 15px;
-}
-
-.nav-tabs .nav-link {
-  color: #333;
-  font-weight: 500;
-  padding: 8px 16px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  transition: all 0.3s ease;
-}
-
-.nav-tabs .nav-link:hover {
-  color: #007bff;
-  border-bottom: 2px solid #007bff;
-}
-
-.nav-tabs .nav-link.active {
-  color: #007bff;
-  border-bottom: 2px solid #007bff;
-  background: transparent;
-}
-
-.cost-calculation-panel {
-  position: fixed;
-  top: 112px;
-  left: 350px;
-  width: 300px;
-  background: #ffffff;
-  padding: 20px;
-  border-left: 1px solid #dee2e6;
-  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
-  z-index: 999;
-  overflow-y: auto;
-  max-height: calc(100vh - 112px);
-}
-
-.cost-calculation-panel h5 {
-  font-size: 1.2rem;
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.cost-calculation-panel .form-control {
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.cost-calculation-panel .btn-primary {
-  width: 100%;
-  padding: 8px;
-  font-size: 0.9rem;
-  border-radius: 4px;
-}
-
-.new-sidebar.closed + .cost-calculation-panel {
-  transform: translateX(-350px);
-}
-
-.new-sidebar.closed ~ .cost-calculation-panel {
-  left: 0;
-}
-
 .fare-details {
   font-size: 0.8em;
   color: #666;
 }
-
-/* ... existing styles ... */
 
 .floating-fare-forms {
   position: fixed;
@@ -425,6 +357,8 @@
   z-index: 1050;
   padding: 20px;
   backdrop-filter: blur(8px);
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 .forms-header {
@@ -459,31 +393,32 @@
 
 .forms-container {
   display: flex;
+  flex-direction: column;
   gap: 20px;
-  overflow-x: auto;
   padding: 10px 0;
 }
 
 .forms-container .fare-form {
-  flex: 1;
-  min-width: 300px;
   background: #fff;
-  border: 1px solid #e9ecef;
+  padding: 15px;
   border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.forms-container .fare-form h5 {
-  color: #333;
-  margin-bottom: 15px;
-  font-weight: 600;
-  font-size: 1.1rem;
+.settings-icon {
+  cursor: pointer;
+  color: #007bff;
+  transition: transform 0.2s ease;
 }
 
-.forms-container .fare-form:hover {
-  border-color: #007bff;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
-  transform: translateY(-2px);
-  transition: all 0.3s ease;
+.settings-icon:hover {
+  transform: scale(1.2);
+  color: #0056b3;
+}
+
+.additional-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
 }

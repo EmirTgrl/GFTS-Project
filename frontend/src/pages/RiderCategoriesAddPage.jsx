@@ -21,19 +21,19 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.rider_category_name) {
-      Swal.fire("Hata!", "Yolcu kategorisi adı zorunludur!", "error");
+      Swal.fire("Error!", "Rider category name is required!", "error");
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu yolcu kategorisini eklemek istediğinize emin misiniz?",
+      title: "Are You Sure?",
+      text: "Are you sure you want to add this rider category?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, ekle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, add!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
@@ -45,17 +45,14 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
           eligibility_url: formData.eligibility_url || null,
         };
 
-        console.log("addRiderCategory payload:", payload);
         const response = await addRiderCategory(project_id, token, payload);
-        console.log("addRiderCategory response:", response);
 
         Swal.fire(
-          "Başarılı!",
-          "Yolcu kategorisi başarıyla eklendi.",
+          "Success!",
+          "Rider category added successfully.",
           "success"
         );
 
-        // Yeni kategoriyi üst bileşene ilet
         if (onAdd) {
           onAdd(response);
         }
@@ -65,11 +62,12 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
           is_default_fare_category: 0,
           eligibility_url: "",
         });
+        onClose(); 
       } catch (error) {
         console.error("Error:", error);
         Swal.fire(
-          "Hata!",
-          `Yolcu kategorisi eklenirken hata oluştu: ${error.message}`,
+          "Error!",
+          `Error occurred while adding rider category: ${error.message}`,
           "error"
         );
       } finally {
@@ -80,11 +78,10 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
 
   return (
     <div className="form-container">
-      <h5>Yeni Yolcu Kategorisi Ekle</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="rider_category_name" className="form-label">
-            Kategori Adı (*)
+            Category Name (*)
           </label>
           <input
             type="text"
@@ -98,7 +95,7 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="is_default_fare_category" className="form-label">
-            Varsayılan Kategori
+            Default Category
           </label>
           <select
             className="form-control"
@@ -107,13 +104,13 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
             value={formData.is_default_fare_category}
             onChange={handleChange}
           >
-            <option value="0">Hayır</option>
-            <option value="1">Evet</option>
+            <option value="0">No</option>
+            <option value="1">Yes</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="eligibility_url" className="form-label">
-            Uygunluk URL si
+            Eligibility URL
           </label>
           <input
             type="text"
@@ -126,10 +123,10 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Ekleniyor..." : "Ekle"}
+            {loading ? "Adding..." : "Add"}
           </button>
           <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            Cancel
           </button>
         </div>
       </form>

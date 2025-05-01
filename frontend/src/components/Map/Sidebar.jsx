@@ -10,8 +10,6 @@ import {
   Tooltip,
   Button,
   Collapse,
-  Overlay,
-  Popover,
 } from "react-bootstrap";
 import {
   List,
@@ -34,6 +32,7 @@ import {
   Pencil,
   Trash,
   CashStack,
+  Gear,
   ChevronDown,
   ChevronUp,
 } from "react-bootstrap-icons";
@@ -63,7 +62,7 @@ import {
 } from "../../api/stopTimeApi";
 import { deleteStopById, fetchStopsByProjectId } from "../../api/stopApi";
 import { deleteShape, fetchShapesByTripId } from "../../api/shapeApi";
-import { fetchDetailedFareForRoute } from "../../api/fareApi.js";
+import { fetchDetailedFareForRoute } from "../../api/fareApi";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
 import RouteAddPage from "../../pages/RouteAddPage";
@@ -76,10 +75,9 @@ import CalendarAddPage from "../../pages/CalendarAddPage";
 import CalendarEditPage from "../../pages/CalendarEditPage";
 import ShapeAddPage from "../../pages/ShapeAddPage";
 import ShapeEditPage from "../../pages/ShapeEditPage";
-import FareProductsAddPage from "../../pages/FareProductsAddPage.jsx";
-import FareMediaAddPage from "../../pages/FareMediaAddPage.jsx";
-import RiderCategoriesAddPage from "../../pages/RiderCategoriesAddPage.jsx";
-import TripFilterPanel from "./TripFilterPanel.jsx";
+import FareProductsTable from "../../pages/FareProductsTablePage";
+import FareSettingsPanel from "./FareSettingsPanel";
+import TripFilterPanel from "./TripFilterPanel";
 import "../../styles/Sidebar.css";
 
 const Sidebar = ({
@@ -110,6 +108,7 @@ const Sidebar = ({
   activeKey,
   setActiveKey,
 }) => {
+  const fareProductsRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [pageAgencies, setPageAgencies] = useState(1);
   const [pageRoutes, setPageRoutes] = useState(1);
@@ -132,11 +131,8 @@ const Sidebar = ({
   const [fareDetails, setFareDetails] = useState(null);
   const [expandedFare, setExpandedFare] = useState(null);
   const [expandedTransfer, setExpandedTransfer] = useState(null);
-  const [showFareForms, setShowFareForms] = useState(false);
-  const [fareMediaList, setFareMediaList] = useState([]);
-  const [riderCategories, setRiderCategories] = useState([]);
   const [showFloatingFareForms, setShowFloatingFareForms] = useState(false);
-  const fareButtonRef = useRef(null);
+  const [showFareSettings, setShowFareSettings] = useState(false);
   const itemsPerPage = 8;
 
   const categoryMap = {
@@ -177,15 +173,6 @@ const Sidebar = ({
       pageTrips * itemsPerPage
     );
     return { data: paginatedTrips, total: sortedTrips.length };
-  };
-
-  // Yeni eklenen rider category ve fare media'yı güncelle
-  const handleAddRiderCategory = (newCategory) => {
-    setRiderCategories((prev) => [...prev, newCategory]);
-  };
-
-  const handleAddFareMedia = (newMedia) => {
-    setFareMediaList((prev) => [...prev, newMedia]);
   };
 
   useEffect(() => {
@@ -233,7 +220,7 @@ const Sidebar = ({
 
         if (isFiltered) {
           console.log(
-            "Skipping fetch due to filtering, using current trips:",
+            "Filtreleme nedeniyle veri çekimi atlanıyor, mevcut seferler kullanılıyor:",
             trips
           );
           return;
@@ -373,13 +360,13 @@ const Sidebar = ({
       const category = categoryMap[activeKey];
       if (category) {
         if (category === "route" && !selectedEntities.agency) {
-          Swal.fire("Error", "Please select an agency first.", "error");
+          Swal.fire("Hata!", "Lütfen önce bir acente seçin.", "error");
         } else if (category === "trip" && !selectedEntities.route) {
-          Swal.fire("Error", "Please select a route first.", "error");
+          Swal.fire("Hata!", "Lütfen önce bir hat seçin.", "error");
         } else if (category === "stop" && !selectedEntities.trip) {
-          Swal.fire("Error", "Please select a trip first.", "error");
+          Swal.fire("Hata!", "Lütfen önce bir sefer seçin.", "error");
         } else if (category === "shape" && !selectedEntities.trip) {
-          Swal.fire("Error", "Please select a trip first.", "error");
+          Swal.fire("Hata!", "Lütfen önce bir sefer seçin.", "error");
         } else {
           setFormConfig({ action: "add", category });
         }
@@ -392,13 +379,13 @@ const Sidebar = ({
           entity: selectedEntities[selectedCategory],
         });
       } else {
-        Swal.fire("Error", "Please select an entity to edit.", "error");
+        Swal.fire("Hata!", "Lütfen düzenlemek için bir öğe seçin.", "error");
       }
     } else if (actionType === "delete") {
       if (selectedCategory && selectedEntities[selectedCategory]) {
         handleDelete(selectedCategory, selectedEntities[selectedCategory]);
       } else {
-        Swal.fire("Error", "Please select an entity to delete.", "error");
+        Swal.fire("Hata!", "Lütfen silmek için bir öğe seçin.", "error");
       }
     } else if (actionType === "copy") {
       if (selectedEntities.trip) {
@@ -409,16 +396,16 @@ const Sidebar = ({
 
   const handleCopy = async (trip) => {
     Swal.fire({
-      title: "Copy Trip",
-      text: "Enter the offset (in minutes) to be applied to all stop times:",
+      title: "Seferi Kopyala",
+      text: "Tüm durak zamanlarına uygulanacak ofseti (dakika cinsinden) girin:",
       input: "number",
       showCancelButton: true,
-      confirmButtonText: "Copy",
-      cancelButtonText: "Cancel",
+      confirmButtonText: "Kopyala",
+      cancelButtonText: "İptal",
       showLoaderOnConfirm: true,
       preConfirm: (offset) => {
         if (offset === "" || isNaN(offset)) {
-          Swal.showValidationMessage("Please enter a valid number.");
+          Swal.showValidationMessage("Lütfen geçerli bir sayı girin.");
           return false;
         }
         return Number(offset);
@@ -474,8 +461,8 @@ const Sidebar = ({
           }
 
           Swal.fire(
-            "Copied!",
-            `Trip copied with an offset of ${offsetMinutes} minutes. New times: ${
+            "Kopyalandı!",
+            `Sefer ${offsetMinutes} dakika ofsetle kopyalandı. Yeni zamanlar: ${
               enrichedStopTimes[0]?.arrival_time || "N/A"
             } - ${
               enrichedStopTimes[enrichedStopTimes.length - 1]?.departure_time ||
@@ -484,8 +471,8 @@ const Sidebar = ({
             "success"
           );
         } catch (error) {
-          console.error("Error copying trip:", error);
-          Swal.fire("Error!", `Failed to copy trip: ${error.message}`, "error");
+          console.error("Sefer kopyalanırken hata:", error);
+          Swal.fire("Hata!", `Sefer kopyalanamadı: ${error.message}`, "error");
         }
       }
     });
@@ -549,6 +536,8 @@ const Sidebar = ({
           setActiveKey("0");
           setIsFilterOpen(false);
           setIsFiltered(false);
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
           setFareDetails(null);
         }
         break;
@@ -566,6 +555,8 @@ const Sidebar = ({
           }));
           setSelectedCategory("agency");
           setActiveKey("1");
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
           setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({
@@ -579,7 +570,19 @@ const Sidebar = ({
           setActiveKey("1");
           setIsFilterOpen(false);
           setIsFiltered(false);
-          setFareDetails(null);
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
+          try {
+            const fareResponse = await fetchDetailedFareForRoute(
+              entity.route_id,
+              project_id,
+              token
+            );
+            setFareDetails(fareResponse || null);
+          } catch (error) {
+            console.error("Ücret detayları alınamadı:", error);
+            setFareDetails(null);
+          }
         }
         break;
       }
@@ -596,6 +599,8 @@ const Sidebar = ({
           setActiveKey("2");
           const updatedTrips = applyTripFiltersAndSort(fullTrips);
           setTrips(updatedTrips);
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
           setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({
@@ -609,6 +614,8 @@ const Sidebar = ({
           setActiveKey("2");
           const updatedTrips = applyTripFiltersAndSort(fullTrips);
           setTrips(updatedTrips);
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
           setFareDetails(null);
         }
         break;
@@ -625,6 +632,8 @@ const Sidebar = ({
           setActiveKey("3");
           setShapes([]);
           setStopsAndTimes([]);
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
           setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({
@@ -664,12 +673,12 @@ const Sidebar = ({
               setZoom(12);
             }
           } catch (error) {
-            console.error("Trip seçilirken veriler yüklenemedi:", error);
+            console.error("Sefer seçilirken veriler yüklenemedi:", error);
             setShapes([]);
             setStopsAndTimes([]);
             setFareDetails(null);
             Swal.fire(
-              "Hata",
+              "Hata!",
               "Veriler yüklenemedi. Lütfen daha sonra tekrar deneyin.",
               "error"
             );
@@ -684,6 +693,8 @@ const Sidebar = ({
           setSelectedEntities((prev) => ({ ...prev, shape: null }));
           setSelectedCategory("trip");
           setActiveKey("4");
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
           setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({ ...prev, shape: entity }));
@@ -696,6 +707,8 @@ const Sidebar = ({
             ]);
             setZoom(18);
           }
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
           setFareDetails(null);
         }
         break;
@@ -705,6 +718,8 @@ const Sidebar = ({
           setSelectedEntities((prev) => ({ ...prev, stop: null }));
           setSelectedCategory("trip");
           setActiveKey("5");
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
           setFareDetails(null);
         } else {
           setSelectedEntities((prev) => ({ ...prev, stop: entity }));
@@ -717,6 +732,8 @@ const Sidebar = ({
             ]);
             setZoom(18);
           }
+          setShowFareSettings(false);
+          setShowFloatingFareForms(false);
         }
         break;
       }
@@ -725,7 +742,8 @@ const Sidebar = ({
           Swal.fire("Hata!", "Lütfen önce bir hat seçin.", "error");
           return;
         }
-        setShowFareForms(true);
+        setShowFloatingFareForms(true);
+        setShowFareSettings(false);
         setSelectedCategory("fare");
         setActiveKey("6");
         break;
@@ -746,7 +764,7 @@ const Sidebar = ({
         : category === "stop"
         ? entity.stop_name || entity.stop_id
         : category === "shape"
-        ? `Sequence ${entity.shape_pt_sequence}`
+        ? `Sıra ${entity.shape_pt_sequence}`
         : category === "calendar"
         ? getActiveDays(entity)
         : category;
@@ -841,16 +859,18 @@ const Sidebar = ({
         }
         Swal.fire("Silindi!", `${category} başarıyla silindi.`, "success");
       } catch (error) {
-        console.error("Error deleting entity:", error);
-        Swal.fire("Hata", `${category} silinirken bir hata oluştu.`, "error");
+        console.error("Öğe silinirken hata:", error);
+        Swal.fire("Hata!", `${category} silinirken bir hata oluştu.`, "error");
       }
     } else {
-      Swal.fire("İptal Edildi", `${category} silinmedi.`, "info");
+      Swal.fire("İptal Edildi!", `${category} silinmedi.`, "info");
     }
   };
 
   const getFormComponent = () => {
-    const { action, category, entity } = formConfig;
+    const { action, category, entity } = formConfig || {};
+    if (!action || !category) return null;
+
     if (action === "add") {
       switch (category) {
         case "agency":
@@ -890,7 +910,7 @@ const Sidebar = ({
               initialLat={clickedCoords?.lat}
               initialLon={clickedCoords?.lng}
               resetClickedCoords={resetClickedCoords}
-              route_id={selectedEntities.route.route_id}
+              route_id={selectedEntities.route?.route_id}
             />
           );
         case "calendar":
@@ -910,26 +930,6 @@ const Sidebar = ({
               setShapes={setShapes}
               clickedCoords={clickedCoords}
             />
-          );
-        case "fare":
-          return (
-            <div className="d-flex gap-3">
-              <FareProductsAddPage
-                project_id={project_id}
-                onClose={() => setFormConfig(null)}
-                selectedRoute={selectedEntities.route}
-              />
-              <FareMediaAddPage
-                project_id={project_id}
-                onClose={() => setFormConfig(null)}
-                onAdd={handleAddFareMedia}
-              />
-              <RiderCategoriesAddPage
-                project_id={project_id}
-                onClose={() => setFormConfig(null)}
-                onAdd={handleAddRiderCategory}
-              />
-            </div>
           );
         default:
           return null;
@@ -979,7 +979,7 @@ const Sidebar = ({
               onClose={() => setFormConfig(null)}
               setStopsAndTimes={setStopsAndTimes}
               stopsAndTimes={stopsAndTimes}
-              route_id={selectedEntities.route.route_id}
+              route_id={selectedEntities.route?.route_id}
             />
           );
         case "calendar":
@@ -1106,13 +1106,10 @@ const Sidebar = ({
     const isSelected = selectedEntities[category] != null;
     return (
       <div className="action-buttons-container">
-        <div
-          className="overlay-trigger-wrapper"
-          ref={category === "fare" ? fareButtonRef : null}
-        >
+        <div className="overlay-trigger-wrapper">
           <OverlayTrigger
             placement="top"
-            overlay={renderTooltip(`Add ${category}`, `add-${category}`)}
+            overlay={renderTooltip(`Ekle ${category}`)}
           >
             <div
               className="sidebar-action-btn add-btn custom-action-icon"
@@ -1150,7 +1147,7 @@ const Sidebar = ({
             <div className="overlay-trigger-wrapper">
               <OverlayTrigger
                 placement="top"
-                overlay={renderTooltip(`Edit ${category}`, `edit-${category}`)}
+                overlay={renderTooltip(`Düzenle ${category}`)}
               >
                 <div
                   className="sidebar-action-btn edit-btn custom-action-icon"
@@ -1174,10 +1171,7 @@ const Sidebar = ({
             <div className="overlay-trigger-wrapper">
               <OverlayTrigger
                 placement="top"
-                overlay={renderTooltip(
-                  `Delete ${category}`,
-                  `delete-${category}`
-                )}
+                overlay={renderTooltip(`Sil ${category}`)}
               >
                 <div
                   className="sidebar-action-btn delete-btn custom-action-icon"
@@ -1203,7 +1197,6 @@ const Sidebar = ({
       </div>
     );
   };
-
   const renderTripsAccordion = () => {
     const tripData = trips.data || [];
 
@@ -1242,7 +1235,7 @@ const Sidebar = ({
           <Form.Group className="mb-3">
             <Form.Control
               type="text"
-              placeholder="Search trips..."
+              placeholder="Search Trips..."
               value={searchTerms.trips}
               onChange={(e) => handleSearch("trips", e.target.value)}
             />
@@ -1294,7 +1287,7 @@ const Sidebar = ({
               );
             })
           ) : (
-            <p className="text-muted text-center">No trips found.</p>
+            <p className="text-muted text-center">Sefer bulunamadı.</p>
           )}
           {renderPagination(trips.total || 0, pageTrips, setPageTrips)}
         </Accordion.Body>
@@ -1312,7 +1305,7 @@ const Sidebar = ({
     };
 
     const getTransferCategory = (transferRule) => {
-      if (!fareDetails.fixed_fares) return "Belirtilmemiş";
+      if (!fareDetails?.fixed_fares) return "Belirtilmemiş";
       const relatedFareRule = fareDetails.fixed_fares.find(
         (rule) =>
           rule.leg_group_id === transferRule.from_leg_group_id ||
@@ -1321,27 +1314,82 @@ const Sidebar = ({
       return relatedFareRule?.rider_category_name || "Belirtilmemiş";
     };
 
+    const handleAddFareClick = async (e) => {
+      e.stopPropagation();
+      if (!selectedEntities.route) {
+        Swal.fire("Hata!", "Lütfen önce bir hat seçin.", "error");
+        return;
+      }
+      try {
+        // Seçili rota için ücret detaylarını al
+        const fareResponse = await fetchDetailedFareForRoute(
+          selectedEntities.route.route_id,
+          project_id,
+          token
+        );
+        setFareDetails(fareResponse || null);
+        setShowFloatingFareForms(true);
+        setShowFareSettings(false);
+        setSelectedCategory("fare");
+        setActiveKey("6");
+      } catch (error) {
+        console.error("Ücret detayları alınamadı:", error);
+        Swal.fire("Hata!", "Ücret detayları yüklenemedi.", "error");
+      }
+    };
+
+    const handleSettingsClick = (e) => {
+      e.stopPropagation();
+      setShowFareSettings(true);
+    };
+
     return (
       <Accordion.Item eventKey="6">
         <Accordion.Header>
           <CashStack size={20} className="me-2" /> Fares
           {selectedEntities.route && (
-            <div className="overlay-trigger-wrapper">
-              <OverlayTrigger
-                placement="top"
-                overlay={renderTooltip("Add Fares")}
-              >
-                <div
-                  className="sidebar-action-btn add-btn custom-action-icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowFloatingFareForms(true);
-                  }}
+            <>
+              <div className="overlay-trigger-wrapper">
+                <OverlayTrigger
+                  placement="top"
+                  overlay={renderTooltip("Add Fares")}
                 >
-                  <PlusLg size={16} />
-                </div>
-              </OverlayTrigger>
-            </div>
+                  <div
+                    className="sidebar-action-btn add-btn custom-action-icon"
+                    onClick={handleAddFareClick}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        handleAddFareClick(e);
+                      }
+                    }}
+                  >
+                    <PlusLg size={16} />
+                  </div>
+                </OverlayTrigger>
+              </div>
+              <div className="overlay-trigger-wrapper">
+                <OverlayTrigger
+                  placement="top"
+                  overlay={renderTooltip("Other Fares")}
+                >
+                  <div
+                    className="sidebar-action-btn settings-btn custom-action-icon"
+                    onClick={handleSettingsClick}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        handleSettingsClick(e);
+                      }
+                    }}
+                  >
+                    <Gear size={16} />
+                  </div>
+                </OverlayTrigger>
+              </div>
+            </>
           )}
         </Accordion.Header>
         <Accordion.Body>
@@ -1568,7 +1616,7 @@ const Sidebar = ({
                               {rule.duration_limit_type || "Belirtilmemiş"}
                             </div>
                             <div className="mb-1">
-                              <strong>Transfer Türü:</strong>
+                              <strong>Transfer Türü:</strong>{" "}
                               {rule.fare_transfer_type || "Belirtilmemiş"}
                             </div>
                           </div>
@@ -1587,10 +1635,7 @@ const Sidebar = ({
                 <p className="text-muted">
                   Bu hat için ücret bilgisi bulunamadı.
                 </p>
-                <Button
-                  variant="primary"
-                  onClick={() => handleSelectionChange("fare", {})}
-                >
+                <Button variant="primary" onClick={handleAddFareClick}>
                   Ücret Kuralı Ekle
                 </Button>
               </div>
@@ -1623,7 +1668,7 @@ const Sidebar = ({
               <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
-                  placeholder="Search agencies..."
+                  placeholder="Search Agencies..."
                   value={searchTerms.agencies}
                   onChange={(e) => handleSearch("agencies", e.target.value)}
                 />
@@ -1650,7 +1695,7 @@ const Sidebar = ({
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">No agencies found.</p>
+                <p className="text-muted text-center">Acente bulunamadı.</p>
               )}
               {renderPagination(agencies.total, pageAgencies, setPageAgencies)}
             </Accordion.Body>
@@ -1665,7 +1710,7 @@ const Sidebar = ({
               <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
-                  placeholder="Search routes..."
+                  placeholder="Search Routes..."
                   value={searchTerms.routes}
                   onChange={(e) => handleSearch("routes", e.target.value)}
                 />
@@ -1699,8 +1744,8 @@ const Sidebar = ({
               ) : (
                 <p className="text-muted text-center">
                   {selectedEntities.agency
-                    ? "No routes found."
-                    : "Select an agency first."}
+                    ? "Hat bulunamadı."
+                    : "Önce bir acente seçin."}
                 </p>
               )}
               {renderPagination(routes.total, pageRoutes, setPageRoutes)}
@@ -1735,7 +1780,7 @@ const Sidebar = ({
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">No calendars found.</p>
+                <p className="text-muted text-center">Calendar is not found.</p>
               )}
               {renderPagination(
                 calendars.total || 0,
@@ -1758,7 +1803,7 @@ const Sidebar = ({
               <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
-                  placeholder="Search stops by name..."
+                  placeholder="Search Stops..."
                   value={searchTerms.stops}
                   onChange={(e) => handleSearch("stops", e.target.value)}
                 />
@@ -1809,8 +1854,8 @@ const Sidebar = ({
               ) : (
                 <p className="text-muted text-center">
                   {selectedEntities.trip
-                    ? "No stops found."
-                    : "All stops in the project."}
+                    ? "Durak bulunamadı."
+                    : "Projedeki tüm duraklar."}
                 </p>
               )}
               {renderPagination(stopsAndTimes.length, pageStops, setPageStops)}
@@ -1843,70 +1888,11 @@ const Sidebar = ({
       >
         <List size={30} />
       </span>
-      {showFareForms && (
-        <Overlay
-          show={showFareForms}
-          target={fareButtonRef.current}
-          placement="top"
-          rootClose
-          onHide={() => setShowFareForms(false)}
-        >
-          <Popover id="fare-forms-popover" style={{ maxWidth: "1000px" }}>
-            <Popover.Header as="h3">Ücret Kuralları Ekle</Popover.Header>
-            <Popover.Body>
-              <div className="d-flex gap-3">
-                <FareProductsAddPage
-                  project_id={project_id}
-                  onClose={() => setShowFareForms(false)}
-                  selectedRoute={selectedEntities.route}
-                  fareMediaList={fareMediaList} // Yeni prop
-                  riderCategories={riderCategories} // Yeni prop
-                />
-                <FareMediaAddPage
-                  project_id={project_id}
-                  onClose={() => setShowFareForms(false)}
-                  onAdd={handleAddFareMedia}
-                />
-                <RiderCategoriesAddPage
-                  project_id={project_id}
-                  onClose={() => setShowFareForms(false)}
-                  onAdd={handleAddRiderCategory}
-                />
-              </div>
-
-              <div className="fare-form">
-                <h5>Fare Products</h5>
-                <FareProductsAddPage
-                  project_id={project_id}
-                  onClose={async (updatedFareDetails) => {
-                    setShowFloatingFareForms(false);
-                    if (updatedFareDetails) {
-                      console.log("Updated fareDetails:", updatedFareDetails);
-                      setFareDetails(updatedFareDetails);
-                    } else if (selectedEntities.route) {
-                      const fareResponse = await fetchDetailedFareForRoute(
-                        selectedEntities.route.route_id,
-                        project_id,
-                        token
-                      );
-                      console.log("Fetched fareResponse:", fareResponse);
-                      setFareDetails(fareResponse || null);
-                    }
-                  }}
-                  selectedRoute={selectedEntities.route}
-                  fareMediaList={fareMediaList} // Yeni prop
-                  riderCategories={riderCategories} // Yeni prop
-                />
-              </div>
-            </Popover.Body>
-          </Popover>
-        </Overlay>
-      )}
       {formConfig && (
         <Modal show onHide={() => setFormConfig(null)}>
           <Modal.Header closeButton>
             <Modal.Title>
-              {formConfig.action === "add" ? "Add" : "Edit"}{" "}
+              {formConfig.action === "add" ? "Ekle" : "Düzenle"}{" "}
               {formConfig.category}
             </Modal.Title>
           </Modal.Header>
@@ -1914,9 +1900,9 @@ const Sidebar = ({
         </Modal>
       )}
       {showFloatingFareForms && (
-        <div className="floating-fare-forms">
+        <div className="floating-fare-forms" key="fare-forms-panel">
           <div className="forms-header">
-            <h4>Add Fare Rules</h4>
+            <h4>Add Fare Products</h4>
             <Button
               variant="link"
               className="close-button"
@@ -1927,45 +1913,34 @@ const Sidebar = ({
           </div>
           <div className="forms-container">
             <div className="fare-form">
-              <h5>Fare Products</h5>
-              <FareProductsAddPage
+              <FareProductsTable
                 project_id={project_id}
-                onClose={async (updatedFareDetails) => {
-                  setShowFloatingFareForms(false);
-                  if (updatedFareDetails) {
-                    console.log("Updated fareDetails:", updatedFareDetails);
-                    setFareDetails(updatedFareDetails);
-                  } else if (selectedEntities.route) {
-                    const fareResponse = await fetchDetailedFareForRoute(
-                      selectedEntities.route.route_id,
-                      project_id,
-                      token
-                    );
-                    console.log("Fetched fareResponse:", fareResponse);
-                    setFareDetails(fareResponse || null);
-                  }
-                }}
+                token={token}
                 selectedRoute={selectedEntities.route}
-              />
-            </div>
-            <div className="fare-form">
-              <h5>Fare Media</h5>
-              <FareMediaAddPage
-                project_id={project_id}
-                onClose={() => setShowFloatingFareForms(false)}
-                onAdd={handleAddFareMedia}
-              />
-            </div>
-            <div className="fare-form">
-              <h5>Rider Categories</h5>
-              <RiderCategoriesAddPage
-                project_id={project_id}
-                onClose={() => setShowFloatingFareForms(false)}
-                onAdd={handleAddRiderCategory}
+                fareProductsRef={fareProductsRef}
+                fareDetails={fareDetails} // Ücret detaylarını geçir
               />
             </div>
           </div>
         </div>
+      )}
+      {showFareSettings && (
+        <FareSettingsPanel
+          project_id={project_id}
+          token={token}
+          show={showFareSettings}
+          onClose={() => setShowFareSettings(false)}
+          onAddRiderCategory={(newCategory) => {
+            if (fareProductsRef.current) {
+              fareProductsRef.current.handleAddRiderCategory(newCategory);
+            }
+          }}
+          onAddFareMedia={(newMedia) => {
+            if (fareProductsRef.current) {
+              fareProductsRef.current.handleAddFareMedia(newMedia);
+            }
+          }}
+        />
       )}
     </div>
   );

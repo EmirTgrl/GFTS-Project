@@ -1,7 +1,7 @@
 const { pool } = require("../db.js");
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Dünya'nın yarıçapı (km)
+  const R = 6371; 
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -11,12 +11,11 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // Mesafe (km)
+  return R * c;
 }
 
 const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
   try {
-    // user_id ve project_id kontrolü
     if (!user_id || !project_id) {
       console.error("Missing user_id or project_id:", { user_id, project_id });
       throw new Error("Kullanıcı kimliği veya proje kimliği eksik.");
