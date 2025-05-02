@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
-import { Modal, Tabs, Tab, Table, Button } from "react-bootstrap";
+import { Modal, Tabs, Tab, Table, Button, Form } from "react-bootstrap";
 import { Pencil, Trash, PlusLg } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
-import { fetchAllRiderCategories, fetchAllFareMedia } from "../../api/fareApi";
+import {
+  fetchAllRiderCategories,
+  fetchAllFareMedia,
+  updateRiderCategory,
+  deleteRiderCategory,
+  updateFareMedia,
+  deleteFareMedia,
+} from "../../api/fareApi";
 import RiderCategoriesAddPage from "../../pages/RiderCategoriesAddPage";
 import FareMediaAddPage from "../../pages/FareMediaAddPage";
 import "../../styles/FareSettingsPanel.css";
@@ -21,6 +28,10 @@ const FareSettingsPanel = ({
   const [activeTab, setActiveTab] = useState("rider_categories");
   const [showRiderForm, setShowRiderForm] = useState(false);
   const [showFareMediaForm, setShowFareMediaForm] = useState(false);
+  const [showEditRiderForm, setShowEditRiderForm] = useState(false);
+  const [showEditFareMediaForm, setShowEditFareMediaForm] = useState(false);
+  const [selectedRiderCategory, setSelectedRiderCategory] = useState(null);
+  const [selectedFareMedia, setSelectedFareMedia] = useState(null);
 
   // Verileri çek
   useEffect(() => {
@@ -31,8 +42,8 @@ const FareSettingsPanel = ({
         const media = await fetchAllFareMedia(project_id, token);
         setFareMedia(media || []);
       } catch (error) {
-        console.error("Veri yüklenirken hata:", error);
-        Swal.fire("Hata", "Veriler yüklenemedi.", "error");
+        console.error("Error while loading data:", error);
+        Swal.fire("Error", "Failed to load data.", "error");
       }
     };
     if (show) {
@@ -44,33 +55,151 @@ const FareSettingsPanel = ({
   const handleAddRiderCategory = (newCategory) => {
     setRiderCategories((prev) => [...prev, newCategory]);
     onAddRiderCategory(newCategory);
-    setShowRiderForm(false); // Formu kapat
-    Swal.fire("Başarılı!", "Yolcu kategorisi eklendi.", "success");
+    setShowRiderForm(false);
+    Swal.fire("Success!", "Passenger category added.", "success");
   };
 
   // Fare Media ekleme
   const handleAddFareMedia = (newMedia) => {
     setFareMedia((prev) => [...prev, newMedia]);
     onAddFareMedia(newMedia);
-    setShowFareMediaForm(false); // Formu kapat
-    Swal.fire("Başarılı!", "Ödeme yöntemi eklendi.", "success");
+    setShowFareMediaForm(false);
+    Swal.fire("Success!", "Payment method added.", "success");
   };
 
-  // fare_media_type'ı Türkçe'ye çeviren yardımcı fonksiyon
+  // Rider Category düzenleme
+  const handleEditRiderCategory = (category) => {
+    setSelectedRiderCategory(category);
+    setShowEditRiderForm(true);
+  };
+
+  const handleUpdateRiderCategory = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const riderCategoryData = {
+      rider_category_name: formData.get("rider_category_name"),
+      is_default_fare_category: formData.get("is_default_fare_category")
+        ? 1
+        : 0,
+      eligibility_url: formData.get("eligibility_url") || null,
+    };
+
+    try {
+      await updateRiderCategory(
+        project_id,
+        token,
+        selectedRiderCategory.rider_category_id,
+        riderCategoryData
+      );
+      const updatedCategories = await fetchAllRiderCategories(
+        project_id,
+        token
+      );
+      setRiderCategories(updatedCategories || []);
+      setShowEditRiderForm(false);
+      Swal.fire("Success!", "Passenger category updated.", "success");
+    } catch (error) {
+      Swal.fire("Error!", error.message, "error");
+    }
+  };
+
+  // Rider Category silme
+  const handleDeleteRiderCategory = async (rider_category_id) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Are you sure you want to delete this passenger category?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete!",
+      cancelButtonText: "No",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteRiderCategory(project_id, token, rider_category_id);
+        const updatedCategories = await fetchAllRiderCategories(
+          project_id,
+          token
+        );
+        setRiderCategories(updatedCategories || []);
+        Swal.fire("Success!", "Passenger category deleted.", "success");
+      } catch (error) {
+        Swal.fire("Error!", error.message, "error");
+      }
+    }
+  };
+
+  // Fare Media düzenleme
+  const handleEditFareMedia = (media) => {
+    setSelectedFareMedia(media);
+    setShowEditFareMediaForm(true);
+  };
+
+  const handleUpdateFareMedia = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const fareMediaData = {
+      fare_media_name: formData.get("fare_media_name"),
+      fare_media_type: parseInt(formData.get("fare_media_type")),
+    };
+
+    try {
+      await updateFareMedia(
+        project_id,
+        token,
+        selectedFareMedia.fare_media_id,
+        fareMediaData
+      );
+      const updatedMedia = await fetchAllFareMedia(project_id, token);
+      setFareMedia(updatedMedia || []);
+      setShowEditFareMediaForm(false);
+      Swal.fire("Success!", "Payment method updated.", "success");
+    } catch (error) {
+      Swal.fire("Error!", error.message, "error");
+    }
+  };
+
+  // Fare Media silme
+  const handleDeleteFareMedia = async (fare_media_id) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Are you sure you want to delete this payment method?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete!",
+      cancelButtonText: "No",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteFareMedia(project_id, token, fare_media_id);
+        const updatedMedia = await fetchAllFareMedia(project_id, token);
+        setFareMedia(updatedMedia || []);
+        Swal.fire("Success!", "The payment method was deleted.", "success");
+      } catch (error) {
+        Swal.fire("Hata!", error.message, "error");
+      }
+    }
+  };
+
   const getFareMediaTypeLabel = (type) => {
     switch (parseInt(type)) {
       case 0:
-        return "Nakit Ödeme";
+        return "Cash Payment";
       case 1:
-        return "Fiziksel Kağıt Bilet";
+        return "Physical Paper Ticket";
       case 2:
-        return "Fiziksel Ulaşım Kart";
+        return "Physical Transit Card";
       case 3:
-        return "Temassız Kart (cEMV)";
+        return "cEMV (contactless Europay, Mastercard and Visa)";
       case 4:
-        return "Mobil Uygulama";
+        return "Mobile App";
       default:
-        return "Bilinmeyen Tür";
+        return "Unknown Type";
     }
   };
 
@@ -131,10 +260,22 @@ const FareSettingsPanel = ({
                         {category.is_default_fare_category ? "Yes" : "No"}
                       </td>
                       <td>
-                        <Button variant="link" disabled title="Edit">
+                        <Button
+                          variant="link"
+                          title="Edit"
+                          onClick={() => handleEditRiderCategory(category)}
+                        >
                           <Pencil size={16} />
                         </Button>
-                        <Button variant="link" disabled title="Delete">
+                        <Button
+                          variant="link"
+                          title="Delete"
+                          onClick={() =>
+                            handleDeleteRiderCategory(
+                              category.rider_category_id
+                            )
+                          }
+                        >
                           <Trash size={16} />
                         </Button>
                       </td>
@@ -143,7 +284,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={4} className="text-center">
-                    Rider category not found.
+                      Rider category not found.
                     </td>
                   </tr>
                 )}
@@ -164,6 +305,51 @@ const FareSettingsPanel = ({
                   onAdd={handleAddRiderCategory}
                   onClose={() => setShowRiderForm(false)}
                 />
+              </Modal.Body>
+            </Modal>
+            <Modal
+              show={showEditRiderForm}
+              onHide={() => setShowEditRiderForm(false)}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Edit Rider Category</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {selectedRiderCategory && (
+                  <Form onSubmit={handleUpdateRiderCategory}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Rider Category Name</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="rider_category_name"
+                        defaultValue={selectedRiderCategory.rider_category_name}
+                        required
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Eligibility URL</Form.Label>
+                      <Form.Control
+                        type="url"
+                        name="eligibility_url"
+                        defaultValue={selectedRiderCategory.eligibility_url}
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Check
+                        type="checkbox"
+                        name="is_default_fare_category"
+                        label="Default Fare Category"
+                        defaultChecked={
+                          selectedRiderCategory.is_default_fare_category
+                        }
+                      />
+                    </Form.Group>
+                    <Button variant="primary" type="submit">
+                      Save Changes
+                    </Button>
+                  </Form>
+                )}
               </Modal.Body>
             </Modal>
           </Tab>
@@ -191,10 +377,20 @@ const FareSettingsPanel = ({
                       <td>{media.fare_media_name}</td>
                       <td>{getFareMediaTypeLabel(media.fare_media_type)}</td>
                       <td>
-                        <Button variant="link" disabled title="Edit">
+                        <Button
+                          variant="link"
+                          title="Edit"
+                          onClick={() => handleEditFareMedia(media)}
+                        >
                           <Pencil size={16} />
                         </Button>
-                        <Button variant="link" disabled title="Delete">
+                        <Button
+                          variant="link"
+                          title="Delete"
+                          onClick={() =>
+                            handleDeleteFareMedia(media.fare_media_id)
+                          }
+                        >
                           <Trash size={16} />
                         </Button>
                       </td>
@@ -203,7 +399,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={3} className="text-center">
-                    Payment method not found.
+                      Payment method not found.
                     </td>
                   </tr>
                 )}
@@ -224,6 +420,48 @@ const FareSettingsPanel = ({
                   onAdd={handleAddFareMedia}
                   onClose={() => setShowFareMediaForm(false)}
                 />
+              </Modal.Body>
+            </Modal>
+            <Modal
+              show={showEditFareMediaForm}
+              onHide={() => setShowEditFareMediaForm(false)}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Edit Payment Method</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {selectedFareMedia && (
+                  <Form onSubmit={handleUpdateFareMedia}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Fare Media Name</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="fare_media_name"
+                        defaultValue={selectedFareMedia.fare_media_name}
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Fare Media Type</Form.Label>
+                      <Form.Select
+                        name="fare_media_type"
+                        defaultValue={selectedFareMedia.fare_media_type}
+                        required
+                      >
+                        <option value="0">Cash Payment</option>
+                        <option value="1">Physical Paper Ticket</option>
+                        <option value="2">Physical Transit Card</option>
+                        <option value="3">
+                          cEMV (contactless Europay, Mastercard and Visa)
+                        </option>
+                        <option value="4">Mobile App</option>
+                      </Form.Select>
+                    </Form.Group>
+                    <Button variant="primary" type="submit">
+                      Save Changes
+                    </Button>
+                  </Form>
+                )}
               </Modal.Body>
             </Modal>
           </Tab>

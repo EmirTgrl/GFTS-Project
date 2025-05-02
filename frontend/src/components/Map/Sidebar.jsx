@@ -145,6 +145,19 @@ const Sidebar = ({
     6: "fare",
   };
 
+  useEffect(() => {
+    if (fareProductsRef.current) {
+      fareProductsRef.current.handleAddFareProduct = (updatedFareDetails) => {
+        console.log(
+          "Sidebar: Güncellenmiş fareDetails alındı (ref):",
+          updatedFareDetails
+        );
+        setFareDetails(updatedFareDetails || null);
+        setExpandedFare(null); // Yeni eklenen/güncellenen ücretleri göstermek için
+      };
+    }
+  }, [fareProductsRef]);
+
   const sortTripsByDeparture = (tripsData) => {
     return [...tripsData].sort((a, b) => {
       const timeA = tripTimes[a.trip_id]?.lastDeparture || "00:00:00";
@@ -1197,6 +1210,7 @@ const Sidebar = ({
       </div>
     );
   };
+
   const renderTripsAccordion = () => {
     const tripData = trips.data || [];
 
@@ -1321,12 +1335,12 @@ const Sidebar = ({
         return;
       }
       try {
-        // Seçili rota için ücret detaylarını al
         const fareResponse = await fetchDetailedFareForRoute(
           selectedEntities.route.route_id,
           project_id,
           token
         );
+        console.log("Sidebar: handleAddFareClick fareResponse:", fareResponse);
         setFareDetails(fareResponse || null);
         setShowFloatingFareForms(true);
         setShowFareSettings(false);
@@ -1352,7 +1366,7 @@ const Sidebar = ({
               <div className="overlay-trigger-wrapper">
                 <OverlayTrigger
                   placement="top"
-                  overlay={renderTooltip("Add Fares")}
+                  overlay={<Tooltip id="tooltip">Add Fare</Tooltip>}
                 >
                   <div
                     className="sidebar-action-btn add-btn custom-action-icon"
@@ -1372,7 +1386,7 @@ const Sidebar = ({
               <div className="overlay-trigger-wrapper">
                 <OverlayTrigger
                   placement="top"
-                  overlay={renderTooltip("Other Fares")}
+                  overlay={<Tooltip id="tooltip">Other Fares</Tooltip>}
                 >
                   <div
                     className="sidebar-action-btn settings-btn custom-action-icon"
@@ -1398,24 +1412,27 @@ const Sidebar = ({
               <div>
                 {/* Hat Bilgileri */}
                 <div className="mb-4 border-bottom pb-2">
-                  <h6 className="mb-3">Hat Bilgileri</h6>
+                  <h6 className="mb-3">Route Info</h6>
                   <div className="mb-2">
-                    <strong>Hat:</strong>{" "}
-                    {fareDetails.route_name || "Belirtilmemiş"}
+                    <strong>Route:</strong>{" "}
+                    {fareDetails.route_name || "Unspecified"}
                   </div>
                   <div className="mb-2">
-                    <strong>Ağ:</strong>{" "}
-                    {fareDetails.network_name || "Bilinmeyen Ağ"}
+                    <strong>Network:</strong>{" "}
+                    {fareDetails.network_name || "Unknown Network"}
                   </div>
                 </div>
 
                 {/* İndi-Bindi Ücretlendirme */}
                 <div className="mb-4">
-                  <h6 className="mb-3">Normal Ücretlendirme</h6>
+                  <h6 className="mb-3">Normal Pricing</h6>
                   {fareDetails.fixed_fares &&
                   fareDetails.fixed_fares.length > 0 ? (
                     fareDetails.fixed_fares.map((fare, index) => (
-                      <div key={index} className="mb-2">
+                      <div
+                        key={fare.fare_product_id || `fixed-fare-${index}`}
+                        className="mb-2"
+                      >
                         <Card
                           className="fare-card"
                           onClick={() => toggleFareExpand(index)}
@@ -1428,7 +1445,7 @@ const Sidebar = ({
                           <Card.Body className="p-2 d-flex justify-content-between align-items-center">
                             <div>
                               <strong>
-                                {fare.rider_category_name || "Belirtilmemiş"}
+                                {fare.rider_category_name || "Unspecified"}
                               </strong>{" "}
                               -{" "}
                               {fare.amount
@@ -1453,14 +1470,14 @@ const Sidebar = ({
                             }}
                           >
                             <div className="mb-1">
-                              <strong>Ödeme Yöntemi:</strong>{" "}
-                              {fare.fare_media_name || "Belirtilmemiş"}
+                              <strong>Payment Method:</strong>{" "}
+                              {fare.fare_media_name || "Unspecified"}
                             </div>
                             <div className="mb-1">
-                              <strong>Zaman Aralığı:</strong>{" "}
+                              <strong>Timeframe:</strong>{" "}
                               {fare.start_time && fare.end_time
                                 ? `${fare.start_time} - ${fare.end_time}`
-                                : "Tüm gün"}
+                                : "All Day"}
                             </div>
                           </div>
                         </Collapse>
@@ -1468,7 +1485,7 @@ const Sidebar = ({
                     ))
                   ) : (
                     <p className="text-muted mb-0">
-                      Bu hat için indi-bindi ücret kuralı tanımlanmamış.
+                      Stopover fare rule is not defined for this line..
                     </p>
                   )}
                 </div>
@@ -1476,12 +1493,15 @@ const Sidebar = ({
                 {/* Mesafeye Dayalı Ücretlendirme */}
                 <div className="mb-4">
                   <h6 className="mb-3">
-                    Mesafeye Dayalı Ücretlendirme (Gittiğin Kadar Öde)
+                  Distance Based Pricing (Pay As You Go)
                   </h6>
                   {fareDetails.distance_based_fares &&
                   fareDetails.distance_based_fares.length > 0 ? (
                     fareDetails.distance_based_fares.map((fare, index) => (
-                      <div key={index} className="mb-2">
+                      <div
+                        key={fare.fare_product_id || `distance-fare-${index}`}
+                        className="mb-2"
+                      >
                         <Card
                           className="fare-card"
                           onClick={() => toggleFareExpand(`distance-${index}`)}
@@ -1494,14 +1514,14 @@ const Sidebar = ({
                           <Card.Body className="p-2 d-flex justify-content-between align-items-center">
                             <div>
                               <strong>
-                                {fare.rider_category_name || "Belirtilmemiş"}
+                                {fare.rider_category_name || "Unspecified"}
                               </strong>{" "}
                               -{" "}
                               {fare.amount
                                 ? `${fare.amount} ${fare.currency}`
                                 : "N/A"}{" "}
-                              ({fare.from_area_name || "Belirtilmemiş"} →{" "}
-                              {fare.to_area_name || "Belirtilmemiş"})
+                              ({fare.from_area_name || "Unspecified"} →{" "}
+                              {fare.to_area_name || "Unspecified"})
                             </div>
                             {expandedFare === `distance-${index}` ? (
                               <ChevronUp size={16} />
@@ -1521,20 +1541,19 @@ const Sidebar = ({
                             }}
                           >
                             <div className="mb-1">
-                              <strong>Ücret Ürünü:</strong>{" "}
+                              <strong>Fare Product:</strong>{" "}
                               {fare.fare_product_name || "Belirtilmemiş"}
                             </div>
                             <div className="mb-1">
-                              <strong>Başlangıç Alanı:</strong>{" "}
+                              <strong>Starting Area:</strong>{" "}
                               {fare.from_area_name || "Belirtilmemiş"}
                             </div>
                             <div className="mb-1">
-                              <strong>Bitiş Alanı:</strong>{" "}
+                              <strong>Ending Area:</strong>{" "}
                               {fare.to_area_name || "Belirtilmemiş"}
                             </div>
                             <div className="mb-1">
-                              <strong>Not:</strong> Bu ücret, gidilen mesafeye
-                              göre hesaplanır.
+                              <strong>Note:</strong> This fare is calculated according to the distance traveled.
                             </div>
                           </div>
                         </Collapse>
@@ -1542,18 +1561,18 @@ const Sidebar = ({
                     ))
                   ) : (
                     <p className="text-muted mb-0">
-                      Bu hat için mesafeye dayalı ücret kuralı tanımlanmamış.
+                      Distance based fare rule is not defined for this line..
                     </p>
                   )}
                 </div>
 
                 {/* Transfer Ücret Kuralları */}
                 <div className="mb-4">
-                  <h6 className="mb-3">Transfer Ücret Kuralları</h6>
+                  <h6 className="mb-3">Transfer Fare Rules</h6>
                   {fareDetails.transfer_rules &&
                   fareDetails.transfer_rules.length > 0 ? (
                     fareDetails.transfer_rules.map((rule, index) => (
-                      <div key={index} className="mb-2">
+                      <div key={`transfer-${index}`} className="mb-2">
                         <Card
                           className="transfer-card"
                           onClick={() => toggleTransferExpand(index)}
@@ -1568,7 +1587,7 @@ const Sidebar = ({
                               <strong>{getTransferCategory(rule)}</strong> -{" "}
                               {rule.transfer_amount
                                 ? `${rule.transfer_amount} ${rule.transfer_currency}`
-                                : "Ücretsiz"}
+                                : "Free"}
                             </div>
                             {expandedTransfer === index ? (
                               <ChevronUp size={16} />
@@ -1588,36 +1607,36 @@ const Sidebar = ({
                             }}
                           >
                             <div className="mb-1">
-                              <strong>Nereden:</strong>{" "}
-                              {`${rule.from_network_name || "Belirtilmemiş"} (${
-                                rule.from_stop_name || "Bilinmeyen Durak"
+                              <strong>From:</strong>{" "}
+                              {`${rule.from_network_name || "Unspecified"} (${
+                                rule.from_stop_name || "Unknown Stop"
                               } → ${
-                                rule.from_to_stop_name || "Bilinmeyen Durak"
+                                rule.from_to_stop_name || "Unknown Stop"
                               })`}
                             </div>
                             <div className="mb-1">
-                              <strong>Nereye:</strong>{" "}
-                              {`${rule.to_network_name || "Belirtilmemiş"} (${
-                                rule.to_from_stop_name || "Bilinmeyen Durak"
-                              } → ${rule.to_stop_name || "Bilinmeyen Durak"})`}
+                              <strong>To:</strong>{" "}
+                              {`${rule.to_network_name || "Unspecified"} (${
+                                rule.to_from_stop_name || "Unknown Stop"
+                              } → ${rule.to_stop_name || "Unknown Stop"})`}
                             </div>
                             <div className="mb-1">
-                              <strong>Transfer Sayısı:</strong>{" "}
+                              <strong>Transfer Count:</strong>{" "}
                               {rule.transfer_count || "1"}
                             </div>
                             <div className="mb-1">
-                              <strong>Süre Limiti:</strong>{" "}
+                              <strong>Time Limit:</strong>{" "}
                               {rule.duration_limit
-                                ? `${rule.duration_limit / 60} dakika`
+                                ? `${rule.duration_limit / 60} minutes`
                                 : "Sınırsız"}
                             </div>
                             <div className="mb-1">
-                              <strong>Süre Türü:</strong>{" "}
-                              {rule.duration_limit_type || "Belirtilmemiş"}
+                              <strong>Time Type:</strong>{" "}
+                              {rule.duration_limit_type || "Unspecified"}
                             </div>
                             <div className="mb-1">
-                              <strong>Transfer Türü:</strong>{" "}
-                              {rule.fare_transfer_type || "Belirtilmemiş"}
+                              <strong>Transfer Type:</strong>{" "}
+                              {rule.fare_transfer_type || "Unspecified"}
                             </div>
                           </div>
                         </Collapse>
@@ -1625,7 +1644,7 @@ const Sidebar = ({
                     ))
                   ) : (
                     <p className="text-muted mb-0">
-                      Bu hat için transfer kuralı tanımlanmamış.
+                      No transfer rule has been defined for this route.
                     </p>
                   )}
                 </div>
@@ -1633,15 +1652,15 @@ const Sidebar = ({
             ) : (
               <div>
                 <p className="text-muted">
-                  Bu hat için ücret bilgisi bulunamadı.
+                No pricing information found for this route.
                 </p>
                 <Button variant="primary" onClick={handleAddFareClick}>
-                  Ücret Kuralı Ekle
+                  Add Fare Rule
                 </Button>
               </div>
             )
           ) : (
-            <p className="text-muted text-center">Lütfen bir hat seçin.</p>
+            <p className="text-muted text-center">Please select a route.</p>
           )}
         </Accordion.Body>
       </Accordion.Item>
@@ -1780,7 +1799,7 @@ const Sidebar = ({
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">Calendar is not found.</p>
+                <p className="text-muted text-center">Takvim bulunamadı.</p>
               )}
               {renderPagination(
                 calendars.total || 0,
@@ -1918,11 +1937,37 @@ const Sidebar = ({
                 token={token}
                 selectedRoute={selectedEntities.route}
                 fareProductsRef={fareProductsRef}
-                fareDetails={fareDetails} // Ücret detaylarını geçir
+                fareDetails={fareDetails}
+                onFareUpdate={(updatedFareDetails) => {
+                  console.log(
+                    "Sidebar: FareProductsTable onFareUpdate çağrıldı:",
+                    updatedFareDetails
+                  );
+                  setFareDetails(updatedFareDetails || null);
+                  setExpandedFare(null);
+                }}
               />
             </div>
           </div>
         </div>
+      )}
+      {showFareSettings && (
+        <FareSettingsPanel
+          project_id={project_id}
+          token={token}
+          show={showFareSettings}
+          onClose={() => setShowFareSettings(false)}
+          onAddRiderCategory={(newCategory) => {
+            if (fareProductsRef.current) {
+              fareProductsRef.current.handleAddRiderCategory(newCategory);
+            }
+          }}
+          onAddFareMedia={(newMedia) => {
+            if (fareProductsRef.current) {
+              fareProductsRef.current.handleAddFareMedia(newMedia);
+            }
+          }}
+        />
       )}
       {showFareSettings && (
         <FareSettingsPanel

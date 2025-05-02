@@ -125,9 +125,6 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? "Adding..." : "Add"}
           </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
         </div>
       </form>
     </div>

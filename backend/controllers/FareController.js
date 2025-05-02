@@ -233,6 +233,198 @@ const addRiderCategory = async (req, res) => {
   }
 };
 
+// Ücret ürününü güncelle
+const updateFareProduct = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { fare_product_id } = req.params;
+  const {
+    fare_product_name,
+    amount,
+    currency,
+    rider_category_id,
+    fare_media_id,
+  } = req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!fare_product_name || amount == null || !currency) {
+    return res.status(400).json({
+      message: "fare_product_name, amount ve currency zorunlu.",
+    });
+  }
+
+  try {
+    const result = await fareService.updateFareProduct(
+      user_id,
+      project_id,
+      fare_product_id,
+      fare_product_name,
+      amount,
+      currency,
+      rider_category_id,
+      fare_media_id
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("updateFareProduct error:", error.message);
+    res.status(400).json({
+      message: `Ücret ürünü güncellenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Ücret ürününü sil
+const deleteFareProduct = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.body; // DELETE için body'den alıyoruz
+  const { fare_product_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  try {
+    const result = await fareService.deleteFareProduct(
+      user_id,
+      project_id,
+      fare_product_id
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("deleteFareProduct error:", error.message);
+    res.status(400).json({
+      message: `Ücret ürünü silinemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Ödeme yöntemini güncelle
+const updateFareMedia = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { fare_media_id } = req.params;
+  const { fare_media_name, fare_media_type } = req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!fare_media_name || fare_media_type == null) {
+    return res
+      .status(400)
+      .json({ message: "fare_media_name ve fare_media_type zorunlu." });
+  }
+
+  try {
+    const result = await fareService.updateFareMedia(
+      user_id,
+      project_id,
+      fare_media_id,
+      fare_media_name,
+      fare_media_type
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("updateFareMedia error:", error.message);
+    res.status(400).json({
+      message: `Ödeme yöntemi güncellenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Ödeme yöntemini sil
+const deleteFareMedia = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.body; // DELETE için body'den alıyoruz
+  const { fare_media_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  try {
+    const result = await fareService.deleteFareMedia(
+      user_id,
+      project_id,
+      fare_media_id
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("deleteFareMedia error:", error.message);
+    res.status(400).json({
+      message: `Ödeme yöntemi silinemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Yolcu kategorisini güncelle
+const updateRiderCategory = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { rider_category_id } = req.params;
+  const { rider_category_name, is_default_fare_category, eligibility_url } =
+    req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!rider_category_name) {
+    return res.status(400).json({ message: "rider_category_name zorunlu." });
+  }
+
+  try {
+    const result = await fareService.updateRiderCategory(
+      user_id,
+      project_id,
+      rider_category_id,
+      rider_category_name,
+      is_default_fare_category || 0,
+      eligibility_url
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("updateRiderCategory error:", error.message);
+    res.status(400).json({
+      message: `Yolcu kategorisi güncellenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Yolcu kategorisini sil
+const deleteRiderCategory = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.body; // DELETE için body'den alıyoruz
+  const { rider_category_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  try {
+    const result = await fareService.deleteRiderCategory(
+      user_id,
+      project_id,
+      rider_category_id
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("deleteRiderCategory error:", error.message);
+    res.status(400).json({
+      message: `Yolcu kategorisi silinemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
 // RESTful rotalar
 router.get("/route/:route_id", getFareDetailsForRoute);
 router.get("/products", getFareProducts);
@@ -242,5 +434,11 @@ router.get("/networks", getNetworks);
 router.post("/products", addFareProduct);
 router.post("/media", addFareMedia);
 router.post("/categories", addRiderCategory);
+router.put("/products/:fare_product_id", updateFareProduct);
+router.delete("/products/:fare_product_id", deleteFareProduct);
+router.put("/media/:fare_media_id", updateFareMedia);
+router.delete("/media/:fare_media_id", deleteFareMedia);
+router.put("/categories/:rider_category_id", updateRiderCategory);
+router.delete("/categories/:rider_category_id", deleteRiderCategory);
 
 module.exports = router;

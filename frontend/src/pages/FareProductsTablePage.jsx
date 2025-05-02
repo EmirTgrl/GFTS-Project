@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Button, Table, Form } from "react-bootstrap";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
+import { Trash } from "react-bootstrap-icons";
 import {
   fetchAllFareMedia,
   fetchAllRiderCategories,
   addFareProduct,
-  // updateFareProduct,
+  updateFareProduct,
+  deleteFareProduct,
   fetchDetailedFareForRoute,
 } from "../api/fareApi";
 
@@ -16,6 +18,7 @@ const FareProductsTable = ({
   selectedRoute,
   fareProductsRef,
   fareDetails,
+  onFareUpdate, // Yeni prop
 }) => {
   const [fareMediaList, setFareMediaList] = useState([]);
   const [riderCategories, setRiderCategories] = useState([]);
@@ -38,9 +41,6 @@ const FareProductsTable = ({
         setRiderCategories(riderCategoriesData || []);
 
         // Mevcut fiyatları fareDetails'dan al ve prices state'ine set et
-        console.log("fareDetails:", fareDetails); // Hata ayıklama için
-        console.log("riderCategories:", riderCategoriesData); // Hata ayıklama için
-        console.log("fareMediaList:", fareMediaData); // Hata ayıklama için
         if (fareDetails?.fixed_fares?.length > 0) {
           const initialPrices = {};
           fareDetails.fixed_fares.forEach((fare) => {
@@ -56,7 +56,7 @@ const FareProductsTable = ({
                 riderCategoryId = matchingCategory.rider_category_id;
               } else {
                 console.warn(
-                  `Rider category name "${fare.rider_category_name}" için eşleşen ID bulunamadı.`
+                  `No matching ID found for Rider category name "${fare.rider_category_name}".`
                 );
               }
             }
@@ -79,18 +79,12 @@ const FareProductsTable = ({
             if (riderCategoryId && fareMediaId && fare.amount) {
               const key = `${riderCategoryId}_${fareMediaId}`;
               initialPrices[key] = fare.amount.toString();
-            } else {
-              console.warn(
-                `Price could not be added: rider_category_id=${riderCategoryId}, fare_media_id=${fareMediaId}, amount=${fare.amount}`
-              );
             }
           });
-          console.log("initialPrices:", initialPrices); // Hata ayıklama için
           setPrices(initialPrices);
           setCurrency(fareDetails.fixed_fares[0]?.currency || "TRY");
         } else {
           setPrices({});
-          console.log("No fixed fares found in fareDetails");
         }
       } catch (error) {
         console.error("Error while loading data:", error);
@@ -103,10 +97,75 @@ const FareProductsTable = ({
   // Fiyat input'larını güncelleme
   const handlePriceChange = (riderCategoryId, fareMediaId, value) => {
     const key = `${riderCategoryId}_${fareMediaId}`;
+    const sanitizedValue = value.replace(/[^0-9.]/g, ""); // Sadece sayı ve nokta
     setPrices((prev) => ({
       ...prev,
-      [key]: value,
+      [key]: sanitizedValue,
     }));
+  };
+
+  // Fare ürünü silme
+  const handleDeleteFareProduct = async (riderCategoryId, fareMediaId) => {
+    const fare = fareDetails?.fixed_fares?.find(
+      (f) =>
+        f.rider_category_id === riderCategoryId &&
+        f.fare_media_id === fareMediaId
+    );
+    if (!fare) {
+      Swal.fire("Error!", "No fare found to delete.", "error");
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `"Are you sure you want to delete the fare "${fare.rider_category_name} - ${fare.fare_media_name}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, delete!",
+      cancelButtonText: "No, cancel",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteFareProduct(project_id, token, fare.fare_product_id);
+
+        // Fare detaylarını güncelle
+        const updatedFareDetails = await fetchDetailedFareForRoute(
+          selectedRoute.route_id,
+          project_id,
+          token
+        );
+        if (updatedFareDetails) {
+          // Ref üzerinden Sidebar'a bildir
+          if (fareProductsRef.current?.handleAddFareProduct) {
+            fareProductsRef.current.handleAddFareProduct(updatedFareDetails);
+          }
+          // Callback üzerinden Sidebar'a bildir
+          if (onFareUpdate) {
+            onFareUpdate(updatedFareDetails);
+          }
+        }
+
+        // prices state'inden sil
+        setPrices((prev) => {
+          const newPrices = { ...prev };
+          delete newPrices[`${riderCategoryId}_${fareMediaId}`];
+          return newPrices;
+        });
+
+        Swal.fire("Success!", "Fare successfully deleted.", "success");
+      } catch (error) {
+        console.error("Deleting error:", error);
+        let errorMessage = "An error occurred while deleting the fare.";
+        if (error.message.includes("dependent tables")) {
+          errorMessage =
+            "This fare could not be deleted because it is dependent on other rules. Remove the relevant rules first.";
+        }
+        Swal.fire("Error!", errorMessage, "error");
+      }
+    }
   };
 
   // Kaydetme işlemi
@@ -122,7 +181,7 @@ const FareProductsTable = ({
       for (const media of fareMediaList) {
         const key = `${rider.rider_category_id}_${media.fare_media_id}`;
         const price = prices[key];
-        if (price && !isNaN(price) && parseFloat(price) >= 0) {
+        if (price && !isNaN(price) && parseFloat(price) > 0) {
           validPrices.push({
             rider_category_id: rider.rider_category_id,
             fare_media_id: media.fare_media_id,
@@ -137,7 +196,7 @@ const FareProductsTable = ({
     // Hiç fiyat girilmemişse uyarı göster
     if (validPrices.length === 0) {
       const result = await Swal.fire({
-        title: "No price entered!",
+        title: "Price not entered!",
         text: "Are you sure you want to save without entering any price??",
         icon: "warning",
         showCancelButton: true,
@@ -155,7 +214,7 @@ const FareProductsTable = ({
     // Onay al
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: `Total price of ${validPrices.length} will be saved. Do you want to continue?`,
+      text: `${validPrices.length} prices will be saved. Do you want to continue?`,
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -172,10 +231,8 @@ const FareProductsTable = ({
         for (const price of validPrices) {
           const existingFare = existingFares.find(
             (fare) =>
-              (fare.rider_category_id === price.rider_category_id ||
-                fare.rider_category_name === price.rider_category_name) &&
-              (fare.fare_media_id === price.fare_media_id ||
-                fare.fare_media_name === price.fare_media_name)
+              fare.rider_category_id === price.rider_category_id &&
+              fare.fare_media_id === price.fare_media_id
           );
 
           const payload = {
@@ -202,25 +259,28 @@ const FareProductsTable = ({
         }
 
         // Fare detaylarını güncelle
-        if (selectedRoute?.route_id) {
-          const updatedFareDetails = await fetchDetailedFareForRoute(
-            selectedRoute.route_id,
-            project_id,
-            token
-          );
-          if (updatedFareDetails && fareProductsRef.current) {
+        const updatedFareDetails = await fetchDetailedFareForRoute(
+          selectedRoute.route_id,
+          project_id,
+          token
+        );
+        if (updatedFareDetails) {
+          // Ref üzerinden Sidebar'a bildir
+          if (fareProductsRef.current?.handleAddFareProduct) {
             fareProductsRef.current.handleAddFareProduct(updatedFareDetails);
+          }
+          // Callback üzerinden Sidebar'a bildir
+          if (onFareUpdate) {
+            onFareUpdate(updatedFareDetails);
           }
         }
 
         Swal.fire("Success!", "Prices saved successfully.", "success");
       } catch (error) {
-        console.error("Saving Error:", error);
+        console.error("Saving error:", error);
         Swal.fire(
           "Error!",
-          `An error occurred while saving prices.: ${
-            error.message || "An unknown error occurred."
-          }`,
+          `An error occurred while saving prices: ${error.message}`,
           "error"
         );
       }
@@ -229,45 +289,33 @@ const FareProductsTable = ({
 
   // Fare Media veya Rider Category eklendiğinde güncelle
   const handleAddFareMedia = (newMedia) => {
-    if (newMedia && newMedia.fare_media_id && newMedia.fare_media_name) {
-      setFareMediaList((prev) => {
-        const updatedList = [...prev, newMedia];
-        return updatedList.filter(
-          (item, index, self) =>
-            index ===
-            self.findIndex((t) => t.fare_media_id === item.fare_media_id)
-        ); // Tekrarları önle
-      });
+    if (newMedia?.fare_media_id && newMedia.fare_media_name) {
+      setFareMediaList((prev) => [
+        ...prev.filter((m) => m.fare_media_id !== newMedia.fare_media_id),
+        newMedia,
+      ]);
     } else {
       fetchAllFareMedia(project_id, token)
         .then((data) => setFareMediaList(data || []))
         .catch((error) =>
-          console.error("Error while renewing payment methods:", error)
+          console.error("Error while refreshing payment methods:", error)
         );
     }
   };
 
   const handleAddRiderCategory = (newCategory) => {
-    if (
-      newCategory &&
-      newCategory.rider_category_id &&
-      newCategory.rider_category_name
-    ) {
-      setRiderCategories((prev) => {
-        const updatedList = [...prev, newCategory];
-        return updatedList.filter(
-          (item, index, self) =>
-            index ===
-            self.findIndex(
-              (t) => t.rider_category_id === item.rider_category_id
-            )
-        ); // Tekrarları önle
-      });
+    if (newCategory?.rider_category_id && newCategory.rider_category_name) {
+      setRiderCategories((prev) => [
+        ...prev.filter(
+          (c) => c.rider_category_id !== newCategory.rider_category_id
+        ),
+        newCategory,
+      ]);
     } else {
       fetchAllRiderCategories(project_id, token)
         .then((data) => setRiderCategories(data || []))
         .catch((error) =>
-          console.error("Error while refreshing rider categories:", error)
+          console.error("Error while refreshing passenger categories:", error)
         );
     }
   };
@@ -278,7 +326,6 @@ const FareProductsTable = ({
       handleAddFareMedia,
       handleAddRiderCategory,
       handleAddFareProduct: (updatedFareDetails) => {
-        console.log("Updated fareDetails:", updatedFareDetails); // Hata ayıklama için
         if (updatedFareDetails?.fixed_fares?.length > 0) {
           const updatedPrices = {};
           updatedFareDetails.fixed_fares.forEach((fare) => {
@@ -310,7 +357,6 @@ const FareProductsTable = ({
               updatedPrices[key] = fare.amount.toString();
             }
           });
-          console.log("Updated prices:", updatedPrices); // Hata ayıklama için
           setPrices(updatedPrices);
           setCurrency(updatedFareDetails.fixed_fares[0]?.currency || "TRY");
         } else {
@@ -324,8 +370,8 @@ const FareProductsTable = ({
     <div className="fare-products-table">
       {fareMediaList.length === 0 || riderCategories.length === 0 ? (
         <div className="alert alert-warning">
-          Please first define the Payment Method and Rider Categories in Other
-          Fare Settings.
+          Please first define Payment Methods and Passenger Categories in Other
+          Fares.
         </div>
       ) : (
         <>
@@ -345,9 +391,14 @@ const FareProductsTable = ({
           <Table bordered responsive>
             <thead>
               <tr>
-                <th>Rider Category / Payment Method</th>
+                <th style={{ width: "25%" }}>
+                  Rider Category / Payment Method
+                </th>
                 {fareMediaList.map((media) => (
-                  <th key={media.fare_media_id}>
+                  <th
+                    key={media.fare_media_id}
+                    style={{ width: `${75 / fareMediaList.length}%` }}
+                  >
                     {media.fare_media_name || "Unknown"}
                   </th>
                 ))}
@@ -359,22 +410,44 @@ const FareProductsTable = ({
                   <td>{rider.rider_category_name || "Unknown"}</td>
                   {fareMediaList.map((media) => {
                     const key = `${rider.rider_category_id}_${media.fare_media_id}`;
+                    const fare = fareDetails?.fixed_fares?.find(
+                      (f) =>
+                        f.rider_category_id === rider.rider_category_id &&
+                        f.fare_media_id === media.fare_media_id
+                    );
                     return (
                       <td key={media.fare_media_id}>
-                        <Form.Control
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={prices[key] || ""}
-                          onChange={(e) =>
-                            handlePriceChange(
-                              rider.rider_category_id,
-                              media.fare_media_id,
-                              e.target.value
-                            )
-                          }
-                          placeholder="Enter price"
-                        />
+                        <div className="d-flex align-items-center">
+                          <Form.Control
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={prices[key] || ""}
+                            onChange={(e) =>
+                              handlePriceChange(
+                                rider.rider_category_id,
+                                media.fare_media_id,
+                                e.target.value
+                              )
+                            }
+                            placeholder="Enter Price"
+                            style={{ width: "100px", marginRight: "8px" }}
+                          />
+                          {fare && (
+                            <Button
+                              variant="link"
+                              className="p-0"
+                              onClick={() =>
+                                handleDeleteFareProduct(
+                                  rider.rider_category_id,
+                                  media.fare_media_id
+                                )
+                              }
+                            >
+                              <Trash size={16} color="#dc3545" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     );
                   })}
@@ -414,6 +487,7 @@ FareProductsTable.propTypes = {
       })
     ),
   }),
+  onFareUpdate: PropTypes.func, // Yeni prop
 };
 
 export default FareProductsTable;

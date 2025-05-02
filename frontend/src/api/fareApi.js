@@ -1,4 +1,3 @@
-// fareApi.js
 const API_BASE_URL = "http://localhost:5000/api/fares";
 
 // 1. Fare verilerini rota için detaylı al
@@ -196,6 +195,7 @@ export const addRiderCategory = async (
   return response.json();
 };
 
+// 9. Rota için ücret oluştur
 export const createFareForRoute = async (
   project_id,
   route_id,
@@ -232,6 +232,177 @@ export const createFareForRoute = async (
     const errorData = await response.json();
     console.error("createFareForRoute error:", errorData);
     throw new Error(errorData.message || "Ücret oluşturulamadı.");
+  }
+
+  return response.json();
+};
+
+// 10. Ücret ürününü güncelle
+export const updateFareProduct = async (
+  project_id,
+  token,
+  fare_product_id,
+  fareProductData
+) => {
+  const response = await fetch(
+    `${API_BASE_URL}/products/${fare_product_id}?project_id=${project_id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fare_product_name: fareProductData.fare_product_name,
+        amount: parseFloat(fareProductData.amount),
+        currency: fareProductData.currency,
+        rider_category_id: fareProductData.rider_category_id || null,
+        fare_media_id: fareProductData.fare_media_id || null,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("updateFareProduct error:", errorData);
+    throw new Error(errorData.message || "Ücret ürünü güncellenemedi.");
+  }
+
+  return response.json();
+};
+
+// 11. Ücret ürününü sil
+export const deleteFareProduct = async (project_id, token, fare_product_id) => {
+  const response = await fetch(
+    `${API_BASE_URL}/products/${fare_product_id}?project_id=${project_id}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ project_id }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("deleteFareProduct error:", errorData);
+    throw new Error(errorData.message || "Ücret ürünü silinemedi.");
+  }
+
+  return response.json();
+};
+
+// 12. Ödeme yöntemini güncelle
+export const updateFareMedia = async (
+  project_id,
+  token,
+  fare_media_id,
+  fareMediaData
+) => {
+  const response = await fetch(
+    `${API_BASE_URL}/media/${fare_media_id}?project_id=${project_id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fare_media_name: fareMediaData.fare_media_name,
+        fare_media_type: fareMediaData.fare_media_type,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("updateFareMedia error:", errorData);
+    throw new Error(errorData.message || "Ödeme yöntemi güncellenemedi.");
+  }
+
+  return response.json();
+};
+
+// 13. Ödeme yöntemini sil
+export const deleteFareMedia = async (project_id, token, fare_media_id) => {
+  const response = await fetch(
+    `${API_BASE_URL}/media/${fare_media_id}?project_id=${project_id}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ project_id }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("deleteFareMedia error:", errorData);
+    throw new Error(errorData.message || "Ödeme yöntemi silinemedi.");
+  }
+
+  return response.json();
+};
+
+// 14. Yolcu kategorisini güncelle
+export const updateRiderCategory = async (
+  project_id,
+  token,
+  rider_category_id,
+  riderCategoryData
+) => {
+  const response = await fetch(
+    `${API_BASE_URL}/categories/${rider_category_id}?project_id=${project_id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        rider_category_name: riderCategoryData.rider_category_name,
+        is_default_fare_category:
+          riderCategoryData.is_default_fare_category || 0,
+        eligibility_url: riderCategoryData.eligibility_url || null,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("updateRiderCategory error:", errorData);
+    throw new Error(errorData.message || "Yolcu kategorisi güncellenemedi.");
+  }
+
+  return response.json();
+};
+
+// 15. Yolcu kategorisini sil
+export const deleteRiderCategory = async (
+  project_id,
+  token,
+  rider_category_id
+) => {
+  const response = await fetch(
+    `${API_BASE_URL}/categories/${rider_category_id}?project_id=${project_id}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ project_id }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("deleteRiderCategory error:", errorData);
+    throw new Error(errorData.message || "Yolcu kategorisi silinemedi.");
   }
 
   return response.json();

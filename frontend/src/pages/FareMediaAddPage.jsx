@@ -85,7 +85,6 @@ const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
             name="fare_media_name"
             value={formData.fare_media_name}
             onChange={handleChange}
-            required
           />
         </div>
         <div className="mb-2">
@@ -110,9 +109,6 @@ const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? "Adding..." : "Add"}
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            Close
           </button>
         </div>
       </form>
