@@ -198,7 +198,7 @@ const ImportPage = () => {
 
                 <Form onSubmit={handleUpload}>
                   {error && (
-                    <Alert variant="danger" className="py-2 small">
+                    <Alert variant="success" className="py-2 small">
                       {error}
                     </Alert>
                   )}

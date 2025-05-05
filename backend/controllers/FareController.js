@@ -121,6 +121,128 @@ const getNetworks = async (req, res) => {
   }
 };
 
+// Yeni ağ ekle
+const addNetwork = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { network_id, network_name, route_ids } = req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!network_id || !network_name) {
+    return res
+      .status(400)
+      .json({ message: "network_id ve network_name zorunlu." });
+  }
+
+  try {
+    const result = await fareService.addNetwork(
+      user_id,
+      project_id,
+      network_id,
+      network_name,
+      route_ids
+    );
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("addNetwork error:", error.message);
+    res.status(400).json({
+      message: `Ağ eklenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+const updateNetwork = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { network_id } = req.params;
+  const { network_name, route_ids } = req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!network_id || !network_name) {
+    return res
+      .status(400)
+      .json({ message: "network_id ve network_name zorunlu." });
+  }
+
+  try {
+    const result = await fareService.updateNetwork(
+      user_id,
+      project_id,
+      network_id,
+      network_name,
+      route_ids
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("updateNetwork hatası:", error.message);
+    res.status(400).json({
+      message: `Ağ güncellenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Ağ sil
+const deleteNetwork = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { network_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!network_id) {
+    return res.status(400).json({ message: "network_id zorunlu." });
+  }
+
+  try {
+    const result = await fareService.deleteNetwork(
+      user_id,
+      project_id,
+      network_id
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("deleteNetwork error:", error.message);
+    res.status(400).json({
+      message: `Ağ silinemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Tüm transfer kurallarını getir
+const getFareTransferRules = async (req, res) => {
+  const { project_id } = req.query;
+  const user_id = req.user.id;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  try {
+    const transferRules = await fareService.getAllFareTransferRules(
+      user_id,
+      project_id
+    );
+    res.json(transferRules);
+  } catch (error) {
+    console.error("getFareTransferRules error:", error.message);
+    res.status(500).json({
+      message: "Sunucu hatası: Transfer kuralları alınamadı.",
+      details: error.message,
+    });
+  }
+};
+
 // Yeni ücret ürünü ekle
 const addFareProduct = async (req, res) => {
   const user_id = req.user.id;
@@ -228,6 +350,53 @@ const addRiderCategory = async (req, res) => {
     console.error("addRiderCategory error:", error.message);
     res.status(400).json({
       message: `Yolcu kategorisi eklenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Yeni transfer kuralı ekle
+const addFareTransferRule = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const {
+    from_leg_group_id,
+    to_leg_group_id,
+    transfer_count,
+    duration_limit,
+    duration_limit_type,
+    fare_transfer_type,
+    fare_product_id,
+  } = req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!from_leg_group_id || !to_leg_group_id || fare_transfer_type == null) {
+    return res.status(400).json({
+      message:
+        "from_leg_group_id, to_leg_group_id ve fare_transfer_type zorunlu.",
+    });
+  }
+
+  try {
+    const result = await fareService.addFareTransferRule(
+      user_id,
+      project_id,
+      from_leg_group_id,
+      to_leg_group_id,
+      transfer_count || 1,
+      duration_limit,
+      duration_limit_type,
+      fare_transfer_type,
+      fare_product_id
+    );
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("addFareTransferRule error:", error.message);
+    res.status(400).json({
+      message: `Transfer kuralı eklenemedi: ${error.message}`,
       details: error.message,
     });
   }
@@ -425,20 +594,124 @@ const deleteRiderCategory = async (req, res) => {
   }
 };
 
+// Transfer kuralını güncelle
+const updateFareTransferRule = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { from_leg_group_id, to_leg_group_id } = req.params;
+  const {
+    transfer_count,
+    duration_limit,
+    duration_limit_type,
+    fare_transfer_type,
+    fare_product_id,
+  } = req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (fare_transfer_type == null) {
+    return res.status(400).json({ message: "fare_transfer_type zorunlu." });
+  }
+
+  try {
+    const result = await fareService.updateFareTransferRule(
+      user_id,
+      project_id,
+      from_leg_group_id,
+      to_leg_group_id,
+      transfer_count || 1,
+      duration_limit,
+      duration_limit_type,
+      fare_transfer_type,
+      fare_product_id
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("updateFareTransferRule error:", error.message);
+    res.status(400).json({
+      message: `Transfer kuralı güncellenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Transfer kuralını sil
+const deleteFareTransferRule = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.body; // DELETE için body'den alıyoruz
+  const { from_leg_group_id, to_leg_group_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  try {
+    const result = await fareService.deleteFareTransferRule(
+      user_id,
+      project_id,
+      from_leg_group_id,
+      to_leg_group_id
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("deleteFareTransferRule error:", error.message);
+    res.status(400).json({
+      message: `Transfer kuralı silinemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+const getLegGroups = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  try {
+    const legGroups = await fareService.getAllLegGroups(user_id, project_id);
+    res.json(legGroups);
+  } catch (error) {
+    console.error("getLegGroups error:", error.message);
+    res.status(500).json({
+      message: "Sunucu hatası: Leg grupları alınamadı.",
+      details: error.message,
+    });
+  }
+};
+
 // RESTful rotalar
 router.get("/route/:route_id", getFareDetailsForRoute);
 router.get("/products", getFareProducts);
 router.get("/media", getFareMedia);
 router.get("/categories", getRiderCategories);
 router.get("/networks", getNetworks);
+router.post("/networks", addNetwork);
+router.put("/networks/:network_id", updateNetwork);
+router.delete("/networks/:network_id", deleteNetwork);
+router.get("/transfer-rules", getFareTransferRules);
 router.post("/products", addFareProduct);
 router.post("/media", addFareMedia);
 router.post("/categories", addRiderCategory);
+router.post("/transfer-rules", addFareTransferRule);
 router.put("/products/:fare_product_id", updateFareProduct);
 router.delete("/products/:fare_product_id", deleteFareProduct);
 router.put("/media/:fare_media_id", updateFareMedia);
 router.delete("/media/:fare_media_id", deleteFareMedia);
 router.put("/categories/:rider_category_id", updateRiderCategory);
 router.delete("/categories/:rider_category_id", deleteRiderCategory);
+router.put(
+  "/transfer-rules/:from_leg_group_id/:to_leg_group_id",
+  updateFareTransferRule
+);
+router.delete(
+  "/transfer-rules/:from_leg_group_id/:to_leg_group_id",
+  deleteFareTransferRule
+);
+router.get("/leg-groups", getLegGroups);
 
 module.exports = router;

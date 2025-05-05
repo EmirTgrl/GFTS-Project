@@ -5,14 +5,24 @@ import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import {
   fetchAllRiderCategories,
-  fetchAllFareMedia,
   updateRiderCategory,
   deleteRiderCategory,
+  fetchAllFareMedia,
   updateFareMedia,
   deleteFareMedia,
+  fetchAllFareTransferRules,
+  updateFareTransferRule,
+  deleteFareTransferRule,
+  fetchAllFareProducts,
+  fetchAllNetworks,
+  updateNetwork,
+  deleteNetwork,
 } from "../../api/fareApi";
+import { fetchRoutesByProjectId } from "../../api/routeApi";
 import RiderCategoriesAddPage from "../../pages/RiderCategoriesAddPage";
 import FareMediaAddPage from "../../pages/FareMediaAddPage";
+import AddFareTransferRuleForm from "../../pages/FareTransferRuleAddPAge";
+import NetworkAddForm from "../../pages/NetworkAddPage";
 import "../../styles/FareSettingsPanel.css";
 
 const FareSettingsPanel = ({
@@ -25,13 +35,23 @@ const FareSettingsPanel = ({
 }) => {
   const [riderCategories, setRiderCategories] = useState([]);
   const [fareMedia, setFareMedia] = useState([]);
+  const [fareTransferRules, setFareTransferRules] = useState([]);
+  const [networks, setNetworks] = useState([]);
+  const [routes, setRoutes] = useState([]);
   const [activeTab, setActiveTab] = useState("rider_categories");
   const [showRiderForm, setShowRiderForm] = useState(false);
   const [showFareMediaForm, setShowFareMediaForm] = useState(false);
+  const [showTransferRuleForm, setShowTransferRuleForm] = useState(false);
+  const [showNetworkForm, setShowNetworkForm] = useState(false);
   const [showEditRiderForm, setShowEditRiderForm] = useState(false);
   const [showEditFareMediaForm, setShowEditFareMediaForm] = useState(false);
+  const [showEditTransferRuleForm, setShowEditTransferRuleForm] =
+    useState(false);
+  const [showEditNetworkForm, setShowEditNetworkForm] = useState(false);
   const [selectedRiderCategory, setSelectedRiderCategory] = useState(null);
   const [selectedFareMedia, setSelectedFareMedia] = useState(null);
+  const [selectedTransferRule, setSelectedTransferRule] = useState(null);
+  const [selectedNetwork, setSelectedNetwork] = useState(null);
 
   // Verileri çek
   useEffect(() => {
@@ -41,6 +61,15 @@ const FareSettingsPanel = ({
         setRiderCategories(categories || []);
         const media = await fetchAllFareMedia(project_id, token);
         setFareMedia(media || []);
+        const transferRules = await fetchAllFareTransferRules(
+          project_id,
+          token
+        );
+        setFareTransferRules(transferRules || []);
+        const networksData = await fetchAllNetworks(project_id, token);
+        setNetworks(networksData || []);
+        const routesData = await fetchRoutesByProjectId(project_id, token);
+        setRoutes(Array.isArray(routesData.data) ? routesData.data : []);
       } catch (error) {
         console.error("Error while loading data:", error);
         Swal.fire("Error", "Failed to load data.", "error");
@@ -65,6 +94,20 @@ const FareSettingsPanel = ({
     onAddFareMedia(newMedia);
     setShowFareMediaForm(false);
     Swal.fire("Success!", "Payment method added.", "success");
+  };
+
+  // Transfer Rule ekleme
+  const handleAddTransferRule = (newRule) => {
+    setFareTransferRules((prev) => [...prev, newRule]);
+    setShowTransferRuleForm(false);
+    Swal.fire("Success!", "Transfer rule added.", "success");
+  };
+
+  // Network ekleme
+  const handleAddNetwork = (newNetwork) => {
+    setNetworks((prev) => [...prev, newNetwork]);
+    setShowNetworkForm(false);
+    Swal.fire("Success!", "Network added.", "success");
   };
 
   // Rider Category düzenleme
@@ -181,7 +224,134 @@ const FareSettingsPanel = ({
         setFareMedia(updatedMedia || []);
         Swal.fire("Success!", "The payment method was deleted.", "success");
       } catch (error) {
-        Swal.fire("Hata!", error.message, "error");
+        Swal.fire("Error!", error.message, "error");
+      }
+    }
+  };
+
+  // Transfer Rule düzenleme
+  const handleEditTransferRule = (rule) => {
+    setSelectedTransferRule(rule);
+    setShowEditTransferRuleForm(true);
+  };
+
+  const handleUpdateTransferRule = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const transferRuleData = {
+      transfer_count: parseInt(formData.get("transfer_count")) || 1,
+      duration_limit: formData.get("duration_limit")
+        ? parseInt(formData.get("duration_limit"))
+        : null,
+      duration_limit_type: formData.get("duration_limit_type")
+        ? parseInt(formData.get("duration_limit_type"))
+        : null,
+      fare_transfer_type: parseInt(formData.get("fare_transfer_type")),
+      fare_product_id: formData.get("fare_product_id") || null,
+    };
+
+    try {
+      await updateFareTransferRule(
+        project_id,
+        token,
+        selectedTransferRule.from_leg_group_id,
+        selectedTransferRule.to_leg_group_id,
+        transferRuleData
+      );
+      const updatedRules = await fetchAllFareTransferRules(project_id, token);
+      setFareTransferRules(updatedRules || []);
+      setShowEditTransferRuleForm(false);
+      Swal.fire("Success!", "Transfer rule updated.", "success");
+    } catch (error) {
+      Swal.fire("Error!", error.message, "error");
+    }
+  };
+
+  // Transfer Rule silme
+  const handleDeleteTransferRule = async (
+    from_leg_group_id,
+    to_leg_group_id
+  ) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Are you sure you want to delete this transfer rule?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete!",
+      cancelButtonText: "No",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteFareTransferRule(
+          project_id,
+          token,
+          from_leg_group_id,
+          to_leg_group_id
+        );
+        const updatedRules = await fetchAllFareTransferRules(project_id, token);
+        setFareTransferRules(updatedRules || []);
+        Swal.fire("Success!", "Transfer rule deleted.", "success");
+      } catch (error) {
+        Swal.fire("Error!", error.message, "error");
+      }
+    }
+  };
+
+  // Network düzenleme
+  const handleEditNetwork = (network) => {
+    setSelectedNetwork(network);
+    setShowEditNetworkForm(true);
+  };
+
+  const handleUpdateNetwork = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const networkData = {
+      network_id: formData.get("network_id"),
+      network_name: formData.get("network_name"),
+      route_ids: formData.getAll("route_ids"),
+    };
+
+    try {
+      await updateNetwork(
+        project_id,
+        token,
+        selectedNetwork.network_id,
+        networkData
+      );
+      const updatedNetworks = await fetchAllNetworks(project_id, token);
+      setNetworks(updatedNetworks || []);
+      setShowEditNetworkForm(false);
+      Swal.fire("Success!", "Network updated.", "success");
+    } catch (error) {
+      Swal.fire("Error!", error.message, "error");
+    }
+  };
+
+  // Network silme
+  const handleDeleteNetwork = async (network_id) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Are you sure you want to delete this network?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete!",
+      cancelButtonText: "No",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteNetwork(project_id, token, network_id);
+        const updatedNetworks = await fetchAllNetworks(project_id, token);
+        setNetworks(updatedNetworks || []);
+        Swal.fire("Success!", "Network deleted.", "success");
+      } catch (error) {
+        Swal.fire("Error!", error.message, "error");
       }
     }
   };
@@ -200,6 +370,34 @@ const FareSettingsPanel = ({
         return "Mobile App";
       default:
         return "Unknown Type";
+    }
+  };
+
+  const getTransferTypeLabel = (type) => {
+    switch (parseInt(type)) {
+      case 0:
+        return "One-Way";
+      case 1:
+        return "Two-Way";
+      case 2:
+        return "Circular";
+      default:
+        return "Unknown Type";
+    }
+  };
+
+  const getDurationLimitTypeLabel = (type) => {
+    switch (parseInt(type)) {
+      case 0:
+        return "Departure-to-Departure";
+      case 1:
+        return "Departure-to-Arrival";
+      case 2:
+        return "Arrival-to-Departure";
+      case 3:
+        return "Arrival-to-Arrival";
+      default:
+        return "Undefined";
     }
   };
 
@@ -456,6 +654,313 @@ const FareSettingsPanel = ({
                         </option>
                         <option value="4">Mobile App</option>
                       </Form.Select>
+                    </Form.Group>
+                    <Button variant="primary" type="submit">
+                      Save Changes
+                    </Button>
+                  </Form>
+                )}
+              </Modal.Body>
+            </Modal>
+          </Tab>
+          <Tab eventKey="transfer_rules" title="Transfer Rules">
+            <div className="d-flex justify-content-end mb-3">
+              <Button
+                onClick={() => setShowTransferRuleForm(true)}
+                className="add-button"
+              >
+                <PlusLg size={16} className="me-1" /> Add New Transfer Rule
+              </Button>
+            </div>
+            <Table striped bordered hover className="mt-3">
+              <thead>
+                <tr>
+                  <th>From Leg Group</th>
+                  <th>To Leg Group</th>
+                  <th>Transfer Count</th>
+                  <th>Duration Limit (s)</th>
+                  <th>Duration Limit Type</th>
+                  <th>Transfer Type</th>
+                  <th>Fare Product</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fareTransferRules.length > 0 ? (
+                  fareTransferRules.map((rule) => (
+                    <tr
+                      key={`${rule.from_leg_group_id}-${rule.to_leg_group_id}`}
+                    >
+                      <td>{rule.from_leg_group_id}</td>
+                      <td>{rule.to_leg_group_id}</td>
+                      <td>{rule.transfer_count || 1}</td>
+                      <td>{rule.duration_limit || "-"}</td>
+                      <td>
+                        {getDurationLimitTypeLabel(rule.duration_limit_type) ||
+                          "-"}
+                      </td>
+                      <td>{getTransferTypeLabel(rule.fare_transfer_type)}</td>
+                      <td>{rule.transfer_fare_product || "-"}</td>
+                      <td>
+                        <Button
+                          variant="link"
+                          title="Edit"
+                          onClick={() => handleEditTransferRule(rule)}
+                        >
+                          <Pencil size={16} />
+                        </Button>
+                        <Button
+                          variant="link"
+                          title="Delete"
+                          onClick={() =>
+                            handleDeleteTransferRule(
+                              rule.from_leg_group_id,
+                              rule.to_leg_group_id
+                            )
+                          }
+                        >
+                          <Trash size={16} />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="text-center">
+                      Transfer rule not found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+            <Modal
+              show={showTransferRuleForm}
+              onHide={() => setShowTransferRuleForm(false)}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Add New Transfer Rule</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <AddFareTransferRuleForm
+                  project_id={project_id}
+                  token={token}
+                  onAdd={handleAddTransferRule}
+                  onClose={() => setShowTransferRuleForm(false)}
+                />
+              </Modal.Body>
+            </Modal>
+            <Modal
+              show={showEditTransferRuleForm}
+              onHide={() => setShowEditTransferRuleForm(false)}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Edit Transfer Rule</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {selectedTransferRule && (
+                  <Form onSubmit={handleUpdateTransferRule}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Transfer Count</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="transfer_count"
+                        defaultValue={selectedTransferRule.transfer_count || 1}
+                        min="0"
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Duration Limit (s)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="duration_limit"
+                        defaultValue={selectedTransferRule.duration_limit || ""}
+                        min="0"
+                        placeholder="Optional"
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Duration Limit Type</Form.Label>
+                      <Form.Select
+                        name="duration_limit_type"
+                        defaultValue={
+                          selectedTransferRule.duration_limit_type || ""
+                        }
+                      >
+                        <option value="">Select (Optional)</option>
+                        <option value="0">Departure-to-Departure</option>
+                        <option value="1">Departure-to-Arrival</option>
+                        <option value="2">Arrival-to-Departure</option>
+                        <option value="3">Arrival-to-Arrival</option>
+                      </Form.Select>
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Transfer Type</Form.Label>
+                      <Form.Select
+                        name="fare_transfer_type"
+                        defaultValue={selectedTransferRule.fare_transfer_type}
+                        required
+                      >
+                        <option value="0">One-Way</option>
+                        <option value="1">Two-Way</option>
+                        <option value="2">Circular</option>
+                      </Form.Select>
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Fare Product</Form.Label>
+                      <Form.Select
+                        name="fare_product_id"
+                        defaultValue={
+                          selectedTransferRule.fare_product_id || ""
+                        }
+                      >
+                        <option value="">Select (Optional)</option>
+                        {fetchAllFareProducts(project_id, token).then(
+                          (products) =>
+                            products.map((product) => (
+                              <option
+                                key={product.fare_product_id}
+                                value={product.fare_product_id}
+                              >
+                                {product.fare_product_name}
+                              </option>
+                            ))
+                        )}
+                      </Form.Select>
+                    </Form.Group>
+                    <Button variant="primary" type="submit">
+                      Save Changes
+                    </Button>
+                  </Form>
+                )}
+              </Modal.Body>
+            </Modal>
+          </Tab>
+          <Tab eventKey="networks" title="Networks">
+            <div className="d-flex justify-content-end mb-3">
+              <Button
+                onClick={() => setShowNetworkForm(true)}
+                className="add-button"
+              >
+                <PlusLg size={16} className="me-1" /> Add New Network
+              </Button>
+            </div>
+            <Table striped bordered hover className="mt-3">
+              <thead>
+                <tr>
+                  <th>Network ID</th>
+                  <th>Network Name</th>
+                  <th>Routes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {networks.length > 0 ? (
+                  networks.map((network) => (
+                    <tr key={network.network_id}>
+                      <td>{network.network_id}</td>
+                      <td>{network.network_name}</td>
+                      <td>
+                        {network.route_ids && network.route_ids.length > 0
+                          ? network.route_ids.join(", ")
+                          : "-"}
+                      </td>
+                      <td>
+                        <Button
+                          variant="link"
+                          title="Edit"
+                          onClick={() => handleEditNetwork(network)}
+                        >
+                          <Pencil size={16} />
+                        </Button>
+                        <Button
+                          variant="link"
+                          title="Delete"
+                          onClick={() =>
+                            handleDeleteNetwork(network.network_id)
+                          }
+                        >
+                          <Trash size={16} />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="text-center">
+                      Network not found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+            <Modal
+              show={showNetworkForm}
+              onHide={() => setShowNetworkForm(false)}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Add New Network</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <NetworkAddForm
+                  project_id={project_id}
+                  token={token}
+                  onAdd={handleAddNetwork}
+                  onClose={() => setShowNetworkForm(false)}
+                />
+              </Modal.Body>
+            </Modal>
+            <Modal
+              show={showEditNetworkForm}
+              onHide={() => setShowEditNetworkForm(false)}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Edit Network</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {selectedNetwork && (
+                  <Form onSubmit={handleUpdateNetwork}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Network ID</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="network_id"
+                        defaultValue={selectedNetwork.network_id}
+                        required
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Network Name</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="network_name"
+                        defaultValue={selectedNetwork.network_name}
+                        required
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Routes (Optional)</Form.Label>
+                      <Form.Control
+                        as="select"
+                        multiple
+                        name="route_ids"
+                        defaultValue={selectedNetwork.route_ids || []}
+                      >
+                        {routes.length > 0 ? (
+                          routes.map((route) => (
+                            <option key={route.route_id} value={route.route_id}>
+                              {route.route_long_name ||
+                                route.route_short_name ||
+                                route.route_id}
+                            </option>
+                          ))
+                        ) : (
+                          <option disabled>No routes available</option>
+                        )}
+                      </Form.Control>
                     </Form.Group>
                     <Button variant="primary" type="submit">
                       Save Changes

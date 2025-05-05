@@ -212,69 +212,72 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
     // 5. Transfer kurallarını al
     const [transferRules] = await pool.query(
       `
-        SELECT ftr.from_leg_group_id,
-               ftr.to_leg_group_id,
-               ftr.transfer_count,
-               ftr.duration_limit,
-               CASE ftr.duration_limit_type
-                 WHEN 0 THEN 'Kalkıştan Kalkışa Süre'
-                 WHEN 1 THEN 'Kalkıştan Varışa Süre'
-                 WHEN 2 THEN 'Varıştan Kalkışa Süre'
-                 WHEN 3 THEN 'Varıştan Varışa Süre'
-                 ELSE 'Tanımsız Süre Limiti Türü'
-               END AS duration_limit_type,
-               CASE ftr.fare_transfer_type
-                 WHEN 0 THEN 'Tek Yön Transfer (A → B)'
-                 WHEN 1 THEN 'Çift Yön Transfer (A → B → C)'
-                 WHEN 2 THEN 'Döngüsel Transfer (A → B → A → C)'
-                 ELSE 'Tanımsız Transfer Türü'
-               END AS fare_transfer_type,
-               ftr.fare_product_id,
-               flr1.network_id AS from_network_id,
-               flr1.from_area_id AS from_area_id,
-               flr1.to_area_id AS from_to_area_id,
-               n1.network_name AS from_network_name,
-               COALESCE(
-                 (SELECT s.stop_name FROM stops s
-                  JOIN stop_areas sa ON s.stop_id = sa.stop_id
-                  WHERE sa.area_id = flr1.from_area_id AND sa.user_id = ? AND sa.project_id = ?
-                  LIMIT 1),
-                 'Bilinmeyen Durak'
-               ) AS from_stop_name,
-               COALESCE(
-                 (SELECT s.stop_name FROM stops s
-                  JOIN stop_areas sa ON s.stop_id = sa.stop_id
-                  WHERE sa.area_id = flr1.to_area_id AND sa.user_id = ? AND sa.project_id = ?
-                  LIMIT 1),
-                 'Bilinmeyen Durak'
-               ) AS from_to_stop_name,
-               flr2.network_id AS to_network_id,
-               flr2.from_area_id AS to_from_area_id,
-               flr2.to_area_id AS to_area_id,
-               n2.network_name AS to_network_name,
-               COALESCE(
-                 (SELECT s.stop_name FROM stops s
-                  JOIN stop_areas sa ON s.stop_id = sa.stop_id
-                  WHERE sa.area_id = flr2.from_area_id AND sa.user_id = ? AND sa.project_id = ?
-                  LIMIT 1),
-                 'Bilinmeyen Durak'
-               ) AS to_from_stop_name,
-               COALESCE(
-                 (SELECT s.stop_name FROM stops s
-                  JOIN stop_areas sa ON s.stop_id = sa.stop_id
-                  WHERE sa.area_id = flr2.to_area_id AND sa.user_id = ? AND sa.project_id = ?
-                  LIMIT 1),
-                 'Bilinmeyen Durak'
-               ) AS to_stop_name,
-               fp.fare_product_name AS transfer_fare_product,
-               fp.amount AS transfer_amount,
-               fp.currency AS transfer_currency
+        SELECT 
+            ftr.from_leg_group_id,
+            ftr.to_leg_group_id,
+            ftr.transfer_count,
+            ftr.duration_limit,
+            CASE ftr.duration_limit_type
+              WHEN 0 THEN 'Kalkıştan Kalkışa Süre'
+              WHEN 1 THEN 'Kalkıştan Varışa Süre'
+              WHEN 2 THEN 'Varıştan Kalkışa Süre'
+              WHEN 3 THEN 'Varıştan Varışa Süre'
+              ELSE 'Tanımsız Süre Limiti Türü'
+            END AS duration_limit_type,
+            CASE ftr.fare_transfer_type
+              WHEN 0 THEN 'Tek Yön Transfer (A → B)'
+              WHEN 1 THEN 'Çift Yön Transfer (A → B → C)'
+              WHEN 2 THEN 'Döngüsel Transfer (A → B → A → C)'
+              ELSE 'Tanımsız Transfer Türü'
+            END AS fare_transfer_type,
+            ftr.fare_product_id,
+            flr1.network_id AS from_network_id,
+            flr1.from_area_id AS from_area_id,
+            flr1.to_area_id AS from_to_area_id,
+            n1.network_name AS from_network_name,
+            COALESCE(
+              (SELECT s.stop_name FROM stops s
+               JOIN stop_areas sa ON s.stop_id = sa.stop_id
+               WHERE sa.area_id = flr1.from_area_id AND sa.user_id = ? AND sa.project_id = ?
+               LIMIT 1),
+              'Bilinmeyen Durak'
+            ) AS from_stop_name,
+            COALESCE(
+              (SELECT s.stop_name FROM stops s
+               JOIN stop_areas sa ON s.stop_id = sa.stop_id
+               WHERE sa.area_id = flr1.to_area_id AND sa.user_id = ? AND sa.project_id = ?
+               LIMIT 1),
+              'Bilinmeyen Durak'
+            ) AS from_to_stop_name,
+            flr2.network_id AS to_network_id,
+            flr2.from_area_id AS to_from_area_id,
+            flr2.to_area_id AS to_area_id,
+            n2.network_name AS to_network_name,
+            COALESCE(
+              (SELECT s.stop_name FROM stops s
+               JOIN stop_areas sa ON s.stop_id = sa.stop_id
+               WHERE sa.area_id = flr2.from_area_id AND sa.user_id = ? AND sa.project_id = ?
+               LIMIT 1),
+              'Bilinmeyen Durak'
+            ) AS to_from_stop_name,
+            COALESCE(
+              (SELECT s.stop_name FROM stops s
+               JOIN stop_areas sa ON s.stop_id = sa.stop_id
+               WHERE sa.area_id = flr2.to_area_id AND sa.user_id = ? AND sa.project_id = ?
+               LIMIT 1),
+              'Bilinmeyen Durak'
+            ) AS to_stop_name,
+            fp.fare_product_name AS transfer_fare_product,
+            fp.amount AS transfer_amount,
+            fp.currency AS transfer_currency,
+            rc.rider_category_name
         FROM fare_transfer_rules ftr
         JOIN fare_leg_rules flr1 ON ftr.from_leg_group_id = flr1.leg_group_id
         JOIN fare_leg_rules flr2 ON ftr.to_leg_group_id = flr2.leg_group_id
         LEFT JOIN networks n1 ON flr1.network_id = n1.network_id
         LEFT JOIN networks n2 ON flr2.network_id = n2.network_id
         LEFT JOIN fare_products fp ON ftr.fare_product_id = fp.fare_product_id
+        LEFT JOIN rider_categories rc ON fp.rider_category_id = rc.rider_category_id
         WHERE ftr.user_id = ?
           AND ftr.project_id = ?
       `,
@@ -361,8 +364,51 @@ const getAllRiderCategories = async (user_id, project_id) => {
   return rows;
 };
 
-// Tüm networks'ü alma
+// Tüm networks'ü alma (Güncellenmiş)
 const getAllNetworks = async (user_id, project_id) => {
+  try {
+    if (!user_id || !project_id) {
+      console.error("Missing user_id or project_id:", { user_id, project_id });
+      throw new Error("Kullanıcı ID veya proje ID eksik.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Geçersiz kullanıcı ID veya proje ID.");
+    }
+
+    const [rows] = await pool.query(
+      `
+        SELECT 
+          n.network_id, 
+          n.network_name, 
+          GROUP_CONCAT(rn.route_id) as route_ids,
+          GROUP_CONCAT(r.route_long_name) as route_names
+        FROM networks n
+        LEFT JOIN route_networks rn ON n.network_id = rn.network_id
+        LEFT JOIN routes r ON rn.route_id = r.route_id
+        WHERE n.user_id = ? AND n.project_id = ?
+        GROUP BY n.network_id, n.network_name
+      `,
+      [user_id, project_id]
+    );
+
+    return rows.map((row) => ({
+      ...row,
+      route_ids: row.route_ids ? row.route_ids.split(",") : [],
+      route_names: row.route_names ? row.route_names.split(",") : [],
+    }));
+  } catch (error) {
+    console.error("getAllNetworks error:", error.message);
+    throw new Error(`Ağlar alınamadı: ${error.message}`);
+  }
+};
+
+// Tüm fare_transfer_rules'ları alma
+const getAllFareTransferRules = async (user_id, project_id) => {
   if (!user_id || !project_id) {
     console.error("Missing user_id or project_id:", { user_id, project_id });
     return [];
@@ -370,10 +416,277 @@ const getAllNetworks = async (user_id, project_id) => {
   user_id = parseInt(user_id, 10);
   project_id = parseInt(project_id, 10);
   const [rows] = await pool.query(
-    `SELECT * FROM networks WHERE user_id = ? AND project_id = ?`,
+    `SELECT * FROM fare_transfer_rules WHERE user_id = ? AND project_id = ?`,
     [user_id, project_id]
   );
   return rows;
+};
+
+// Yeni: Network Ekleme
+const addNetwork = async (
+  user_id,
+  project_id,
+  network_id,
+  network_name,
+  route_ids
+) => {
+  try {
+    if (!user_id || !project_id || !network_id || !network_name) {
+      console.error("Missing required fields:", {
+        user_id,
+        project_id,
+        network_id,
+        network_name,
+      });
+      throw new Error("User ID, project ID, network ID, or name is missing.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Invalid user ID or project ID.");
+    }
+
+    // Ağın zaten var olup olmadığını kontrol et
+    const [[existingNetwork]] = await pool.query(
+      `SELECT network_id FROM networks WHERE network_id = ? AND user_id = ? AND project_id = ?`,
+      [network_id, user_id, project_id]
+    );
+
+    if (existingNetwork) {
+      throw new Error("Network ID already exists.");
+    }
+
+    // Yeni ağ ekle
+    const [result] = await pool.query(
+      `
+        INSERT INTO networks (network_id, network_name, user_id, project_id)
+        VALUES (?, ?, ?, ?)
+      `,
+      [network_id, network_name, user_id, project_id]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error("Failed to add network.");
+    }
+
+    // Eğer route_ids varsa, route_networks tablosuna ekle
+    if (route_ids && Array.isArray(route_ids) && route_ids.length > 0) {
+      // Rotların varlığını kontrol et
+      for (const route_id of route_ids) {
+        const [[existingRoute]] = await pool.query(
+          `SELECT route_id FROM routes WHERE route_id = ? AND user_id = ? AND project_id = ?`,
+          [route_id, user_id, project_id]
+        );
+        if (!existingRoute) {
+          throw new Error(`Invalid route ID: ${route_id} does not exist.`);
+        }
+      }
+
+      const routeValues = route_ids.map((route_id) => [
+        network_id,
+        route_id,
+        user_id,
+        project_id,
+      ]);
+
+      await pool.query(
+        `
+          INSERT INTO route_networks(network_id, route_id, user_id, project_id)
+          VALUES ?
+        `,
+        [routeValues]
+      );
+    }
+
+    return {
+      network_id,
+      network_name,
+      route_ids: route_ids || [],
+      message: "Network added successfully.",
+    };
+  } catch (error) {
+    console.error("addNetwork error:", error.message);
+    throw new Error(`Could not add network: ${error.message}`);
+  }
+};
+
+const updateNetwork = async (
+  user_id,
+  project_id,
+  network_id,
+  network_name,
+  route_ids
+) => {
+  try {
+    if (!user_id || !project_id || !network_id || !network_name) {
+      console.error("Eksik zorunlu alanlar:", {
+        user_id,
+        project_id,
+        network_id,
+        network_name,
+      });
+      throw new Error("Kullanıcı ID, proje ID, ağ ID veya isim eksik.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Geçersiz user_id veya project_id:", {
+        user_id,
+        project_id,
+      });
+      throw new Error("Geçersiz kullanıcı ID veya proje ID.");
+    }
+
+    // Ağın varlığını kontrol et
+    const [[existingNetwork]] = await pool.query(
+      `SELECT network_id FROM networks WHERE network_id = ? AND user_id = ? AND project_id = ?`,
+      [network_id, user_id, project_id]
+    );
+
+    if (!existingNetwork) {
+      throw new Error("Ağ bulunamadı.");
+    }
+
+    // Ağ adını güncelle
+    const [updateResult] = await pool.query(
+      `
+        UPDATE networks 
+        SET network_name = ?
+        WHERE network_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [network_name, network_id, user_id, project_id]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      throw new Error("Ağ güncellenemedi.");
+    }
+
+    // Mevcut rota bağlantılarını sil
+    await pool.query(
+      `
+        DELETE FROM route_networks 
+        WHERE network_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [network_id, user_id, project_id]
+    );
+
+    // Yeni rota bağlantılarını ekle (eğer varsa)
+    if (route_ids && Array.isArray(route_ids) && route_ids.length > 0) {
+      for (const route_id of route_ids) {
+        const [[existingRoute]] = await pool.query(
+          `SELECT route_id FROM routes WHERE route_id = ? AND user_id = ? AND project_id = ?`,
+          [route_id, user_id, project_id]
+        );
+        if (!existingRoute) {
+          throw new Error(`Geçersiz rota ID: ${route_id} mevcut değil.`);
+        }
+      }
+
+      const routeValues = route_ids.map((route_id) => [
+        network_id,
+        route_id,
+        user_id,
+        project_id,
+      ]);
+
+      await pool.query(
+        `
+          INSERT INTO route_networks(network_id, route_id, user_id, project_id)
+          VALUES ?
+        `,
+        [routeValues]
+      );
+    }
+
+    return {
+      network_id,
+      network_name,
+      route_ids: route_ids || [],
+      message: "Ağ başarıyla güncellendi.",
+    };
+  } catch (error) {
+    console.error("updateNetwork hatası:", error.message);
+    throw new Error(`Ağ güncellenemedi: ${error.message}`);
+  }
+};
+
+// Yeni: Network Silme
+const deleteNetwork = async (user_id, project_id, network_id) => {
+  try {
+    if (!user_id || !project_id || !network_id) {
+      console.error("Missing required fields:", {
+        user_id,
+        project_id,
+        network_id,
+      });
+      throw new Error("User ID, project ID, or network ID is missing.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Invalid user ID or project ID.");
+    }
+
+    // Ağın varlığını kontrol et
+    const [[existingNetwork]] = await pool.query(
+      `SELECT network_id FROM networks WHERE network_id = ? AND user_id = ? AND project_id = ?`,
+      [network_id, user_id, project_id]
+    );
+
+    if (!existingNetwork) {
+      throw new Error("Network not found.");
+    }
+
+    // Bağımlı kayıtları kontrol et (fare_leg_rules)
+    const [[dependentFareLegRules]] = await pool.query(
+      `SELECT COUNT(*) as count FROM fare_leg_rules WHERE network_id = ? AND user_id = ? AND project_id = ?`,
+      [network_id, user_id, project_id]
+    );
+
+    if (dependentFareLegRules.count > 0) {
+      throw new Error(
+        "Cannot delete network: It is referenced in fare leg rules."
+      );
+    }
+
+    // Bağımlı kayıtları sil (route_networks)
+    await pool.query(
+      `
+        DELETE FROM route_networks 
+        WHERE network_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [network_id, user_id, project_id]
+    );
+
+    // Ağ'ı sil
+    const [result] = await pool.query(
+      `
+        DELETE FROM networks 
+        WHERE network_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [network_id, user_id, project_id]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error("Failed to delete network.");
+    }
+
+    return {
+      message: "Network deleted successfully.",
+      network_id,
+    };
+  } catch (error) {
+    console.error("deleteNetwork error:", error.message);
+    throw new Error(`Could not delete network: ${error.message}`);
+  }
 };
 
 // Yeni ekleme fonksiyonları
@@ -643,6 +956,138 @@ const addRiderCategory = async (
   }
 };
 
+// Yeni: Fare Transfer Rule Ekleme
+const addFareTransferRule = async (
+  user_id,
+  project_id,
+  from_leg_group_id,
+  to_leg_group_id,
+  transfer_count = 1,
+  duration_limit = null,
+  duration_limit_type = null,
+  fare_transfer_type,
+  fare_product_id = null
+) => {
+  try {
+    // user_id ve project_id kontrolü
+    if (!user_id || !project_id) {
+      console.error("Missing user_id or project_id:", { user_id, project_id });
+      throw new Error("User ID or project ID is missing.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Invalid user ID or project ID.");
+    }
+
+    // Gerekli alanların kontrolü
+    if (!from_leg_group_id || !to_leg_group_id || fare_transfer_type == null) {
+      throw new Error(
+        "Invalid transfer rule data: From leg group, to leg group, and fare transfer type are required."
+      );
+    }
+
+    // from_leg_group_id ve to_leg_group_id kontrolü
+    const [[fromLegGroup]] = await pool.query(
+      `SELECT leg_group_id FROM fare_leg_rules WHERE leg_group_id = ? AND user_id = ? AND project_id = ?`,
+      [from_leg_group_id, user_id, project_id]
+    );
+    if (!fromLegGroup) {
+      throw new Error("Invalid from leg group ID: Leg group does not exist.");
+    }
+
+    const [[toLegGroup]] = await pool.query(
+      `SELECT leg_group_id FROM fare_leg_rules WHERE leg_group_id = ? AND user_id = ? AND project_id = ?`,
+      [to_leg_group_id, user_id, project_id]
+    );
+    if (!toLegGroup) {
+      throw new Error("Invalid to leg group ID: Leg group does not exist.");
+    }
+
+    // transfer_count kontrolü
+    if (transfer_count < 0) {
+      throw new Error("Invalid transfer count: Must be a non-negative number.");
+    }
+
+    // duration_limit kontrolü
+    if (
+      duration_limit !== null &&
+      (isNaN(duration_limit) || duration_limit < 0)
+    ) {
+      throw new Error(
+        "Invalid duration limit: Must be a non-negative number or null."
+      );
+    }
+
+    // duration_limit_type kontrolü (0: departure-to-departure, 1: departure-to-arrival, 2: arrival-to-departure, 3: arrival-to-arrival)
+    if (
+      duration_limit_type !== null &&
+      ![0, 1, 2, 3].includes(duration_limit_type)
+    ) {
+      throw new Error(
+        "Invalid duration limit type. Valid options: Departure-to-Departure (0), Departure-to-Arrival (1), Arrival-to-Departure (2), Arrival-to-Arrival (3)."
+      );
+    }
+
+    // fare_transfer_type kontrolü (0: one-way, 1: two-way, 2: circular)
+    if (![0, 1, 2].includes(fare_transfer_type)) {
+      throw new Error(
+        "Invalid fare transfer type. Valid options: One-Way (0), Two-Way (1), Circular (2)."
+      );
+    }
+
+    // fare_product_id kontrolü
+    if (fare_product_id) {
+      const [[fareProduct]] = await pool.query(
+        `SELECT fare_product_id FROM fare_products WHERE fare_product_id = ? AND user_id = ? AND project_id = ?`,
+        [fare_product_id, user_id, project_id]
+      );
+      if (!fareProduct) {
+        throw new Error(
+          "Invalid fare product ID: Fare product does not exist."
+        );
+      }
+    }
+
+    // fare_transfer_rules tablosuna ekleme
+    await pool.query(
+      `
+        INSERT INTO fare_transfer_rules 
+        (from_leg_group_id, to_leg_group_id, transfer_count, duration_limit, duration_limit_type, fare_transfer_type, fare_product_id, user_id, project_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        from_leg_group_id,
+        to_leg_group_id,
+        transfer_count,
+        duration_limit,
+        duration_limit_type,
+        fare_transfer_type,
+        fare_product_id,
+        user_id,
+        project_id,
+      ]
+    );
+
+    return {
+      message: "Fare transfer rule added successfully.",
+      from_leg_group_id,
+      to_leg_group_id,
+      transfer_count,
+      duration_limit,
+      duration_limit_type,
+      fare_transfer_type,
+      fare_product_id,
+    };
+  } catch (error) {
+    console.error("addFareTransferRule error:", error.message);
+    throw new Error(`Could not add fare transfer rule: ${error.message}`);
+  }
+};
+
 // Fare Product Güncelleme
 const updateFareProduct = async (
   user_id,
@@ -853,7 +1298,7 @@ const updateFareMedia = async (
     }
 
     // Gerekli alanların kontrolü
-    if (!fare_media_type == null) {
+    if (!fare_media_name || fare_media_type == null) {
       throw new Error("Payment method name and type are required fields.");
     }
 
@@ -1114,19 +1559,257 @@ const deleteRiderCategory = async (user_id, project_id, rider_category_id) => {
   }
 };
 
+// Yeni: Fare Transfer Rule Güncelleme
+const updateFareTransferRule = async (
+  user_id,
+  project_id,
+  from_leg_group_id,
+  to_leg_group_id,
+  transfer_count = 1,
+  duration_limit = null,
+  duration_limit_type = null,
+  fare_transfer_type,
+  fare_product_id = null
+) => {
+  try {
+    // user_id ve project_id kontrolü
+    if (!user_id || !project_id || !from_leg_group_id || !to_leg_group_id) {
+      console.error("Missing required fields:", {
+        user_id,
+        project_id,
+        from_leg_group_id,
+        to_leg_group_id,
+      });
+      throw new Error(
+        "User ID, project ID, from leg group ID, or to leg group ID is missing."
+      );
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Invalid user ID or project ID.");
+    }
+
+    // Gerekli alanların kontrolü
+    if (fare_transfer_type == null) {
+      throw new Error(
+        "Invalid transfer rule data: Fare transfer type is required."
+      );
+    }
+
+    // from_leg_group_id ve to_leg_group_id kontrolü
+    const [[fromLegGroup]] = await pool.query(
+      `SELECT leg_group_id FROM fare_leg_rules WHERE leg_group_id = ? AND user_id = ? AND project_id = ?`,
+      [from_leg_group_id, user_id, project_id]
+    );
+    if (!fromLegGroup) {
+      throw new Error("Invalid from leg group ID: Leg group does not exist.");
+    }
+
+    const [[toLegGroup]] = await pool.query(
+      `SELECT leg_group_id FROM fare_leg_rules WHERE leg_group_id = ? AND user_id = ? AND project_id = ?`,
+      [to_leg_group_id, user_id, project_id]
+    );
+    if (!toLegGroup) {
+      throw new Error("Invalid to leg group ID: Leg group does not exist.");
+    }
+
+    // Kayıt var mı kontrolü
+    const [[existingTransferRule]] = await pool.query(
+      `SELECT from_leg_group_id, to_leg_group_id FROM fare_transfer_rules WHERE from_leg_group_id = ? AND to_leg_group_id = ? AND user_id = ? AND project_id = ?`,
+      [from_leg_group_id, to_leg_group_id, user_id, project_id]
+    );
+
+    if (!existingTransferRule) {
+      throw new Error("Fare transfer rule not found.");
+    }
+
+    // transfer_count kontrolü
+    if (transfer_count < 0) {
+      throw new Error("Invalid transfer count: Must be a non-negative number.");
+    }
+
+    // duration_limit kontrolü
+    if (
+      duration_limit !== null &&
+      (isNaN(duration_limit) || duration_limit < 0)
+    ) {
+      throw new Error(
+        "Invalid duration limit: Must be a non-negative number or null."
+      );
+    }
+
+    // duration_limit_type kontrolü (0: departure-to-departure, 1: departure-to-arrival, 2: arrival-to-departure, 3: arrival-to-arrival)
+    if (
+      duration_limit_type !== null &&
+      ![0, 1, 2, 3].includes(duration_limit_type)
+    ) {
+      throw new Error(
+        "Invalid duration limit type. Valid options: Departure-to-Departure (0), Departure-to-Arrival (1), Arrival-to-Departure (2), Arrival-to-Arrival (3)."
+      );
+    }
+
+    // fare_transfer_type kontrolü (0: one-way, 1: two-way, 2: circular)
+    if (![0, 1, 2].includes(fare_transfer_type)) {
+      throw new Error(
+        "Invalid fare transfer type. Valid options: One-Way (0), Two-Way (1), Circular (2)."
+      );
+    }
+
+    // fare_product_id kontrolü
+    if (fare_product_id) {
+      const [[fareProduct]] = await pool.query(
+        `SELECT fare_product_id FROM fare_products WHERE fare_product_id = ? AND user_id = ? AND project_id = ?`,
+        [fare_product_id, user_id, project_id]
+      );
+      if (!fareProduct) {
+        throw new Error(
+          "Invalid fare product ID: Fare product does not exist."
+        );
+      }
+    }
+
+    // fare_transfer_rules tablosunu güncelle
+    const [result] = await pool.query(
+      `
+        UPDATE fare_transfer_rules 
+        SET transfer_count = ?, duration_limit = ?, duration_limit_type = ?, fare_transfer_type = ?, fare_product_id = ?
+        WHERE from_leg_group_id = ? AND to_leg_group_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [
+        transfer_count,
+        duration_limit,
+        duration_limit_type,
+        fare_transfer_type,
+        fare_product_id,
+        from_leg_group_id,
+        to_leg_group_id,
+        user_id,
+        project_id,
+      ]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error("Failed to update fare transfer rule.");
+    }
+
+    return {
+      message: "Fare transfer rule updated successfully.",
+      from_leg_group_id,
+      to_leg_group_id,
+      transfer_count,
+      duration_limit,
+      duration_limit_type,
+      fare_transfer_type,
+      fare_product_id,
+    };
+  } catch (error) {
+    console.error("updateFareTransferRule error:", error.message);
+    throw new Error(`Could not update fare transfer rule: ${error.message}`);
+  }
+};
+
+// Yeni: Fare Transfer Rule Silme
+const deleteFareTransferRule = async (
+  user_id,
+  project_id,
+  from_leg_group_id,
+  to_leg_group_id
+) => {
+  try {
+    // user_id ve project_id kontrolü
+    if (!user_id || !project_id || !from_leg_group_id || !to_leg_group_id) {
+      console.error("Missing required fields:", {
+        user_id,
+        project_id,
+        from_leg_group_id,
+        to_leg_group_id,
+      });
+      throw new Error(
+        "User ID, project ID, from leg group ID, or to leg group ID is missing."
+      );
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Invalid user ID or project ID.");
+    }
+
+    // Kayıt var mı kontrolü
+    const [[existingTransferRule]] = await pool.query(
+      `SELECT from_leg_group_id, to_leg_group_id FROM fare_transfer_rules WHERE from_leg_group_id = ? AND to_leg_group_id = ? AND user_id = ? AND project_id = ?`,
+      [from_leg_group_id, to_leg_group_id, user_id, project_id]
+    );
+
+    if (!existingTransferRule) {
+      throw new Error("Fare transfer rule not found.");
+    }
+
+    // fare_transfer_rules tablosundan sil
+    const [result] = await pool.query(
+      `
+        DELETE FROM fare_transfer_rules 
+        WHERE from_leg_group_id = ? AND to_leg_group_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [from_leg_group_id, to_leg_group_id, user_id, project_id]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error("Failed to delete fare transfer rule.");
+    }
+
+    return {
+      message: "Fare transfer rule deleted successfully.",
+      from_leg_group_id,
+      to_leg_group_id,
+    };
+  } catch (error) {
+    console.error("deleteFareTransferRule error:", error.message);
+    throw new Error(`Could not delete fare transfer rule: ${error.message}`);
+  }
+};
+
+const getAllLegGroups = async (user_id, project_id) => {
+  if (!user_id || !project_id) {
+    console.error("Missing user_id or project_id:", { user_id, project_id });
+    return [];
+  }
+  user_id = parseInt(user_id, 10);
+  project_id = parseInt(project_id, 10);
+  const [rows] = await pool.query(
+    `SELECT leg_group_id FROM fare_leg_rules WHERE user_id = ? AND project_id = ?`,
+    [user_id, project_id]
+  );
+  return rows.map((row) => row.leg_group_id);
+};
+
 module.exports = {
   getDetailedFareForRoute,
   getAllFareProducts,
   getAllFareMedia,
   getAllRiderCategories,
   getAllNetworks,
+  getAllFareTransferRules,
   addFareProduct,
   addFareMedia,
   addRiderCategory,
+  addFareTransferRule,
   updateFareProduct,
   deleteFareProduct,
   updateFareMedia,
   deleteFareMedia,
   updateRiderCategory,
   deleteRiderCategory,
+  updateFareTransferRule,
+  deleteFareTransferRule,
+  getAllLegGroups,
+  addNetwork,
+  deleteNetwork,
+  updateNetwork,
 };

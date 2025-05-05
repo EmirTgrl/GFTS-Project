@@ -15,6 +15,7 @@ const routeService = {
       "route_color",
       "route_text_color",
       "route_sort_order",
+      "network_id",
     ];
 
     const fields = [];

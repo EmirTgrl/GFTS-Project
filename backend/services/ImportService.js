@@ -1,6 +1,6 @@
 const multer = require("multer");
-const csv = require("csv-parser");
-const unzipper = require("unzipper");
+const csv = require("fast-csv");
+const AdmZip = require("adm-zip");
 const { pool } = require("../db.js");
 const fs = require("fs");
 const path = require("path");
@@ -33,7 +33,7 @@ class ImportService {
       },
     });
 
-    this.batchSize = 5000;
+    this.batchSize = 3000;
     this.tableOrder = [
       "agency",
       "calendar",
@@ -460,7 +460,7 @@ class ImportService {
     try {
       await pipeline(
         fs.createReadStream(filePath),
-        csv(),
+        csv.parse({ headers: true, trim: true, ignoreEmpty: true }),
         async function* (source) {
           for await (const row of source) {
             Object.keys(row).forEach((key) => {
@@ -606,10 +606,8 @@ class ImportService {
       if (!fs.existsSync(this.tempDir)) {
         fs.mkdirSync(this.tempDir, { recursive: true });
       }
-      await fs
-        .createReadStream(zipPath)
-        .pipe(unzipper.Extract({ path: this.tempDir }))
-        .promise();
+      const zip = new AdmZip(zipPath);
+      zip.extractAllTo(this.tempDir, true);
       console.log(`✅ ZIP extraction complete`);
 
       console.log(`🔍 Validating GTFS data...`);
