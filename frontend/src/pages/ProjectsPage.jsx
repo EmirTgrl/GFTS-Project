@@ -39,7 +39,7 @@ const ProjectsPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [exportLoading, setExportLoading] = useState(false);
-  const projectsPerPage = 6;
+  const projectsPerPage = 10;
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
 

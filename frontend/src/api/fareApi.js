@@ -148,7 +148,8 @@ export const addFareProduct = async (project_id, token, fareProductData) => {
         currency: fareProductData.currency,
         rider_category_id: fareProductData.rider_category_id || null,
         fare_media_id: fareProductData.fare_media_id || null,
-        network_id: fareProductData.network_id,
+        from_area_id: fareProductData.from_area_id,
+        to_area_id: fareProductData.to_area_id,
         route_id: fareProductData.route_id,
       }),
     }
@@ -610,7 +611,7 @@ export const deleteNetwork = async (project_id, token, network_id) => {
   return response.json();
 };
 
-// 23. Ağı güncelle
+// 23. Update Network
 export const updateNetwork = async (
   project_id,
   token,
@@ -635,7 +636,103 @@ export const updateNetwork = async (
   if (!response.ok) {
     const errorData = await response.json();
     console.error("updateNetwork error:", errorData);
-    throw new Error(errorData.message || "Ağ güncellenemedi.");
+    throw new Error(errorData.message || "Failed to update network.");
+  }
+
+  return response.json();
+};
+
+// 24. Get All Areas
+export const fetchAllAreas = async (project_id, token) => {
+  const response = await fetch(
+    `${API_BASE_URL}/areas?project_id=${project_id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("fetchAllAreas error:", errorData);
+    throw new Error(errorData.message || "Areas not be retrieved.");
+  }
+
+  return response.json();
+};
+
+// 25. Add Area
+export const addArea = async (project_id, token, areaData) => {
+  const response = await fetch(
+    `${API_BASE_URL}/areas?project_id=${project_id}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        area_name: areaData.area_name,
+        stop_ids: areaData.stop_ids || [],
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("addArea error:", errorData);
+    throw new Error(errorData.message || "Failed to add area.");
+  }
+
+  return response.json();
+};
+
+// 26. Update Area
+export const updateArea = async (project_id, token, area_id, areaData) => {
+  const response = await fetch(
+    `${API_BASE_URL}/areas/${area_id}?project_id=${project_id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        area_name: areaData.area_name,
+        stop_ids: areaData.stop_ids || [],
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("updateArea error:", errorData);
+    throw new Error(errorData.message || "Failed to update area.");
+  }
+
+  return response.json();
+};
+
+// 27. Delete Area
+export const deleteArea = async (project_id, token, area_id) => {
+  const response = await fetch(
+    `${API_BASE_URL}/areas/${area_id}?project_id=${project_id}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ project_id }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("deleteArea error:", errorData);
+    throw new Error(errorData.message || "Failed to delete area.");
   }
 
   return response.json();

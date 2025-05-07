@@ -3,6 +3,7 @@ import { Modal, Tabs, Tab, Table, Button, Form } from "react-bootstrap";
 import { Pencil, Trash, PlusLg } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
+import Select from "react-select";
 import {
   fetchAllRiderCategories,
   updateRiderCategory,
@@ -17,14 +18,20 @@ import {
   fetchAllNetworks,
   updateNetwork,
   deleteNetwork,
+  fetchAllAreas,
+  updateArea,
+  deleteArea,
 } from "../../api/fareApi";
 import { fetchRoutesByProjectId } from "../../api/routeApi";
+import { fetchStopsByProjectId } from "../../api/stopApi";
 import RiderCategoriesAddPage from "../../pages/RiderCategoriesAddPage";
 import FareMediaAddPage from "../../pages/FareMediaAddPage";
 import AddFareTransferRuleForm from "../../pages/FareTransferRuleAddPAge";
 import NetworkAddForm from "../../pages/NetworkAddPage";
+import AreaAddPage from "../../pages/AreaAddPage";
 import "../../styles/FareSettingsPanel.css";
 
+// FareSettingsPanel component for managing fare-related settings
 const FareSettingsPanel = ({
   project_id,
   token,
@@ -37,23 +44,31 @@ const FareSettingsPanel = ({
   const [fareMedia, setFareMedia] = useState([]);
   const [fareTransferRules, setFareTransferRules] = useState([]);
   const [networks, setNetworks] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [routes, setRoutes] = useState([]);
+  const [stops, setStops] = useState([]);
+  const [fareProducts, setFareProducts] = useState([]);
   const [activeTab, setActiveTab] = useState("rider_categories");
   const [showRiderForm, setShowRiderForm] = useState(false);
   const [showFareMediaForm, setShowFareMediaForm] = useState(false);
   const [showTransferRuleForm, setShowTransferRuleForm] = useState(false);
   const [showNetworkForm, setShowNetworkForm] = useState(false);
+  const [showAreaForm, setShowAreaForm] = useState(false);
   const [showEditRiderForm, setShowEditRiderForm] = useState(false);
   const [showEditFareMediaForm, setShowEditFareMediaForm] = useState(false);
   const [showEditTransferRuleForm, setShowEditTransferRuleForm] =
     useState(false);
   const [showEditNetworkForm, setShowEditNetworkForm] = useState(false);
+  const [showEditAreaForm, setShowEditAreaForm] = useState(false);
   const [selectedRiderCategory, setSelectedRiderCategory] = useState(null);
   const [selectedFareMedia, setSelectedFareMedia] = useState(null);
   const [selectedTransferRule, setSelectedTransferRule] = useState(null);
   const [selectedNetwork, setSelectedNetwork] = useState(null);
+  const [selectedArea, setSelectedArea] = useState(null);
+  const [selectedStops, setSelectedStops] = useState([]);
+  const [selectedRoutes, setSelectedRoutes] = useState([]);
 
-  // Verileri çek
+  // Fetch all data when modal is shown
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -68,8 +83,14 @@ const FareSettingsPanel = ({
         setFareTransferRules(transferRules || []);
         const networksData = await fetchAllNetworks(project_id, token);
         setNetworks(networksData || []);
+        const areasData = await fetchAllAreas(project_id, token);
+        setAreas(areasData || []);
         const routesData = await fetchRoutesByProjectId(project_id, token);
         setRoutes(Array.isArray(routesData.data) ? routesData.data : []);
+        const stopsData = await fetchStopsByProjectId(project_id, token);
+        setStops(Array.isArray(stopsData.data) ? stopsData.data : []);
+        const products = await fetchAllFareProducts(project_id, token);
+        setFareProducts(products || []);
       } catch (error) {
         console.error("Error while loading data:", error);
         Swal.fire("Error", "Failed to load data.", "error");
@@ -80,37 +101,44 @@ const FareSettingsPanel = ({
     }
   }, [project_id, token, show]);
 
-  // Rider Category ekleme
+  // Handle adding a new rider category
   const handleAddRiderCategory = (newCategory) => {
     setRiderCategories((prev) => [...prev, newCategory]);
     onAddRiderCategory(newCategory);
     setShowRiderForm(false);
-    Swal.fire("Success!", "Passenger category added.", "success");
+    Swal.fire("Success!", "Rider category added.", "success");
   };
 
-  // Fare Media ekleme
+  // Handle adding a new fare media
   const handleAddFareMedia = (newMedia) => {
     setFareMedia((prev) => [...prev, newMedia]);
     onAddFareMedia(newMedia);
     setShowFareMediaForm(false);
-    Swal.fire("Success!", "Payment method added.", "success");
+    Swal.fire("Success!", "Fare media added.", "success");
   };
 
-  // Transfer Rule ekleme
+  // Handle adding a new transfer rule
   const handleAddTransferRule = (newRule) => {
     setFareTransferRules((prev) => [...prev, newRule]);
     setShowTransferRuleForm(false);
     Swal.fire("Success!", "Transfer rule added.", "success");
   };
 
-  // Network ekleme
+  // Handle adding a new network
   const handleAddNetwork = (newNetwork) => {
     setNetworks((prev) => [...prev, newNetwork]);
     setShowNetworkForm(false);
     Swal.fire("Success!", "Network added.", "success");
   };
 
-  // Rider Category düzenleme
+  // Handle adding a new area
+  const handleAddArea = (newArea) => {
+    setAreas((prev) => [...prev, newArea]);
+    setShowAreaForm(false);
+    Swal.fire("Success!", "Area added.", "success");
+  };
+
+  // Handle editing a rider category
   const handleEditRiderCategory = (category) => {
     setSelectedRiderCategory(category);
     setShowEditRiderForm(true);
@@ -140,17 +168,17 @@ const FareSettingsPanel = ({
       );
       setRiderCategories(updatedCategories || []);
       setShowEditRiderForm(false);
-      Swal.fire("Success!", "Passenger category updated.", "success");
+      Swal.fire("Success!", "Rider category updated.", "success");
     } catch (error) {
       Swal.fire("Error!", error.message, "error");
     }
   };
 
-  // Rider Category silme
+  // Handle deleting a rider category
   const handleDeleteRiderCategory = async (rider_category_id) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: "Are you sure you want to delete this passenger category?",
+      text: "Do you want to delete this rider category?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -167,14 +195,14 @@ const FareSettingsPanel = ({
           token
         );
         setRiderCategories(updatedCategories || []);
-        Swal.fire("Success!", "Passenger category deleted.", "success");
+        Swal.fire("Success!", "Rider category deleted.", "success");
       } catch (error) {
         Swal.fire("Error!", error.message, "error");
       }
     }
   };
 
-  // Fare Media düzenleme
+  // Handle editing a fare media
   const handleEditFareMedia = (media) => {
     setSelectedFareMedia(media);
     setShowEditFareMediaForm(true);
@@ -198,17 +226,17 @@ const FareSettingsPanel = ({
       const updatedMedia = await fetchAllFareMedia(project_id, token);
       setFareMedia(updatedMedia || []);
       setShowEditFareMediaForm(false);
-      Swal.fire("Success!", "Payment method updated.", "success");
+      Swal.fire("Success!", "Fare media updated.", "success");
     } catch (error) {
       Swal.fire("Error!", error.message, "error");
     }
   };
 
-  // Fare Media silme
+  // Handle deleting a fare media
   const handleDeleteFareMedia = async (fare_media_id) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: "Are you sure you want to delete this payment method?",
+      text: "Do you want to delete this fare media?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -222,14 +250,14 @@ const FareSettingsPanel = ({
         await deleteFareMedia(project_id, token, fare_media_id);
         const updatedMedia = await fetchAllFareMedia(project_id, token);
         setFareMedia(updatedMedia || []);
-        Swal.fire("Success!", "The payment method was deleted.", "success");
+        Swal.fire("Success!", "Fare media deleted.", "success");
       } catch (error) {
         Swal.fire("Error!", error.message, "error");
       }
     }
   };
 
-  // Transfer Rule düzenleme
+  // Handle editing a transfer rule
   const handleEditTransferRule = (rule) => {
     setSelectedTransferRule(rule);
     setShowEditTransferRuleForm(true);
@@ -267,14 +295,14 @@ const FareSettingsPanel = ({
     }
   };
 
-  // Transfer Rule silme
+  // Handle deleting a transfer rule
   const handleDeleteTransferRule = async (
     from_leg_group_id,
     to_leg_group_id
   ) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: "Are you sure you want to delete this transfer rule?",
+      text: "Do you want to delete this transfer rule?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -300,9 +328,12 @@ const FareSettingsPanel = ({
     }
   };
 
-  // Network düzenleme
+  // Handle editing a network
   const handleEditNetwork = (network) => {
     setSelectedNetwork(network);
+    setSelectedRoutes(
+      routeOptions.filter((option) => network.route_ids?.includes(option.value))
+    );
     setShowEditNetworkForm(true);
   };
 
@@ -310,9 +341,8 @@ const FareSettingsPanel = ({
     e.preventDefault();
     const formData = new FormData(e.target);
     const networkData = {
-      network_id: formData.get("network_id"),
       network_name: formData.get("network_name"),
-      route_ids: formData.getAll("route_ids"),
+      route_ids: selectedRoutes.map((route) => route.value),
     };
 
     try {
@@ -325,17 +355,18 @@ const FareSettingsPanel = ({
       const updatedNetworks = await fetchAllNetworks(project_id, token);
       setNetworks(updatedNetworks || []);
       setShowEditNetworkForm(false);
+      setSelectedRoutes([]);
       Swal.fire("Success!", "Network updated.", "success");
     } catch (error) {
       Swal.fire("Error!", error.message, "error");
     }
   };
 
-  // Network silme
+  // Handle deleting a network
   const handleDeleteNetwork = async (network_id) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: "Are you sure you want to delete this network?",
+      text: "Do you want to delete this network?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -355,6 +386,71 @@ const FareSettingsPanel = ({
       }
     }
   };
+
+  // Handle editing an area
+  const handleEditArea = (area) => {
+    setSelectedArea(area);
+    setSelectedStops(
+      stopOptions.filter((option) => area.stop_ids?.includes(option.value))
+    );
+    setShowEditAreaForm(true);
+  };
+
+  const handleUpdateArea = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const areaData = {
+      area_name: formData.get("area_name"),
+      stop_ids: selectedStops.map((stop) => stop.value),
+    };
+
+    try {
+      await updateArea(project_id, token, selectedArea.area_id, areaData);
+      const updatedAreas = await fetchAllAreas(project_id, token);
+      setAreas(updatedAreas || []);
+      setShowEditAreaForm(false);
+      setSelectedStops([]);
+      Swal.fire("Success!", "Area updated.", "success");
+    } catch (error) {
+      Swal.fire("Error!", error.message, "error");
+    }
+  };
+
+  // Handle deleting an area
+  const handleDeleteArea = async (area_id) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this area?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete!",
+      cancelButtonText: "No",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteArea(project_id, token, area_id);
+        const updatedAreas = await fetchAllAreas(project_id, token);
+        setAreas(updatedAreas || []);
+        Swal.fire("Success!", "Area deleted.", "success");
+      } catch (error) {
+        Swal.fire("Error!", error.message, "error");
+      }
+    }
+  };
+
+  // Prepare stop and route options for react-select
+  const stopOptions = stops.map((stop) => ({
+    value: stop.stop_id,
+    label: stop.stop_name || stop.stop_id,
+  }));
+
+  const routeOptions = routes.map((route) => ({
+    value: route.route_id,
+    label: route.route_long_name || route.route_short_name || route.route_id,
+  }));
 
   const getFareMediaTypeLabel = (type) => {
     switch (parseInt(type)) {
@@ -401,6 +497,32 @@ const FareSettingsPanel = ({
     }
   };
 
+  // Get route names for display
+  const getRouteNames = (routeIds) => {
+    if (!routeIds || routeIds.length === 0) return "-";
+    const routeNames = routeIds
+      .map((id) => {
+        const route = routes.find((r) => r.route_id === id);
+        return route
+          ? route.route_long_name || route.route_short_name || route.route_id
+          : id;
+      })
+      .filter(Boolean);
+    return routeNames.length > 0 ? routeNames.join(", ") : "-";
+  };
+
+  // Get stop names for display
+  const getStopNames = (stopIds) => {
+    if (!stopIds || stopIds.length === 0) return "-";
+    const stopNames = stopIds
+      .map((id) => {
+        const stop = stops.find((s) => s.stop_id === id);
+        return stop ? stop.stop_name || stop.stop_id : id;
+      })
+      .filter(Boolean);
+    return stopNames.length > 0 ? stopNames.join(", ") : "-";
+  };
+
   return (
     <Modal
       show={show}
@@ -410,7 +532,7 @@ const FareSettingsPanel = ({
       className="fare-settings-panel"
     >
       <Modal.Header closeButton>
-        <Modal.Title>Other Fares</Modal.Title>
+        <Modal.Title>Fare Settings</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Tabs
@@ -482,7 +604,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={4} className="text-center">
-                      Rider category not found.
+                      No rider categories found.
                     </td>
                   </tr>
                 )}
@@ -597,7 +719,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={3} className="text-center">
-                      Payment method not found.
+                      No fare media found.
                     </td>
                   </tr>
                 )}
@@ -609,7 +731,7 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Add New Payment Method</Modal.Title>
+                <Modal.Title>Add New Fare Media</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 <FareMediaAddPage
@@ -626,7 +748,7 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Edit Payment Method</Modal.Title>
+                <Modal.Title>Edit Fare Media</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 {selectedFareMedia && (
@@ -637,6 +759,7 @@ const FareSettingsPanel = ({
                         type="text"
                         name="fare_media_name"
                         defaultValue={selectedFareMedia.fare_media_name}
+                        required
                       />
                     </Form.Group>
                     <Form.Group className="mb-3">
@@ -727,7 +850,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={8} className="text-center">
-                      Transfer rule not found.
+                      No transfer rules found.
                     </td>
                   </tr>
                 )}
@@ -816,17 +939,14 @@ const FareSettingsPanel = ({
                         }
                       >
                         <option value="">Select (Optional)</option>
-                        {fetchAllFareProducts(project_id, token).then(
-                          (products) =>
-                            products.map((product) => (
-                              <option
-                                key={product.fare_product_id}
-                                value={product.fare_product_id}
-                              >
-                                {product.fare_product_name}
-                              </option>
-                            ))
-                        )}
+                        {fareProducts.map((product) => (
+                          <option
+                            key={product.fare_product_id}
+                            value={product.fare_product_id}
+                          >
+                            {product.fare_product_name}
+                          </option>
+                        ))}
                       </Form.Select>
                     </Form.Group>
                     <Button variant="primary" type="submit">
@@ -861,11 +981,7 @@ const FareSettingsPanel = ({
                     <tr key={network.network_id}>
                       <td>{network.network_id}</td>
                       <td>{network.network_name}</td>
-                      <td>
-                        {network.route_ids && network.route_ids.length > 0
-                          ? network.route_ids.join(", ")
-                          : "-"}
-                      </td>
+                      <td>{getRouteNames(network.route_ids)}</td>
                       <td>
                         <Button
                           variant="link"
@@ -889,7 +1005,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={4} className="text-center">
-                      Network not found.
+                      No networks found.
                     </td>
                   </tr>
                 )}
@@ -922,49 +1038,309 @@ const FareSettingsPanel = ({
               </Modal.Header>
               <Modal.Body>
                 {selectedNetwork && (
-                  <Form onSubmit={handleUpdateNetwork}>
-                    <Form.Group className="mb-3">
+                  <Form
+                    onSubmit={handleUpdateNetwork}
+                    className="edit-network-form"
+                  >
+                    <Form.Group className="mb-4">
                       <Form.Label>Network ID</Form.Label>
                       <Form.Control
                         type="text"
                         name="network_id"
                         defaultValue={selectedNetwork.network_id}
-                        required
+                        readOnly
+                        className="form-control-lg"
                       />
                     </Form.Group>
-                    <Form.Group className="mb-3">
+                    <Form.Group className="mb-4">
                       <Form.Label>Network Name</Form.Label>
                       <Form.Control
                         type="text"
                         name="network_name"
                         defaultValue={selectedNetwork.network_name}
                         required
+                        className="form-control-lg"
                       />
                     </Form.Group>
-                    <Form.Group className="mb-3">
+                    <Form.Group className="mb-4">
                       <Form.Label>Routes (Optional)</Form.Label>
-                      <Form.Control
-                        as="select"
-                        multiple
+                      <Select
+                        isMulti
                         name="route_ids"
-                        defaultValue={selectedNetwork.route_ids || []}
-                      >
-                        {routes.length > 0 ? (
-                          routes.map((route) => (
-                            <option key={route.route_id} value={route.route_id}>
-                              {route.route_long_name ||
-                                route.route_short_name ||
-                                route.route_id}
-                            </option>
-                          ))
-                        ) : (
-                          <option disabled>No routes available</option>
-                        )}
-                      </Form.Control>
+                        options={routeOptions}
+                        value={selectedRoutes}
+                        onChange={setSelectedRoutes}
+                        placeholder="Select routes..."
+                        className="basic-multi-select"
+                        classNamePrefix="select"
+                        noOptionsMessage={() => "No routes available"}
+                        isSearchable
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "48px",
+                            height: "auto",
+                            borderColor: "#ced4da",
+                            boxShadow: "none",
+                            borderRadius: "6px",
+                            fontSize: "16px",
+                            padding: "4px",
+                            "&:hover": {
+                              borderColor: "#007bff",
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            zIndex: 9999,
+                            fontSize: "16px",
+                            borderRadius: "6px",
+                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                          }),
+                          multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: "#e9ecef",
+                            borderRadius: "4px",
+                            padding: "2px",
+                          }),
+                          multiValueLabel: (base) => ({
+                            ...base,
+                            color: "#212529",
+                            fontSize: "15px",
+                            padding: "4px 8px",
+                          }),
+                          multiValueRemove: (base) => ({
+                            ...base,
+                            color: "#dc3545",
+                            padding: "4px",
+                            "&:hover": {
+                              backgroundColor: "#dc3545",
+                              color: "white",
+                            },
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            color: "#6c757d",
+                            fontSize: "16px",
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            backgroundColor: state.isSelected
+                              ? "#007bff"
+                              : state.isFocused
+                              ? "#f1f3f5"
+                              : "white",
+                            color: state.isSelected ? "white" : "#212529",
+                            padding: "10px 12px",
+                            fontSize: "16px",
+                            "&:active": {
+                              backgroundColor: "#e9ecef",
+                            },
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            fontSize: "16px",
+                            padding: "4px",
+                          }),
+                        }}
+                      />
                     </Form.Group>
-                    <Button variant="primary" type="submit">
-                      Save Changes
-                    </Button>
+                    <div className="d-flex justify-content-end">
+                      <Button variant="primary" type="submit">
+                        Save Changes
+                      </Button>
+                    </div>
+                  </Form>
+                )}
+              </Modal.Body>
+            </Modal>
+          </Tab>
+          <Tab eventKey="areas" title="Areas">
+            <div className="d-flex justify-content-end mb-3">
+              <Button
+                onClick={() => setShowAreaForm(true)}
+                className="add-button"
+              >
+                <PlusLg size={16} className="me-1" /> Add New Area
+              </Button>
+            </div>
+            <Table striped bordered hover className="mt-3">
+              <thead>
+                <tr>
+                  <th>Area ID</th>
+                  <th>Area Name</th>
+                  <th>Stops</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {areas.length > 0 ? (
+                  areas.map((area) => (
+                    <tr key={area.area_id}>
+                      <td>{area.area_id}</td>
+                      <td>{area.area_name}</td>
+                      <td>{getStopNames(area.stop_ids)}</td>
+                      <td>
+                        <Button
+                          variant="link"
+                          title="Edit"
+                          onClick={() => handleEditArea(area)}
+                        >
+                          <Pencil size={16} />
+                        </Button>
+                        <Button
+                          variant="link"
+                          title="Delete"
+                          onClick={() => handleDeleteArea(area.area_id)}
+                        >
+                          <Trash size={16} />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="text-center">
+                      No areas found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+            <Modal
+              show={showAreaForm}
+              onHide={() => setShowAreaForm(false)}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Add New Area</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <AreaAddPage
+                  project_id={project_id}
+                  token={token}
+                  onAdd={handleAddArea}
+                  onClose={() => setShowAreaForm(false)}
+                />
+              </Modal.Body>
+            </Modal>
+            <Modal
+              show={showEditAreaForm}
+              onHide={() => setShowEditAreaForm(false)}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Edit Area</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {selectedArea && (
+                  <Form onSubmit={handleUpdateArea} className="edit-area-form">
+                    <Form.Group className="mb-4">
+                      <Form.Label>Area ID</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="area_id"
+                        defaultValue={selectedArea.area_id}
+                        readOnly
+                        className="form-control-lg"
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-4">
+                      <Form.Label>Area Name</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="area_name"
+                        defaultValue={selectedArea.area_name}
+                        required
+                        className="form-control-lg"
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-4">
+                      <Form.Label>Stops (Optional)</Form.Label>
+                      <Select
+                        isMulti
+                        name="stop_ids"
+                        options={stopOptions}
+                        value={selectedStops}
+                        onChange={setSelectedStops}
+                        placeholder="Select stops..."
+                        className="basic-multi-select"
+                        classNamePrefix="select"
+                        noOptionsMessage={() => "No stops available"}
+                        isSearchable
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "48px",
+                            height: "auto",
+                            borderColor: "#ced4da",
+                            boxShadow: "none",
+                            borderRadius: "6px",
+                            fontSize: "16px",
+                            padding: "4px",
+                            "&:hover": {
+                              borderColor: "#007bff",
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            zIndex: 9999,
+                            fontSize: "16px",
+                            borderRadius: "6px",
+                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                          }),
+                          multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: "#e9ecef",
+                            borderRadius: "4px",
+                            padding: "2px",
+                          }),
+                          multiValueLabel: (base) => ({
+                            ...base,
+                            color: "#212529",
+                            fontSize: "15px",
+                            padding: "4px 8px",
+                          }),
+                          multiValueRemove: (base) => ({
+                            ...base,
+                            color: "#dc3545",
+                            padding: "4px",
+                            "&:hover": {
+                              backgroundColor: "#dc3545",
+                              color: "white",
+                            },
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            color: "#6c757d",
+                            fontSize: "16px",
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            backgroundColor: state.isSelected
+                              ? "#007bff"
+                              : state.isFocused
+                              ? "#f1f3f5"
+                              : "white",
+                            color: state.isSelected ? "white" : "#212529",
+                            padding: "10px 12px",
+                            fontSize: "16px",
+                            "&:active": {
+                              backgroundColor: "#e9ecef",
+                            },
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            fontSize: "16px",
+                            padding: "4px",
+                          }),
+                        }}
+                      />
+                    </Form.Group>
+                    <div className="d-flex justify-content-end">
+                      <Button variant="primary" type="submit">
+                        Save Changes
+                      </Button>
+                    </div>
                   </Form>
                 )}
               </Modal.Body>

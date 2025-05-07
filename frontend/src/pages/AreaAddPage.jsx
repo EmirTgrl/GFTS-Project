@@ -3,23 +3,21 @@ import { Form } from "react-bootstrap";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import Select from "react-select";
-import { addNetwork } from "../api/fareApi";
-import { fetchRoutesByProjectId } from "../api/routeApi";
+import { addArea } from "../api/fareApi";
+import { fetchStopsByProjectId } from "../api/stopApi";
 
-// NetworkAddForm component for adding a new network
-const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
+const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
-    network_id: "",
-    network_name: "",
-    route_ids: [],
+    area_id: "",
+    area_name: "",
+    stop_ids: [],
   });
-  const [routes, setRoutes] = useState([]);
-  const [selectedRoutes, setSelectedRoutes] = useState([]);
+  const [stops, setStops] = useState([]);
+  const [selectedStops, setSelectedStops] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [routesLoading, setRoutesLoading] = useState(false);
+  const [stopsLoading, setStopsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch routes on component mount
   useEffect(() => {
     const fetchData = async () => {
       if (!project_id || !token) {
@@ -28,47 +26,45 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
       }
 
       try {
-        setRoutesLoading(true);
-        const response = await fetchRoutesByProjectId(project_id, token);
+        setStopsLoading(true);
+        const response = await fetchStopsByProjectId(project_id, token);
 
-        const routesData = Array.isArray(response.data) ? response.data : [];
+        const stopsData = Array.isArray(response.data) ? response.data : [];
 
-        if (routesData.length === 0) {
-          setError("No routes found. Please create routes first.");
-          setRoutes([]);
+        if (stopsData.length === 0) {
+          setError("No stops found. Please create stops first.");
+          setStops([]);
         } else {
-          setRoutes(routesData);
+          setStops(stopsData);
           setError(null);
         }
       } catch (err) {
-        console.error("Error fetching routes:", err);
-        setError(`Error loading routes: ${err.message}`);
-        setRoutes([]);
+        console.error("Error fetching stops:", err);
+        setError(`Error loading stops: ${err.message}`);
+        setStops([]);
       } finally {
-        setRoutesLoading(false);
+        setStopsLoading(false);
       }
     };
 
     fetchData();
   }, [project_id, token]);
 
-  // Handle text input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.network_id || !formData.network_name) {
-      Swal.fire("Error!", "Network ID and Network Name are required!", "error");
+    if (!formData.area_id || !formData.area_name) {
+      Swal.fire("Error!", "Area ID and Area Name are required!", "error");
       return;
     }
 
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: "Do you want to add this network?",
+      text: "Do you want to add this area?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -81,96 +77,95 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
       try {
         setLoading(true);
         const payload = {
-          network_id: formData.network_id,
-          network_name: formData.network_name,
-          route_ids: selectedRoutes.map((route) => route.value),
+          area_id: formData.area_id,
+          area_name: formData.area_name,
+          stop_ids: selectedStops.map((stop) => stop.value),
         };
 
-        const response = await addNetwork(project_id, token, payload);
+        const response = await addArea(project_id, token, payload);
 
-        Swal.fire("Success!", "Network added successfully.", "success");
+        Swal.fire("Success!", "Area added successfully.", "success");
 
         if (onAdd) {
           onAdd(response);
         }
 
         setFormData({
-          network_id: "",
-          network_name: "",
-          route_ids: [],
+          area_id: "",
+          area_name: "",
+          stop_ids: [],
         });
-        setSelectedRoutes([]);
+        setSelectedStops([]);
         onClose();
       } catch (error) {
-        console.error("Error adding network:", error);
-        Swal.fire("Error!", `Could not add network: ${error.message}`, "error");
+        console.error("Error adding area:", error);
+        Swal.fire("Error!", `Could not add area: ${error.message}`, "error");
       } finally {
         setLoading(false);
       }
     }
   };
 
-  // Prepare route options for react-select
-  const routeOptions = routes.map((route) => ({
-    value: route.route_id,
-    label: route.route_long_name || route.route_short_name || route.route_id,
+  const stopOptions = stops.map((stop) => ({
+    value: stop.stop_id,
+    label: stop.stop_name || stop.stop_id,
   }));
 
   return (
     <div className="form-container">
-      <Form onSubmit={handleSubmit} className="add-network-form">
+      <Form onSubmit={handleSubmit} className="add-area-form">
         {error && <div className="text-red-500 mb-4">{error}</div>}
-        {routesLoading && (
-          <div className="loading-text mb-4">Loading routes...</div>
+        {stopsLoading && (
+          <div className="loading-text mb-4">Loading stops...</div>
         )}
         <Form.Group className="mb-4">
-          <Form.Label htmlFor="network_id" className="form-label">
-            Network ID (*)
+          <Form.Label htmlFor="area_id" className="form-label">
+            Area ID (*)
           </Form.Label>
           <Form.Control
             type="text"
-            id="network_id"
-            name="network_id"
-            value={formData.network_id}
+            id="area_id"
+            name="area_id"
+            value={formData.area_id}
             onChange={handleChange}
             required
-            placeholder="Enter unique network ID"
+            placeholder="Enter unique area ID"
             disabled={loading}
             className="form-control-lg"
           />
         </Form.Group>
         <Form.Group className="mb-4">
-          <Form.Label htmlFor="network_name" className="form-label">
-            Network Name (*)
+          <Form.Label htmlFor="area_name" className="form-label">
+            Area Name (*)
           </Form.Label>
           <Form.Control
             type="text"
-            id="network_name"
-            name="network_name"
-            value={formData.network_name}
+            id="area_name"
+            name="area_name"
+            value={formData.area_name}
             onChange={handleChange}
             required
-            placeholder="Enter network name"
+            placeholder="Enter area name"
             disabled={loading}
             className="form-control-lg"
           />
         </Form.Group>
         <Form.Group className="mb-4">
-          <Form.Label htmlFor="route_ids" className="form-label">
-            Routes (Optional)
+          <Form.Label htmlFor="stop_ids" className="form-label">
+            Stops (Optional)
           </Form.Label>
           <Select
             isMulti
-            name="route_ids"
-            options={routeOptions}
-            value={selectedRoutes}
-            onChange={setSelectedRoutes}
-            placeholder="Select routes..."
+            name="stop_ids"
+            options={stopOptions}
+            value={selectedStops}
+            onChange={setSelectedStops}
+            placeholder="Select stops..."
             className="basic-multi-select"
             classNamePrefix="select"
-            noOptionsMessage={() => "No routes available"}
+            noOptionsMessage={() => "No stops available"}
             isSearchable
-            isDisabled={loading || routesLoading}
+            isDisabled={loading || stopsLoading}
             styles={{
               control: (base) => ({
                 ...base,
@@ -250,7 +245,7 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
             Cancel
           </button>
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Adding..." : "Add Network"}
+            {loading ? "Adding..." : "Add Area"}
           </button>
         </div>
       </Form>
@@ -258,11 +253,11 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
   );
 };
 
-NetworkAddForm.propTypes = {
+AreaAddPage.propTypes = {
   project_id: PropTypes.string.isRequired,
   token: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   onAdd: PropTypes.func,
 };
 
-export default NetworkAddForm;
+export default AreaAddPage;

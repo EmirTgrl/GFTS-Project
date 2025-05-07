@@ -24,6 +24,10 @@ const stopService = {
     fields.push("user_id = ?");
     values.push(user_id);
 
+    if (!req.query.project_id) {
+      return res.status(400).json({ error: "project_id is required" });
+    }
+
     for (const param in req.query) {
       if (validFields.includes(param)) {
         if (param === "stop_name") {
@@ -38,13 +42,35 @@ const stopService = {
       }
     }
 
-    let query = `SELECT * FROM stops WHERE ${fields.join(" AND ")}`;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 8;
+    const offset = (page - 1) * limit;
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM stops
+      WHERE ${fields.join(" AND ")}
+    `;
+
+    const dataQuery = `
+      SELECT stop_id, stop_code, stop_name, stop_desc, stop_lat, stop_lon, zone_id, stop_url, location_type, parent_station, stop_timezone, wheelchair_boarding
+      FROM stops
+      WHERE ${fields.join(" AND ")}
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
     try {
-      const [rows] = await pool.execute(query, values);
-      res.json(rows.length > 0 ? rows : []);
+      const [countRows] = await pool.query(countQuery, values);
+      const total = countRows[0].total;
+
+      const [dataRows] = await pool.query(dataQuery, values);
+
+      res.json({
+        data: dataRows.length > 0 ? dataRows : [],
+        total: total,
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Query execution error:", error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },

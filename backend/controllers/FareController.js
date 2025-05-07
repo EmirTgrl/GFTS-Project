@@ -253,17 +253,25 @@ const addFareProduct = async (req, res) => {
     currency,
     rider_category_id,
     fare_media_id,
-    network_id,
+    from_area_id,
+    to_area_id,
     route_id,
   } = req.body;
 
   if (!project_id) {
-    return res.status(400).json({ message: "project_id zorunlu." });
+    return res.status(400).json({ message: "Project ID is required." });
   }
 
-  if (!fare_product_name || amount == null || !currency) {
+  if (
+    !fare_product_name ||
+    amount == null ||
+    !currency ||
+    !from_area_id ||
+    !to_area_id
+  ) {
     return res.status(400).json({
-      message: "fare_product_name, amount ve currency zorunlu.",
+      message:
+        "fare_product_name, amount, currency, from_area_id, and to_area_id are required.",
     });
   }
 
@@ -276,14 +284,15 @@ const addFareProduct = async (req, res) => {
       currency,
       rider_category_id,
       fare_media_id,
-      network_id,
+      from_area_id,
+      to_area_id,
       route_id
     );
     res.status(201).json(result);
   } catch (error) {
     console.error("addFareProduct error:", error.message);
     res.status(400).json({
-      message: `Ücret ürünü eklenemedi: ${error.message}`,
+      message: `Could not add fare product: ${error.message}`,
       details: error.message,
     });
   }
@@ -684,6 +693,116 @@ const getLegGroups = async (req, res) => {
   }
 };
 
+const getAreas = async (req, res) => {
+  const { project_id } = req.query;
+  const user_id = req.user.id;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  try {
+    const areas = await fareService.getAllAreas(user_id, project_id);
+    res.json(areas);
+  } catch (error) {
+    console.error("getAreas error:", error.message);
+    res.status(500).json({
+      message: "Sunucu hatası: Alanlar alınamadı.",
+      details: error.message,
+    });
+  }
+};
+
+// Yeni alan ekle
+const addArea = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { area_name, stop_ids } = req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!area_name) {
+    return res.status(400).json({ message: "area_name zorunlu." });
+  }
+
+  try {
+    const result = await fareService.addArea(
+      user_id,
+      project_id,
+      area_name,
+      stop_ids || []
+    );
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("addArea error:", error.message);
+    res.status(400).json({
+      message: `Alan eklenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Alan güncelle
+const updateArea = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query;
+  const { area_id } = req.params;
+  const { area_name, stop_ids } = req.body;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!area_id || !area_name) {
+    return res.status(400).json({ message: "area_id ve area_name zorunlu." });
+  }
+
+  try {
+    const result = await fareService.updateArea(
+      user_id,
+      project_id,
+      area_id,
+      area_name,
+      stop_ids || []
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("updateArea error:", error.message);
+    res.status(400).json({
+      message: `Alan güncellenemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
+// Alan sil
+const deleteArea = async (req, res) => {
+  const user_id = req.user.id;
+  const { project_id } = req.query; // DELETE için query'den alıyoruz
+  const { area_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({ message: "project_id zorunlu." });
+  }
+
+  if (!area_id) {
+    return res.status(400).json({ message: "area_id zorunlu." });
+  }
+
+  try {
+    const result = await fareService.deleteArea(user_id, project_id, area_id);
+    res.json(result);
+  } catch (error) {
+    console.error("deleteArea error:", error.message);
+    res.status(400).json({
+      message: `Alan silinemedi: ${error.message}`,
+      details: error.message,
+    });
+  }
+};
+
 // RESTful rotalar
 router.get("/route/:route_id", getFareDetailsForRoute);
 router.get("/products", getFareProducts);
@@ -713,5 +832,9 @@ router.delete(
   deleteFareTransferRule
 );
 router.get("/leg-groups", getLegGroups);
+router.get("/areas", getAreas);
+router.post("/areas", addArea);
+router.put("/areas/:area_id", updateArea);
+router.delete("/areas/:area_id", deleteArea);
 
 module.exports = router;

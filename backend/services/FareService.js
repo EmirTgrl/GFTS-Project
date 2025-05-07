@@ -42,7 +42,7 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
     );
 
     if (!routeData) {
-      console.log("Route not found.");
+      console.log("Route not found for route_id:", route_id);
       return null;
     }
 
@@ -55,7 +55,7 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
     } = routeData;
 
     if (!network_id) {
-      console.log("Network not found.");
+      console.log("Network not found for route_id:", route_id);
       return null;
     }
 
@@ -74,9 +74,11 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
     );
 
     if (!stopAreas || stopAreas.length === 0) {
-      console.log("No areas found for the route.");
+      console.log("No areas found for route_id:", route_id);
       return null;
     }
+
+    console.log("Stop areas found:", stopAreas);
 
     // 3. İndi-Bindi (Sabit) ücretleri al
     const [fixedFares] = await pool.query(
@@ -84,6 +86,8 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
         SELECT 
             flr.leg_group_id,
             flr.fare_product_id,
+            flr.from_area_id,
+            flr.to_area_id,
             fp.fare_product_name,
             fp.rider_category_id,
             fp.fare_media_id,
@@ -110,11 +114,15 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       [network_id, user_id, project_id]
     );
 
+    console.log("Fixed fares:", fixedFares);
+
     // 4. Mesafeye dayalı ücretlendirme
     const [distanceBasedFares] = await pool.query(
       `
         SELECT 
             flr.fare_product_id,
+            flr.from_area_id,
+            flr.to_area_id,
             fp.fare_product_name,
             fp.rider_category_id,
             fp.fare_media_id,
@@ -135,6 +143,8 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       `,
       [network_id, user_id, project_id]
     );
+
+    console.log("Distance-based fares:", distanceBasedFares);
 
     // Mesafe hesaplama
     const categorizedDistanceFares = await Promise.all(
@@ -300,7 +310,7 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       filteredDistanceFares.length === 0 &&
       transferRules.length === 0
     ) {
-      console.log("Fare rule not found.");
+      console.log("No fare rules found for route_id:", route_id);
       return null;
     }
 
@@ -314,7 +324,13 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       transfer_rules: transferRules,
     };
   } catch (error) {
-    console.error("getDetailedFareForRoute error:", error.stack);
+    console.error("getDetailedFareForRoute error:", {
+      message: error.message,
+      stack: error.stack,
+      route_id,
+      user_id,
+      project_id,
+    });
     throw new Error(`Fare information could not be obtained: ${error.message}`);
   }
 };
@@ -563,7 +579,7 @@ const updateNetwork = async (
     );
 
     if (updateResult.affectedRows === 0) {
-      throw new Error("Ağ güncellenemedi.");
+      throw new Error("Failed to update network.");
     }
 
     // Mevcut rota bağlantılarını sil
@@ -583,7 +599,7 @@ const updateNetwork = async (
           [route_id, user_id, project_id]
         );
         if (!existingRoute) {
-          throw new Error(`Geçersiz rota ID: ${route_id} mevcut değil.`);
+          throw new Error(`Invalid route ID: ${route_id} does not exist.`);
         }
       }
 
@@ -610,8 +626,8 @@ const updateNetwork = async (
       message: "Ağ başarıyla güncellendi.",
     };
   } catch (error) {
-    console.error("updateNetwork hatası:", error.message);
-    throw new Error(`Ağ güncellenemedi: ${error.message}`);
+    console.error("updateNetwork error:", error.message);
+    throw new Error(`Failed to update network: ${error.message}`);
   }
 };
 
@@ -698,11 +714,12 @@ const addFareProduct = async (
   currency,
   rider_category_id = null,
   fare_media_id = null,
-  network_id = null,
+  from_area_id = null,
+  to_area_id = null,
   route_id = null
 ) => {
   try {
-    // user_id ve project_id kontrolü
+    // Input validation
     if (!user_id || !project_id) {
       console.error("Missing user_id or project_id:", { user_id, project_id });
       throw new Error("User ID or project ID is missing.");
@@ -716,17 +733,20 @@ const addFareProduct = async (
       throw new Error("Invalid user ID or project ID.");
     }
 
-    // Gerekli alanların kontrolü
     if (!fare_product_name || amount < 0 || !currency) {
       throw new Error(
-        "Invalid fare data: Name, amount and currency are required."
+        "Invalid fare data: Name, amount, and currency are required."
       );
     }
 
-    // Benzersiz fare_product_id oluştur
+    if (!from_area_id || !to_area_id) {
+      throw new Error("Both from_area_id and to_area_id are required.");
+    }
+
+    // Generate unique fare_product_id
     const fare_product_id = `fare_product_${Date.now()}`;
 
-    // fare_products tablosuna ekleme
+    // Insert into fare_products table
     const [result] = await pool.query(
       `
         INSERT INTO fare_products 
@@ -745,90 +765,110 @@ const addFareProduct = async (
       ]
     );
 
-    // route_id sağlandıysa, fare_leg_rules tablosuna otomatik kayıt ekle
+    // Fetch network_id based on route_id
+    let network_id;
     if (route_id) {
-      // Route'a bağlı network_id'yi al
       const [[routeData]] = await pool.query(
         `
           SELECT rn.network_id
-          FROM routes r
-          LEFT JOIN route_networks rn ON r.route_id = rn.route_id
-          WHERE r.route_id = ? AND r.user_id = ? AND r.project_id = ?
+          FROM route_networks rn
+          WHERE rn.route_id = ? AND rn.user_id = ? AND rn.project_id = ?
+          LIMIT 1
         `,
         [route_id, user_id, project_id]
       );
 
       if (!routeData || !routeData.network_id) {
-        console.error("Network ID not found:", {
-          route_id,
-          user_id,
-          project_id,
-        });
-        throw new Error("No network information found for selected route.");
-      }
-
-      const network_id = routeData.network_id;
-      const leg_group_id = `leg_group_${Date.now()}`;
-
-      // Rota için başlangıç ve bitiş alanlarını (from_area_id, to_area_id) al
-      const [stopAreas] = await pool.query(
-        `
-          SELECT sa.area_id
-          FROM stop_times st
-          JOIN stops s ON st.stop_id = s.stop_id
-          JOIN stop_areas sa ON s.stop_id = sa.stop_id
-          JOIN trips t ON st.trip_id = t.trip_id
-          WHERE t.route_id = ? AND t.user_id = ? AND t.project_id = ?
-          GROUP BY sa.area_id
-          ORDER BY MIN(st.stop_sequence)
-        `,
-        [route_id, user_id, project_id]
-      );
-
-      if (stopAreas.length === 0) {
-        console.error("No stop areas found for route:", {
-          route_id,
-          user_id,
-          project_id,
-        });
         throw new Error(
-          "There is no stop area defined for the route. Please check the stop areas."
+          `No network found for route ID: ${route_id}. Please define a network for this route.`
         );
       }
-
-      let from_area_id = stopAreas[0].area_id; // İlk durak alanı
-      let to_area_id = stopAreas[stopAreas.length - 1].area_id; // Son durak alanı
-
-      // fare_leg_rules tablosuna ekleme (route_id olmadan)
-      await pool.query(
+      network_id = routeData.network_id;
+    } else {
+      // Fallback to area-based network lookup
+      const [[areaData]] = await pool.query(
         `
-          INSERT INTO fare_leg_rules 
-          (leg_group_id, network_id, fare_product_id, from_area_id, to_area_id, user_id, project_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+          SELECT rn.network_id
+          FROM stop_areas sa
+          JOIN stops s ON sa.stop_id = s.stop_id
+          JOIN stop_times st ON s.stop_id = st.stop_id
+          JOIN trips t ON st.trip_id = t.trip_id
+          JOIN route_networks rn ON t.route_id = rn.route_id
+          WHERE sa.area_id = ? AND sa.user_id = ? AND sa.project_id = ?
+          LIMIT 1
         `,
-        [
-          leg_group_id,
-          network_id,
-          fare_product_id,
-          from_area_id,
-          to_area_id,
-          user_id,
-          project_id,
-        ]
+        [from_area_id, user_id, project_id]
       );
+
+      if (!areaData || !areaData.network_id) {
+        throw new Error(
+          `No network found for from_area_id: ${from_area_id}. Please define a network for this area.`
+        );
+      }
+      network_id = areaData.network_id;
     }
 
+    // Validate from_area_id and to_area_id
+    const [[fromAreaExists]] = await pool.query(
+      `
+        SELECT area_id
+        FROM areas
+        WHERE area_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [from_area_id, user_id, project_id]
+    );
+
+    const [[toAreaExists]] = await pool.query(
+      `
+        SELECT area_id
+        FROM areas
+        WHERE area_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [to_area_id, user_id, project_id]
+    );
+
+    if (!fromAreaExists) {
+      throw new Error(`Invalid from_area_id: ${from_area_id} does not exist.`);
+    }
+
+    if (!toAreaExists) {
+      throw new Error(`Invalid to_area_id: ${to_area_id} does not exist.`);
+    }
+
+    // Insert into fare_leg_rules table
+    const leg_group_id = `leg_${fare_product_id}`;
+    await pool.query(
+      `
+        INSERT INTO fare_leg_rules 
+        (leg_group_id, network_id, fare_product_id, from_area_id, to_area_id, user_id, project_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        leg_group_id,
+        network_id,
+        fare_product_id,
+        from_area_id,
+        to_area_id,
+        user_id,
+        project_id,
+      ]
+    );
+
     return {
-      message: "Fare product added successfully.",
+      message: "Fare product and leg rules added successfully.",
       fare_product_id,
       fare_product_name,
       amount,
       currency,
       rider_category_id,
       fare_media_id,
+      from_area_id,
+      to_area_id,
+      network_id,
+      route_id,
     };
   } catch (error) {
-    console.error("addFareProduct error:", error.message);
+    console.error("AddFareProduct error:", error.message);
     throw new Error(`Could not add fare product: ${error.message}`);
   }
 };
@@ -1789,6 +1829,352 @@ const getAllLegGroups = async (user_id, project_id) => {
   return rows.map((row) => row.leg_group_id);
 };
 
+const getAllAreas = async (user_id, project_id) => {
+  try {
+    if (!user_id || !project_id) {
+      console.error("Missing user_id or project_id:", { user_id, project_id });
+      throw new Error("Missing user ID or project ID.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Invalid user ID or project ID.");
+    }
+
+    const [rows] = await pool.query(
+      `
+        SELECT 
+          a.area_id, 
+          a.area_name, 
+          GROUP_CONCAT(sa.stop_id) as stop_ids,
+          GROUP_CONCAT(s.stop_name) as stop_names
+        FROM areas a
+        LEFT JOIN stop_areas sa ON a.area_id = sa.area_id
+        LEFT JOIN stops s ON sa.stop_id = s.stop_id
+        WHERE a.user_id = ? AND a.project_id = ?
+        GROUP BY a.area_id, a.area_name
+      `,
+      [user_id, project_id]
+    );
+
+    return rows.map((row) => ({
+      ...row,
+      stop_ids: row.stop_ids ? row.stop_ids.split(",") : [],
+      stop_names: row.stop_names ? row.stop_names.split(",") : [],
+    }));
+  } catch (error) {
+    console.error("getAllAreas detailed error:", {
+      message: error.message,
+      stack: error.stack,
+      user_id,
+      project_id,
+    });
+    throw new Error(`Areas could not be retrieved: ${error.message}`);
+  }
+};
+
+// New : Add Area
+const addArea = async (
+  user_id,
+  project_id,
+  area_id,
+  area_name,
+  stop_ids = []
+) => {
+  try {
+    if (!user_id || !project_id || !area_id || !area_name) {
+      console.error("Missing required fields:", {
+        user_id,
+        project_id,
+        area_id,
+        area_name,
+      });
+      throw new Error("User ID, project ID, area ID, or area name is missing.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Invalid user ID or project ID.");
+    }
+
+    if (!Array.isArray(stop_ids)) {
+      throw new Error("stop_ids must be an array.");
+    }
+
+    // area_id'nin benzersizliğini kontrol et
+    const [[existingArea]] = await pool.query(
+      `
+        SELECT area_id
+        FROM areas
+        WHERE area_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [area_id, user_id, project_id]
+    );
+
+    if (existingArea) {
+      throw new Error(`Area ID ${area_id} already exists.`);
+    }
+
+    // areas tablosuna ekleme
+    const [result] = await pool.query(
+      `
+        INSERT INTO areas (area_id, area_name, user_id, project_id)
+        VALUES (?, ?, ?, ?)
+      `,
+      [area_id, area_name, user_id, project_id]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error("Failed to add area.");
+    }
+
+    // Eğer stop_ids varsa, stop_areas tablosuna ekle
+    if (stop_ids.length > 0) {
+      // Durakların varlığını kontrol et
+      for (const stop_id of stop_ids) {
+        const [[existingStop]] = await pool.query(
+          `
+            SELECT stop_id
+            FROM stops
+            WHERE stop_id = ? AND user_id = ? AND project_id = ?
+          `,
+          [stop_id, user_id, project_id]
+        );
+        if (!existingStop) {
+          throw new Error(`Invalid stop ID: ${stop_id} does not exist.`);
+        }
+      }
+
+      const stopAreaValues = stop_ids.map((stop_id) => [
+        stop_id,
+        area_id,
+        user_id,
+        project_id,
+      ]);
+
+      await pool.query(
+        `
+          INSERT INTO stop_areas (stop_id, area_id, user_id, project_id)
+          VALUES ?
+        `,
+        [stopAreaValues]
+      );
+    }
+
+    return {
+      area_id,
+      area_name,
+      stop_ids,
+      message: "Area added successfully.",
+    };
+  } catch (error) {
+    console.error("addArea error:", error.message);
+    throw new Error(`Could not add area: ${error.message}`);
+  }
+};
+
+// Update Area
+const updateArea = async (
+  user_id,
+  project_id,
+  area_id,
+  area_name,
+  stop_ids = []
+) => {
+  try {
+    if (!user_id || !project_id || !area_id || !area_name) {
+      console.error("Missing required fields:", {
+        user_id,
+        project_id,
+        area_id,
+        area_name,
+      });
+      throw new Error("User ID, project ID, area ID, or area name is missing.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Invalid user ID or project ID.");
+    }
+
+    if (!Array.isArray(stop_ids)) {
+      throw new Error("stop_ids must be an array.");
+    }
+
+    // Alanın varlığını kontrol et
+    const [[existingArea]] = await pool.query(
+      `
+        SELECT area_id
+        FROM areas
+        WHERE area_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [area_id, user_id, project_id]
+    );
+
+    if (!existingArea) {
+      throw new Error("Area not found.");
+    }
+
+    // areas tablosunu güncelle
+    const [updateResult] = await pool.query(
+      `
+        UPDATE areas 
+        SET area_name = ?
+        WHERE area_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [area_name, area_id, user_id, project_id]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      throw new Error("Failed to update area.");
+    }
+
+    // Mevcut stop_areas kayıtlarını sil
+    // await pool.query(
+    //   `
+    //     DELETE FROM stop_areas
+    //     WHERE area_id = ? AND user_id = ? AND project_id = ?
+    //   `,
+    //   [area_id, user_id, project_id]
+    // );
+
+    // Yeni stop_ids varsa, stop_areas tablosuna ekle
+    if (stop_ids.length > 0) {
+      // Durakların varlığını kontrol et
+      for (const stop_id of stop_ids) {
+        const [[existingStop]] = await pool.query(
+          `
+            SELECT stop_id
+            FROM stops
+            WHERE stop_id = ? AND user_id = ? AND project_id = ?
+          `,
+          [stop_id, user_id, project_id]
+        );
+        if (!existingStop) {
+          throw new Error(`Invalid stop ID: ${stop_id} does not exist.`);
+        }
+      }
+
+      const stopAreaValues = stop_ids.map((stop_id) => [
+        stop_id,
+        area_id,
+        user_id,
+        project_id,
+      ]);
+
+      await pool.query(
+        `
+          INSERT INTO stop_areas (stop_id, area_id, user_id, project_id)
+          VALUES ?
+        `,
+        [stopAreaValues]
+      );
+    }
+
+    return {
+      area_id,
+      area_name,
+      stop_ids,
+      message: "Area updated successfully.",
+    };
+  } catch (error) {
+    console.error("updateArea error:", error.message);
+    throw new Error(`Could not update area: ${error.message}`);
+  }
+};
+
+// Delete Area
+const deleteArea = async (user_id, project_id, area_id) => {
+  try {
+    if (!user_id || !project_id || !area_id) {
+      console.error("Missing required fields:", {
+        user_id,
+        project_id,
+        area_id,
+      });
+      throw new Error("User ID, project ID, or area ID is missing.");
+    }
+
+    user_id = parseInt(user_id, 10);
+    project_id = parseInt(project_id, 10);
+
+    if (isNaN(user_id) || isNaN(project_id)) {
+      console.error("Invalid user_id or project_id:", { user_id, project_id });
+      throw new Error("Invalid user ID or project ID.");
+    }
+
+    // Alanın varlığını kontrol et
+    const [[existingArea]] = await pool.query(
+      `
+        SELECT area_id
+        FROM areas
+        WHERE area_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [area_id, user_id, project_id]
+    );
+
+    if (!existingArea) {
+      throw new Error("Area not found.");
+    }
+
+    // Bağımlı kayıtları kontrol et (fare_leg_rules)
+    const [[dependentFareLegRules]] = await pool.query(
+      `
+        SELECT COUNT(*) as count
+        FROM fare_leg_rules
+        WHERE from_area_id = ? OR to_area_id = ?
+        AND user_id = ? AND project_id = ?
+      `,
+      [area_id, area_id, user_id, project_id]
+    );
+
+    if (dependentFareLegRules.count > 0) {
+      throw new Error(
+        "Cannot delete area: It is referenced in fare leg rules."
+      );
+    }
+
+    // stop_areas kayıtlarını sil
+    await pool.query(
+      `
+        DELETE FROM stop_areas 
+        WHERE area_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [area_id, user_id, project_id]
+    );
+
+    // areas tablosundan sil
+    const [result] = await pool.query(
+      `
+        DELETE FROM areas 
+        WHERE area_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [area_id, user_id, project_id]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error("Failed to delete area.");
+    }
+
+    return {
+      message: "Area deleted successfully.",
+      area_id,
+    };
+  } catch (error) {
+    console.error("deleteArea error:", error.message);
+    throw new Error(`Could not delete area: ${error.message}`);
+  }
+};
+
 module.exports = {
   getDetailedFareForRoute,
   getAllFareProducts,
@@ -1812,4 +2198,8 @@ module.exports = {
   addNetwork,
   deleteNetwork,
   updateNetwork,
+  getAllAreas,
+  addArea,
+  updateArea,
+  deleteArea,
 };

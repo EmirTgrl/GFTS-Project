@@ -10,6 +10,7 @@ import {
   updateFareProduct,
   deleteFareProduct,
   fetchDetailedFareForRoute,
+  fetchAllAreas,
 } from "../api/fareApi";
 
 const FareProductsTable = ({
@@ -18,101 +19,116 @@ const FareProductsTable = ({
   selectedRoute,
   fareProductsRef,
   fareDetails,
-  onFareUpdate, // Yeni prop
+  onFareUpdate,
 }) => {
   const [fareMediaList, setFareMediaList] = useState([]);
   const [riderCategories, setRiderCategories] = useState([]);
-  const [prices, setPrices] = useState({}); // { "rider_category_id_fare_media_id": amount }
-  const [currency, setCurrency] = useState("TRY"); // Varsayılan para birimi
+  const [areas, setAreas] = useState([]);
+  const [fromAreaId, setFromAreaId] = useState("");
+  const [toAreaId, setToAreaId] = useState("");
+  const [prices, setPrices] = useState({});
+  const [currency, setCurrency] = useState("TRY");
 
-  // Veri çekme ve mevcut fiyatları yükleme
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Ödeme yöntemlerini al
         const fareMediaData = await fetchAllFareMedia(project_id, token);
         setFareMediaList(fareMediaData || []);
 
-        // Yolcu kategorilerini al
         const riderCategoriesData = await fetchAllRiderCategories(
           project_id,
           token
         );
         setRiderCategories(riderCategoriesData || []);
 
-        // Mevcut fiyatları fareDetails'dan al ve prices state'ine set et
-        if (fareDetails?.fixed_fares?.length > 0) {
-          const initialPrices = {};
-          fareDetails.fixed_fares.forEach((fare) => {
-            let riderCategoryId = fare.rider_category_id;
-            let fareMediaId = fare.fare_media_id;
-
-            // rider_category_id eksikse, rider_category_name ile eşleştir
-            if (!riderCategoryId && fare.rider_category_name) {
-              const matchingCategory = riderCategoriesData.find(
-                (cat) => cat.rider_category_name === fare.rider_category_name
-              );
-              if (matchingCategory) {
-                riderCategoryId = matchingCategory.rider_category_id;
-              } else {
-                console.warn(
-                  `No matching ID found for Rider category name "${fare.rider_category_name}".`
-                );
-              }
-            }
-
-            // fare_media_id eksikse, fare_media_name ile eşleştir
-            if (!fareMediaId && fare.fare_media_name) {
-              const matchingMedia = fareMediaData.find(
-                (media) => media.fare_media_name === fare.fare_media_name
-              );
-              if (matchingMedia) {
-                fareMediaId = matchingMedia.fare_media_id;
-              } else {
-                console.warn(
-                  `No matching ID found for fare media name "${fare.fare_media_name}".`
-                );
-              }
-            }
-
-            // Hem riderCategoryId hem fareMediaId varsa prices'a ekle
-            if (riderCategoryId && fareMediaId && fare.amount) {
-              const key = `${riderCategoryId}_${fareMediaId}`;
-              initialPrices[key] = fare.amount.toString();
-            }
-          });
-          setPrices(initialPrices);
-          setCurrency(fareDetails.fixed_fares[0]?.currency || "TRY");
-        } else {
-          setPrices({});
-        }
+        const areasData = await fetchAllAreas(project_id, token);
+        setAreas(areasData || []);
       } catch (error) {
         console.error("Error while loading data:", error);
-        Swal.fire("Error!", "Failed to load data.", "error");
+        Swal.fire("Error!", "Data could not be uploaded.", "error");
       }
     };
     fetchData();
-  }, [project_id, token, fareDetails]);
+  }, [project_id, token]);
 
-  // Fiyat input'larını güncelleme
+  useEffect(() => {
+    if (!fareDetails?.fixed_fares?.length) {
+      setPrices({});
+      return;
+    }
+
+    const updatePrices = () => {
+      const filteredPrices = {};
+      fareDetails.fixed_fares.forEach((fare) => {
+        let riderCategoryId = fare.rider_category_id;
+        let fareMediaId = fare.fare_media_id;
+
+        if (!riderCategoryId && fare.rider_category_name) {
+          const matchingCategory = riderCategories.find(
+            (cat) => cat.rider_category_name === fare.rider_category_name
+          );
+          if (matchingCategory) {
+            riderCategoryId = matchingCategory.rider_category_id;
+          } else {
+            console.warn(
+              `No matching ID found for Rider category name "${fare.rider_category_name}".`
+            );
+          }
+        }
+
+        if (!fareMediaId && fare.fare_media_name) {
+          const matchingMedia = fareMediaList.find(
+            (media) => media.fare_media_name === fare.fare_media_name
+          );
+          if (matchingMedia) {
+            fareMediaId = matchingMedia.fare_media_id;
+          } else {
+            console.warn(
+              `No matching ID found for fare media name "${fare.fare_media_name}".`
+            );
+          }
+        }
+
+        if (riderCategoryId && fareMediaId && fare.amount) {
+          const key = `${riderCategoryId}_${fareMediaId}`;
+          if (fromAreaId && toAreaId) {
+            if (
+              fare.from_area_id === fromAreaId &&
+              fare.to_area_id === toAreaId
+            ) {
+              filteredPrices[key] = fare.amount.toString();
+            }
+          } else {
+            filteredPrices[key] = fare.amount.toString();
+          }
+        }
+      });
+      setPrices(filteredPrices);
+      setCurrency(fareDetails.fixed_fares[0]?.currency || "TRY");
+    };
+
+    updatePrices();
+  }, [fareDetails, riderCategories, fareMediaList, fromAreaId, toAreaId]);
+
   const handlePriceChange = (riderCategoryId, fareMediaId, value) => {
     const key = `${riderCategoryId}_${fareMediaId}`;
-    const sanitizedValue = value.replace(/[^0-9.]/g, ""); // Sadece sayı ve nokta
+    const sanitizedValue = value.replace(/[^0-9.]/g, "");
     setPrices((prev) => ({
       ...prev,
       [key]: sanitizedValue,
     }));
   };
 
-  // Fare ürünü silme
   const handleDeleteFareProduct = async (riderCategoryId, fareMediaId) => {
     const fare = fareDetails?.fixed_fares?.find(
       (f) =>
         f.rider_category_id === riderCategoryId &&
-        f.fare_media_id === fareMediaId
+        f.fare_media_id === fareMediaId &&
+        (!fromAreaId || f.from_area_id === fromAreaId) &&
+        (!toAreaId || f.to_area_id === toAreaId)
     );
     if (!fare) {
-      Swal.fire("Error!", "No fare found to delete.", "error");
+      Swal.fire("Error!", "No fares found to be deleted.", "error");
       return;
     }
 
@@ -131,24 +147,20 @@ const FareProductsTable = ({
       try {
         await deleteFareProduct(project_id, token, fare.fare_product_id);
 
-        // Fare detaylarını güncelle
         const updatedFareDetails = await fetchDetailedFareForRoute(
-          selectedRoute.route_id,
+          selectedRoute?.route_id,
           project_id,
           token
         );
         if (updatedFareDetails) {
-          // Ref üzerinden Sidebar'a bildir
           if (fareProductsRef.current?.handleAddFareProduct) {
             fareProductsRef.current.handleAddFareProduct(updatedFareDetails);
           }
-          // Callback üzerinden Sidebar'a bildir
           if (onFareUpdate) {
             onFareUpdate(updatedFareDetails);
           }
         }
 
-        // prices state'inden sil
         setPrices((prev) => {
           const newPrices = { ...prev };
           delete newPrices[`${riderCategoryId}_${fareMediaId}`];
@@ -157,25 +169,28 @@ const FareProductsTable = ({
 
         Swal.fire("Success!", "Fare successfully deleted.", "success");
       } catch (error) {
-        console.error("Deleting error:", error);
+        console.error("Deletion error:", error);
         let errorMessage = "An error occurred while deleting the fare.";
         if (error.message.includes("dependent tables")) {
           errorMessage =
-            "This fare could not be deleted because it is dependent on other rules. Remove the relevant rules first.";
+            "This fare could not be deleted because it is linked to other rules. Please remove the related rules first.";
         }
         Swal.fire("Error!", errorMessage, "error");
       }
     }
   };
 
-  // Kaydetme işlemi
   const handleSubmit = async () => {
-    if (!selectedRoute?.route_id) {
-      Swal.fire("Error!", "Selected route information is missing!", "error");
+    if (!fromAreaId || !toAreaId) {
+      Swal.fire("Error!", "Please select the start and end areas!", "error");
       return;
     }
 
-    // Geçerli fiyatları topla
+    if (!selectedRoute?.route_id) {
+      Swal.fire("Error!", "Route not selected!", "error");
+      return;
+    }
+
     const validPrices = [];
     for (const rider of riderCategories) {
       for (const media of fareMediaList) {
@@ -193,11 +208,10 @@ const FareProductsTable = ({
       }
     }
 
-    // Hiç fiyat girilmemişse uyarı göster
     if (validPrices.length === 0) {
       const result = await Swal.fire({
-        title: "Price not entered!",
-        text: "Are you sure you want to save without entering any price??",
+        title: "No price entered!",
+        text: "Are you sure you want to save without entering a price?",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
@@ -211,10 +225,9 @@ const FareProductsTable = ({
       }
     }
 
-    // Onay al
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: `${validPrices.length} prices will be saved. Do you want to continue?`,
+      text: `${validPrices.length} price will be saved for the selected fields. Do you want to continue?`,
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -225,14 +238,15 @@ const FareProductsTable = ({
 
     if (result.isConfirmed) {
       try {
-        // Mevcut fare ürünlerini al
         const existingFares = fareDetails?.fixed_fares || [];
 
         for (const price of validPrices) {
           const existingFare = existingFares.find(
             (fare) =>
               fare.rider_category_id === price.rider_category_id &&
-              fare.fare_media_id === price.fare_media_id
+              fare.fare_media_id === price.fare_media_id &&
+              fare.from_area_id === fromAreaId &&
+              fare.to_area_id === toAreaId
           );
 
           const payload = {
@@ -241,11 +255,12 @@ const FareProductsTable = ({
             currency,
             rider_category_id: price.rider_category_id,
             fare_media_id: price.fare_media_id,
+            from_area_id: fromAreaId,
+            to_area_id: toAreaId,
             route_id: selectedRoute.route_id,
           };
 
           if (existingFare) {
-            // Mevcut fare ürününü güncelle
             await updateFareProduct(
               project_id,
               token,
@@ -253,41 +268,37 @@ const FareProductsTable = ({
               payload
             );
           } else {
-            // Yeni fare ürünü ekle
             await addFareProduct(project_id, token, payload);
           }
         }
 
-        // Fare detaylarını güncelle
         const updatedFareDetails = await fetchDetailedFareForRoute(
-          selectedRoute.route_id,
+          selectedRoute?.route_id,
           project_id,
           token
         );
         if (updatedFareDetails) {
-          // Ref üzerinden Sidebar'a bildir
           if (fareProductsRef.current?.handleAddFareProduct) {
             fareProductsRef.current.handleAddFareProduct(updatedFareDetails);
           }
-          // Callback üzerinden Sidebar'a bildir
           if (onFareUpdate) {
             onFareUpdate(updatedFareDetails);
           }
         }
 
-        Swal.fire("Success!", "Prices saved successfully.", "success");
+        Swal.fire("Success!", "Prices successfully recorded.", "success");
       } catch (error) {
         console.error("Saving error:", error);
-        Swal.fire(
-          "Error!",
-          `An error occurred while saving prices: ${error.message}`,
-          "error"
-        );
+        let errorMessage = `Error saving prices: ${error.message}`;
+        if (error.message.includes("network information")) {
+          errorMessage =
+            "Failed to save fare: No network is defined for the selected area or route. Please define a network.";
+        }
+        Swal.fire("Error!", errorMessage, "error");
       }
     }
   };
 
-  // Fare Media veya Rider Category eklendiğinde güncelle
   const handleAddFareMedia = (newMedia) => {
     if (newMedia?.fare_media_id && newMedia.fare_media_name) {
       setFareMediaList((prev) => [
@@ -320,7 +331,6 @@ const FareProductsTable = ({
     }
   };
 
-  // fareProductsRef ile fonksiyonları bağla
   if (fareProductsRef) {
     fareProductsRef.current = {
       handleAddFareMedia,
@@ -332,7 +342,6 @@ const FareProductsTable = ({
             let riderCategoryId = fare.rider_category_id;
             let fareMediaId = fare.fare_media_id;
 
-            // rider_category_id eksikse, rider_category_name ile eşleştir
             if (!riderCategoryId && fare.rider_category_name) {
               const matchingCategory = riderCategories.find(
                 (cat) => cat.rider_category_name === fare.rider_category_name
@@ -342,7 +351,6 @@ const FareProductsTable = ({
               }
             }
 
-            // fare_media_id eksikse, fare_media_name ile eşleştir
             if (!fareMediaId && fare.fare_media_name) {
               const matchingMedia = fareMediaList.find(
                 (media) => media.fare_media_name === fare.fare_media_name
@@ -354,7 +362,16 @@ const FareProductsTable = ({
 
             if (riderCategoryId && fareMediaId && fare.amount) {
               const key = `${riderCategoryId}_${fareMediaId}`;
-              updatedPrices[key] = fare.amount.toString();
+              if (fromAreaId && toAreaId) {
+                if (
+                  fare.from_area_id === fromAreaId &&
+                  fare.to_area_id === toAreaId
+                ) {
+                  updatedPrices[key] = fare.amount.toString();
+                }
+              } else {
+                updatedPrices[key] = fare.amount.toString();
+              }
             }
           });
           setPrices(updatedPrices);
@@ -370,8 +387,8 @@ const FareProductsTable = ({
     <div className="fare-products-table">
       {fareMediaList.length === 0 || riderCategories.length === 0 ? (
         <div className="alert alert-warning">
-          Please first define Payment Methods and Passenger Categories in Other
-          Fares.
+          Please first define Payment Methods and Passenger Categories in the
+          Other Fees section.
         </div>
       ) : (
         <>
@@ -385,6 +402,34 @@ const FareProductsTable = ({
                 <option value="TRY">TRY</option>
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mt-3">
+              <Form.Label>From Area</Form.Label>
+              <Form.Select
+                value={fromAreaId}
+                onChange={(e) => setFromAreaId(e.target.value)}
+              >
+                <option value="">Select Area</option>
+                {areas.map((area) => (
+                  <option key={area.area_id} value={area.area_id}>
+                    {area.area_name || area.area_id}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mt-3">
+              <Form.Label>To Area</Form.Label>
+              <Form.Select
+                value={toAreaId}
+                onChange={(e) => setToAreaId(e.target.value)}
+              >
+                <option value="">Select Area</option>
+                {areas.map((area) => (
+                  <option key={area.area_id} value={area.area_id}>
+                    {area.area_name || area.area_id}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
           </div>
@@ -413,7 +458,9 @@ const FareProductsTable = ({
                     const fare = fareDetails?.fixed_fares?.find(
                       (f) =>
                         f.rider_category_id === rider.rider_category_id &&
-                        f.fare_media_id === media.fare_media_id
+                        f.fare_media_id === media.fare_media_id &&
+                        (!fromAreaId || f.from_area_id === fromAreaId) &&
+                        (!toAreaId || f.to_area_id === toAreaId)
                     );
                     return (
                       <td key={media.fare_media_id}>
@@ -480,6 +527,8 @@ FareProductsTable.propTypes = {
         fare_product_name: PropTypes.string,
         rider_category_id: PropTypes.string,
         fare_media_id: PropTypes.string,
+        from_area_id: PropTypes.string,
+        to_area_id: PropTypes.string,
         amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         currency: PropTypes.string,
         rider_category_name: PropTypes.string,
@@ -487,7 +536,7 @@ FareProductsTable.propTypes = {
       })
     ),
   }),
-  onFareUpdate: PropTypes.func, // Yeni prop
+  onFareUpdate: PropTypes.func,
 };
 
 export default FareProductsTable;

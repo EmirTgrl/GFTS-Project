@@ -31,7 +31,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         // Fetch fare products
         const products = await fetchAllFareProducts(project_id, token);
         if (!products || products.length === 0) {
-          setError("Ücret ürünleri bulunamadı.");
+          setError("Fare products not found.");
         } else {
           setFareProducts(products);
         }
@@ -39,12 +39,12 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         // Fetch leg groups
         const legGroupsData = await fetchAllLegGroups(project_id, token);
         if (!legGroupsData || legGroupsData.length === 0) {
-          setError("Leg grupları bulunamadı. Lütfen önce leg gruplarını oluşturun.");
+          setError("No leg groups found. Please create leg groups first.");
         } else {
           setLegGroups(legGroupsData);
         }
       } catch (err) {
-        setError("Veriler yüklenirken hata oluştu: " + err.message);
+        setError("An error occurred while loading data: " + err.message);
       }
     };
 
@@ -66,22 +66,22 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
       !formData.fare_transfer_type
     ) {
       Swal.fire(
-        "Hata!",
-        "Başlangıç Leg Grubu, Bitiş Leg Grubu ve Transfer Türü gereklidir!",
+        "Error!",
+        "Starting Leg Group, Ending Leg Group and Transfer Type are required!",
         "error"
       );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu transfer kuralını eklemek istediğinizden emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to add this transfer rule??",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, ekle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, add!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
@@ -103,7 +103,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
 
         const response = await addFareTransferRule(project_id, token, payload);
 
-        Swal.fire("Başarılı!", "Transfer kuralı başarıyla eklendi.", "success");
+        Swal.fire("Success!", "Transfer rule added successfully.", "success");
 
         if (onAdd) {
           onAdd(response);
@@ -122,8 +122,8 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
       } catch (error) {
         console.error("Hata:", error);
         Swal.fire(
-          "Hata!",
-          `Transfer kuralı eklenemedi: ${error.message}`,
+          "Error!",
+          `Transfer rule could not be added: ${error.message}`,
           "error"
         );
       } finally {
@@ -135,11 +135,10 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
   return (
     <div className="form-container">
       <form onSubmit={handleSubmit}>
-        <h2 className="text-xl font-bold mb-4">Yeni Transfer Kuralı Ekle</h2>
         {error && <div className="text-red-500 mb-4">{error}</div>}
         <div className="mb-2">
           <label htmlFor="from_leg_group_id" className="form-label">
-            Başlangıç Leg Grubu (*)
+            From Leg Group (*)
           </label>
           <select
             className="form-control"
@@ -149,7 +148,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             onChange={handleChange}
             required
           >
-            <option value="">Seçiniz</option>
+            <option value="">Select</option>
             {legGroups.map((legGroup) => (
               <option key={legGroup} value={legGroup}>
                 {legGroup}
@@ -159,7 +158,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="to_leg_group_id" className="form-label">
-            Bitiş Leg Grubu (*)
+            To Leg Group (*)
           </label>
           <select
             className="form-control"
@@ -169,7 +168,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             onChange={handleChange}
             required
           >
-            <option value="">Seçiniz</option>
+            <option value="">Select</option>
             {legGroups.map((legGroup) => (
               <option key={legGroup} value={legGroup}>
                 {legGroup}
@@ -179,7 +178,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="transfer_count" className="form-label">
-            Transfer Sayısı
+            Transfer Count
           </label>
           <input
             type="number"
@@ -193,7 +192,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="duration_limit" className="form-label">
-            Süre Limiti (saniye)
+            Duration Limit (second)
           </label>
           <input
             type="number"
@@ -203,12 +202,12 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             value={formData.duration_limit}
             onChange={handleChange}
             min="0"
-            placeholder="Opsiyonel"
+            placeholder="Optional"
           />
         </div>
         <div className="mb-2">
           <label htmlFor="duration_limit_type" className="form-label">
-            Süre Limiti Türü
+            Duration Limit Type
           </label>
           <select
             className="form-control"
@@ -217,16 +216,16 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             value={formData.duration_limit_type}
             onChange={handleChange}
           >
-            <option value="">Seçiniz (Opsiyonel)</option>
-            <option value="0">Kalkıştan Kalkışa</option>
-            <option value="1">Kalkıştan Varışa</option>
-            <option value="2">Varıştan Kalkışa</option>
-            <option value="3">Varıştan Varışa</option>
+            <option value="">Select (Optional)</option>
+            <option value="0">Departure to Departure</option>
+            <option value="1">Departure to Arrival</option>
+            <option value="2">Arrival to Departure</option>
+            <option value="3">Arrival to Arrival</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="fare_transfer_type" className="form-label">
-            Transfer Türü (*)
+            Transfer Type (*)
           </label>
           <select
             className="form-control"
@@ -236,15 +235,15 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             onChange={handleChange}
             required
           >
-            <option value="">Seçiniz</option>
-            <option value="0">Tek Yön</option>
-            <option value="1">Çift Yön</option>
-            <option value="2">Döngüsel</option>
+            <option value="">Select</option>
+            <option value="0">One Way</option>
+            <option value="1">Two Way</option>
+            <option value="2">Cyclical</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="fare_product_id" className="form-label">
-            Ücret Ürünü
+            Fare Product
           </label>
           <select
             className="form-control"
@@ -253,7 +252,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             value={formData.fare_product_id}
             onChange={handleChange}
           >
-            <option value="">Seçiniz (Opsiyonel)</option>
+            <option value="">Select (Optional)</option>
             {fareProducts.map((product) => (
               <option
                 key={product.fare_product_id}
@@ -266,7 +265,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Ekleniyor..." : "Transfer Kuralı Ekle"}
+            {loading ? "Adding..." : "Add Transfer Rule"}
           </button>
         </div>
       </form>

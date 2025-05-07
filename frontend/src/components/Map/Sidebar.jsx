@@ -315,7 +315,7 @@ const Sidebar = ({
           setFareDetails(null);
         }
       } catch (error) {
-        console.error("VAn error occurred while loading the data:", error);
+        console.error("An error occurred while loading the data:", error);
         setAgencies({ data: [], total: 0 });
         setRoutes({ data: [], total: 0 });
         setCalendars([]);
@@ -371,11 +371,11 @@ const Sidebar = ({
         if (category === "route" && !selectedEntities.agency) {
           Swal.fire("Error!", "Please select an agency first.", "error");
         } else if (category === "trip" && !selectedEntities.route) {
-          Swal.fire("Error!", "Please select an route first.", "error");
+          Swal.fire("Error!", "Please select a route first.", "error");
         } else if (category === "stop" && !selectedEntities.trip) {
-          Swal.fire("Error!", "Please select an trip first.", "error");
+          Swal.fire("Error!", "Please select a trip first.", "error");
         } else if (category === "shape" && !selectedEntities.trip) {
-          Swal.fire("Error!", "Please select an trip first.", "error");
+          Swal.fire("Error!", "Please select a trip first.", "error");
         } else {
           setFormConfig({ action: "add", category });
         }
@@ -409,7 +409,7 @@ const Sidebar = ({
       text: "Enter the offset (in minutes) to be applied to all stop times:",
       input: "number",
       showCancelButton: true,
-      confirmButtonText: "Cpoy",
+      confirmButtonText: "Copy",
       cancelButtonText: "Cancel",
       showLoaderOnConfirm: true,
       preConfirm: (offset) => {
@@ -695,7 +695,7 @@ const Sidebar = ({
             setFareDetails(null);
             Swal.fire(
               "Error!",
-              "Failed to load data. Please try again later..",
+              "Failed to load data. Please try again later.",
               "error"
             );
           }
@@ -755,7 +755,7 @@ const Sidebar = ({
       }
       case "fare": {
         if (!selectedEntities.route) {
-          Swal.fire("Error!", "Please select a trip first.", "error");
+          Swal.fire("Error!", "Please select a route first.", "error");
           return;
         }
         setShowFloatingFareForms(true);
@@ -1491,6 +1491,14 @@ const Sidebar = ({
                                 ? `${fare.start_time} - ${fare.end_time}`
                                 : "All Day"}
                             </div>
+                            {fare.from_area_id && fare.to_area_id && (
+                              <div className="mb-1">
+                                <strong>Alanlar:</strong>{" "}
+                                {`${fare.from_area_name || "Unspecified"} → ${
+                                  fare.to_area_name || "Unspecified"
+                                }`}
+                              </div>
+                            )}
                           </div>
                         </Collapse>
                       </div>
@@ -1503,7 +1511,7 @@ const Sidebar = ({
                 </div>
 
                 {/* Mesafeye Dayalı Ücretlendirme */}
-                {/* <div className="mb-4">
+                <div className="mb-4">
                   <h6 className="mb-3">
                     Distance Based Pricing (Pay As You Go)
                   </h6>
@@ -1531,9 +1539,9 @@ const Sidebar = ({
                               -{" "}
                               {fare.amount
                                 ? `${fare.amount} ${fare.currency}`
-                                : "N/A"}{" "}
-                              ({fare.from_area_name || "Unspecified"} →{" "}
-                              {fare.to_area_name || "Unspecified"})
+                                : "Yok"}{" "}
+                              ({fare.distance_label || "Distance Not Specified"}
+                              )
                             </div>
                             {expandedFare === `distance-${index}` ? (
                               <ChevronUp size={16} />
@@ -1554,19 +1562,23 @@ const Sidebar = ({
                           >
                             <div className="mb-1">
                               <strong>Fare Product:</strong>{" "}
-                              {fare.fare_product_name || "Belirtilmemiş"}
+                              {fare.fare_product_name || "Unspecified"}
                             </div>
                             <div className="mb-1">
-                              <strong>Starting Area:</strong>{" "}
-                              {fare.from_area_name || "Belirtilmemiş"}
+                              <strong>Distance:</strong>{" "}
+                              {fare.distance_label || "Tanımsız Mesafe"}
                             </div>
+                            {fare.from_area_id && fare.to_area_id && (
+                              <div className="mb-1">
+                                <strong>Areas:</strong>{" "}
+                                {`${fare.from_area_name || "Unspecified"} → ${
+                                  fare.to_area_name || "Unspecified"
+                                }`}
+                              </div>
+                            )}
                             <div className="mb-1">
-                              <strong>Ending Area:</strong>{" "}
-                              {fare.to_area_name || "Belirtilmemiş"}
-                            </div>
-                            <div className="mb-1">
-                              <strong>Note:</strong> This fare is calculated
-                              according to the distance traveled.
+                              <strong>Note:</strong> This fare is based on the
+                              distance traveled is calculated accordingly.
                             </div>
                           </div>
                         </Collapse>
@@ -1574,10 +1586,10 @@ const Sidebar = ({
                     ))
                   ) : (
                     <p className="text-muted mb-0">
-                      Distance based fare rule is not defined for this line..
+                      No distance-based fare rule is defined for this line.
                     </p>
                   )}
-                </div> */}
+                </div>
 
                 {/* Transfer Ücret Kuralları */}
                 <div className="mb-4">
@@ -1636,13 +1648,13 @@ const Sidebar = ({
                               {rule.transfer_count || "1"}
                             </div>
                             <div className="mb-1">
-                              <strong>Time Limit:</strong>{" "}
+                              <strong>Duration Limit:</strong>{" "}
                               {rule.duration_limit
-                                ? `${rule.duration_limit / 60} minutes`
+                                ? `${rule.duration_limit / 60} minute`
                                 : "Sınırsız"}
                             </div>
                             <div className="mb-1">
-                              <strong>Time Type:</strong>{" "}
+                              <strong>Duration Limit Type:</strong>{" "}
                               {rule.duration_limit_type || "Unspecified"}
                             </div>
                             <div className="mb-1">
@@ -1981,7 +1993,7 @@ const Sidebar = ({
             }
           }}
         />
-      )} 
+      )}
     </div>
   );
 };
