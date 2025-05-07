@@ -39,6 +39,7 @@ const ProjectsPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [exportLoading, setExportLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState({}); // Proje bazlı yükleme durumu
   const projectsPerPage = 10;
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
@@ -77,7 +78,7 @@ const ProjectsPage = () => {
   const handleDeleteProject = async (projectId, projectName) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: `You are about to delete "${projectName}". This action cannot be undone!`,
+      text: `You are about to delete "${projectName}" and all associated GTFS data. This action cannot be undone!`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc3545",
@@ -87,13 +88,28 @@ const ProjectsPage = () => {
     });
 
     if (result.isConfirmed) {
+      setDeleteLoading((prev) => ({ ...prev, [projectId]: true })); // Proje bazlı yükleme başlat
       try {
         await deleteProject(projectId, token);
-        setProjects((prev) => prev.filter((p) => p.project_id !== projectId));
-        Swal.fire("Deleted!", "Your GTFS file has been deleted.", "success");
+        await loadProjects(); // Proje listesini yenile
+        Swal.fire(
+          "Deleted!",
+          "Your project and associated GTFS data have been deleted.",
+          "success"
+        );
       } catch (error) {
         console.error("Error deleting GTFS file:", error);
-        Swal.fire("Error!", "Failed to delete the GTFS file.", "error");
+        Swal.fire({
+          title: "Error!",
+          text:
+            error.response?.data?.message === "Project not found"
+              ? "The project could not be found. It may have been deleted already."
+              : error.response?.data?.details ||
+                "Failed to delete the project and GTFS data.",
+          icon: "error",
+        });
+      } finally {
+        setDeleteLoading((prev) => ({ ...prev, [projectId]: false })); // Yükleme durumunu sıfırla
       }
     }
   };
@@ -265,9 +281,14 @@ const ProjectsPage = () => {
                                     project.file_name
                                   )
                                 }
+                                disabled={deleteLoading[project.project_id]} // Proje bazlı yükleme durumu
                                 title="Delete"
                               >
-                                <Trash size={16} />
+                                {deleteLoading[project.project_id] ? (
+                                  <span className="spinner-border spinner-border-sm me-1" />
+                                ) : (
+                                  <Trash size={16} />
+                                )}
                               </Button>
                             </td>
                           </tr>

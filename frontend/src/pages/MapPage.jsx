@@ -335,6 +335,7 @@ const MapPage = () => {
         setSelectedEntities={setSelectedEntities}
         setSelectedCategory={setSelectedCategory}
         token={token}
+        project_id={project_id}
       />
 
       <FloatingActions

@@ -1,4 +1,5 @@
 const { pool } = require("../db.js");
+const { tableExists } = require("../initTables.js");
 
 const projectService = {
   getProjectsByQuery: async (req, res) => {
@@ -19,7 +20,7 @@ const projectService = {
       if (validFields.includes(param)) {
         if (param === "validation_data") {
           fields.push("JSON_CONTAINS(validation_data, ?)");
-          values.push(req.query[param]); 
+          values.push(req.query[param]);
         } else {
           fields.push(`${param} = ?`);
           values.push(req.query[param]);
@@ -67,20 +68,90 @@ const projectService = {
   },
 
   deleteProjectById: async (req, res) => {
+    const user_id = req.user.id;
+    const { project_id } = req.params;
+
+    // GTFS tabloları, bağımlılık sırasına göre
+    const gtfsTables = [
+      // En bağımlı tablolar
+      "stop_times",
+      "fare_transfer_rules",
+      "fare_leg_join_rules",
+      "route_networks",
+      "stop_areas",
+      // Orta seviye bağımlı tablolar
+      "trips",
+      "fare_leg_rules",
+      "fare_rules",
+      "fare_products",
+      // Daha az bağımlı tablolar
+      "stops",
+      "routes",
+      "shapes",
+      "calendar",
+      "fare_attributes",
+      "fare_media",
+      "rider_categories",
+      "timeframes",
+      "networks",
+      "areas",
+      // Bağımsız tablolar
+      "agency",
+    ];
+
+    // Transaction başlat
+    let connection;
     try {
-      const user_id = req.user.id;
-      const { project_id } = req.params;
-      await pool.execute(
-        `
-        DELETE FROM projects
-        WHERE project_id = ? AND user_id = ?
-        `,
+      connection = await pool.getConnection();
+      await connection.beginTransaction();
+
+      // Foreign key kısıtlamalarını devre dışı bırak
+      await connection.execute("SET FOREIGN_KEY_CHECKS = 0;");
+
+      // GTFS tablolarındaki verileri sil, sadece mevcut tablolar için
+      for (const table of gtfsTables) {
+        const exists = await tableExists(table);
+        if (exists) {
+          await connection.execute(
+            `DELETE FROM ${table} WHERE project_id = ? AND user_id = ?`,
+            [project_id, user_id]
+          );
+        } else {
+          console.warn(`Table ${table} does not exist, skipping deletion`);
+        }
+      }
+
+      // Projects tablosundan projeyi sil
+      const [result] = await connection.execute(
+        `DELETE FROM projects WHERE project_id = ? AND user_id = ?`,
         [project_id, user_id]
       );
-      res.json({ message: "Project deleted successfully" });
+
+      if (result.affectedRows === 0) {
+        await connection.execute("SET FOREIGN_KEY_CHECKS = 1;"); // Kısıtlamaları geri aç
+        await connection.rollback();
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      // Foreign key kısıtlamalarını tekrar etkinleştir
+      await connection.execute("SET FOREIGN_KEY_CHECKS = 1;");
+
+      // Transaction'ı commit et
+      await connection.commit();
+      res.json({
+        message: "Project and associated GTFS data deleted successfully",
+      });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
+      console.error("Error deleting project and GTFS data:", error);
+      if (connection) {
+        await connection.execute("SET FOREIGN_KEY_CHECKS = 1;"); // Hata durumunda da kısıtlamaları geri aç
+        await connection.rollback();
+      }
+      res.status(500).json({ message: "Server error", details: error.message });
+    } finally {
+      if (connection) {
+        connection.release();
+      }
     }
   },
 

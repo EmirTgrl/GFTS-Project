@@ -53,8 +53,8 @@ const stopService = {
     `;
 
     const dataQuery = `
-      SELECT stop_id, stop_code, stop_name, stop_desc, stop_lat, stop_lon, zone_id, stop_url, location_type, parent_station, stop_timezone, wheelchair_boarding
-      FROM stops
+      SELECT s.*
+      FROM stops s
       WHERE ${fields.join(" AND ")}
       LIMIT ${limit} OFFSET ${offset}
     `;
@@ -206,6 +206,33 @@ const stopService = {
       });
     } catch (error) {
       console.error(`Error in saveStop:`, error);
+      res.status(500).json({ error: "Server Error", details: error.message });
+    }
+  },
+
+  // getAllStopsByProjectId fonksiyonunu ekleyin
+  getAllStopsByProjectId: async (req, res) => {
+    const user_id = req.user.id;
+    const { project_id } = req.query;
+
+    if (!project_id) {
+      return res.status(400).json({ error: "project_id is required" });
+    }
+
+    const query = `
+      SELECT *
+      FROM stops
+      WHERE user_id = ? AND project_id = ?
+    `;
+
+    try {
+      const [rows] = await pool.query(query, [user_id, project_id]);
+      res.json({
+        data: rows,
+        total: rows.length
+      });
+    } catch (error) {
+      console.error("Query execution error:", error);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },

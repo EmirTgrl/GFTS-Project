@@ -24,6 +24,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet-polylinedecorator";
+import { fetchAllStopsByProjectId } from "../../api/stopApi.js";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -131,6 +132,7 @@ const MapView = ({
   setSelectedEntities,
   token,
   setSelectedCategory,
+  project_id,
 }) => {
   const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
   const [tempShapes, setTempShapes] = useState([]);
@@ -156,13 +158,15 @@ const MapView = ({
   };
 
   useEffect(() => {
-    if (!stopsAndTimes || stopsAndTimes.length === 0) return;
+    // stopsAndTimes'ın veri yapısını kontrol et
+    const stopsData = stopsAndTimes?.data || [];
+    if (!stopsData.length) return;
 
     if (
       JSON.stringify(stopsAndTimes) !==
       JSON.stringify(prevStopsAndTimesRef.current)
     ) {
-      const newStops = stopsAndTimes
+      const newStops = stopsData
         .filter((stop) =>
           isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon))
         )
@@ -258,7 +262,10 @@ const MapView = ({
             token
           );
           await saveMultipleStopsAndTimes(tempStopsAndTimes, token);
-          setStopsAndTimes(tempStopsAndTimes);
+          setStopsAndTimes({
+            data: tempStopsAndTimes,
+            total: tempStopsAndTimes.length,
+          });
           setShapes(tempShapes);
           Swal.fire("Success!", "Stops and shapes are saved.", "success");
         } catch (error) {
@@ -445,13 +452,11 @@ const MapView = ({
     }
 
     try {
-      // İlk olarak stoplar arasındaki rotayı OSRM ile hesapla
       const routeData = await calculateRouteBetweenStops(
         tempStopsAndTimes,
         token
       );
 
-      // OSRM ile şekilleri yola snap et
       const snappedShapes = await snapShapesToRoads(
         tempShapes.length > 0
           ? tempShapes
@@ -485,6 +490,40 @@ const MapView = ({
   };
 
   const defaultCenter = [51.505, -0.09];
+
+  const fetchAllStops = async () => {
+    // Token ve project_id kontrolü
+    if (!token) {
+      console.error("No token available");
+      return;
+    }
+
+    if (!project_id) {
+      console.error("No project_id available");
+      return;
+    }
+
+    // Seçili bir trip yoksa ve zoom seviyesi 10 veya üzerindeyse tüm durakları al
+    if (!selectedEntities.trip && currentZoom >= 10) {
+      try {
+        const allStops = await fetchAllStopsByProjectId(project_id, token);
+        if (currentBounds && allStops?.data) {
+          const filteredStops = allStops.data.filter(
+            (stop) =>
+              isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon)) &&
+              currentBounds.contains([parseFloat(stop.stop_lat), parseFloat(stop.stop_lon)])
+          );
+          setVisibleStops(filteredStops);
+        }
+      } catch (error) {
+        console.error("Error fetching all stops:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchAllStops();
+  }, [currentBounds, currentZoom, selectedEntities.trip, token, project_id]);
 
   return (
     <MapContainer
@@ -641,8 +680,9 @@ MapView.propTypes = {
   setEditorMode: PropTypes.func.isRequired,
   selectedEntities: PropTypes.object.isRequired,
   setSelectedEntities: PropTypes.func.isRequired,
-  setSelectedCategory: PropTypes.func.isRequired,
   token: PropTypes.string.isRequired,
+  project_id: PropTypes.string.isRequired,
+  setSelectedCategory: PropTypes.func.isRequired,
 };
 
 BoundsTracker.propTypes = {

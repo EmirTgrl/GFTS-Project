@@ -4,7 +4,7 @@ import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import Select from "react-select";
 import { addArea } from "../api/fareApi";
-import { fetchStopsByProjectId } from "../api/stopApi";
+import { fetchAllStopsByProjectId } from "../api/stopApi";
 
 const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
@@ -27,7 +27,7 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
 
       try {
         setStopsLoading(true);
-        const response = await fetchStopsByProjectId(project_id, token);
+        const response = await fetchAllStopsByProjectId(project_id, token);
 
         const stopsData = Array.isArray(response.data) ? response.data : [];
 

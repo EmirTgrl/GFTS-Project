@@ -23,7 +23,7 @@ import {
   deleteArea,
 } from "../../api/fareApi";
 import { fetchRoutesByProjectId } from "../../api/routeApi";
-import { fetchStopsByProjectId } from "../../api/stopApi";
+import { fetchAllStopsByProjectId } from "../../api/stopApi";
 import RiderCategoriesAddPage from "../../pages/RiderCategoriesAddPage";
 import FareMediaAddPage from "../../pages/FareMediaAddPage";
 import AddFareTransferRuleForm from "../../pages/FareTransferRuleAddPAge";
@@ -85,12 +85,34 @@ const FareSettingsPanel = ({
         setNetworks(networksData || []);
         const areasData = await fetchAllAreas(project_id, token);
         setAreas(areasData || []);
-        const routesData = await fetchRoutesByProjectId(project_id, token);
-        setRoutes(Array.isArray(routesData.data) ? routesData.data : []);
-        const stopsData = await fetchStopsByProjectId(project_id, token);
+        const stopsData = await fetchAllStopsByProjectId(project_id, token);
         setStops(Array.isArray(stopsData.data) ? stopsData.data : []);
         const products = await fetchAllFareProducts(project_id, token);
         setFareProducts(products || []);
+
+        // Fetch all routes across all pages
+        let allRoutes = [];
+        let page = 1;
+        const limit = 8;
+        while (true) {
+          const response = await fetchRoutesByProjectId(
+            project_id,
+            token,
+            page,
+            limit
+          );
+          const routesData = Array.isArray(response.data) ? response.data : [];
+          allRoutes = [...allRoutes, ...routesData];
+          if (
+            routesData.length < limit ||
+            !response.total ||
+            allRoutes.length >= response.total
+          ) {
+            break;
+          }
+          page++;
+        }
+        setRoutes(allRoutes);
       } catch (error) {
         console.error("Error while loading data:", error);
         Swal.fire("Error", "Failed to load data.", "error");

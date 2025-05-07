@@ -19,9 +19,9 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
   const [routesLoading, setRoutesLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch routes on component mount
+  // Fetch all routes across all pages
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchAllRoutes = async () => {
       if (!project_id || !token) {
         setError("Project ID or token is missing.");
         return;
@@ -29,15 +29,36 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
 
       try {
         setRoutesLoading(true);
-        const response = await fetchRoutesByProjectId(project_id, token);
+        let allRoutes = [];
+        let page = 1;
+        const limit = 8;
 
-        const routesData = Array.isArray(response.data) ? response.data : [];
+        while (true) {
+          const response = await fetchRoutesByProjectId(
+            project_id,
+            token,
+            page,
+            limit
+          );
+          const routesData = Array.isArray(response.data) ? response.data : [];
 
-        if (routesData.length === 0) {
+          allRoutes = [...allRoutes, ...routesData];
+
+          if (
+            routesData.length < limit ||
+            !response.total ||
+            allRoutes.length >= response.total
+          ) {
+            break;
+          }
+          page++;
+        }
+
+        if (allRoutes.length === 0) {
           setError("No routes found. Please create routes first.");
           setRoutes([]);
         } else {
-          setRoutes(routesData);
+          setRoutes(allRoutes);
           setError(null);
         }
       } catch (err) {
@@ -49,7 +70,7 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
       }
     };
 
-    fetchData();
+    fetchAllRoutes();
   }, [project_id, token]);
 
   // Handle text input changes
