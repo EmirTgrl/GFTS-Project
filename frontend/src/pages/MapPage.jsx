@@ -10,6 +10,7 @@ import Swal from "sweetalert2";
 import { Modal, Button } from "react-bootstrap";
 import { fetchShapesByTripId } from "../api/shapeApi";
 import { fetchStopsAndStopTimesByTripId } from "../api/stopTimeApi";
+import { fetchAllAreas } from "../api/fareApi"; // Yeni import
 
 const MapPage = () => {
   const { token } = useContext(AuthContext);
@@ -21,6 +22,7 @@ const MapPage = () => {
   const [stopsAndTimes, setStopsAndTimes] = useState([]);
   const [calendars, setCalendars] = useState([]);
   const [agencies, setAgencies] = useState([]);
+  const [areas, setAreas] = useState([]); // Yeni state
   const [mapCenter, setMapCenter] = useState([39.0, 35.0]);
   const [zoom, setZoom] = useState(6);
   const [clickedCoords, setClickedCoords] = useState(null);
@@ -44,6 +46,20 @@ const MapPage = () => {
   const [activeKey, setActiveKey] = useState("0");
   const [showUrlModal, setShowUrlModal] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState("");
+
+  useState(() => {
+    const fetchAreasData = async () => {
+      try {
+        const areasData = await fetchAllAreas(project_id, token);
+        setAreas(areasData || []);
+      } catch (error) {
+        console.error("Error fetching areas:", error);
+        setAreas([]);
+      }
+    };
+
+    fetchAreasData();
+  }, [project_id, token]);
 
   useEffect(() => {
     const { selectedRoute: prevRoute, selectedTrip: prevTrip } =
@@ -93,7 +109,7 @@ const MapPage = () => {
       const query = new URLSearchParams(location.search);
       const agencyId = query.get("agency");
       const routeId = query.get("route");
-      const calendarId = query.get("calendar"); 
+      const calendarId = query.get("calendar");
       const tripId = query.get("trip");
       const stopId = query.get("stop");
 
@@ -101,9 +117,9 @@ const MapPage = () => {
         !agencies.data?.length ||
         !routes.data?.length ||
         !trips.data?.length ||
-        !calendars.data?.length 
+        !calendars.data?.length
       ) {
-        return; 
+        return;
       }
 
       let updatedEntities = { ...selectedEntities };
@@ -336,6 +352,7 @@ const MapPage = () => {
         setSelectedCategory={setSelectedCategory}
         token={token}
         project_id={project_id}
+        areas={areas} // Yeni prop
       />
 
       <FloatingActions
@@ -363,11 +380,6 @@ const MapPage = () => {
             Copy URL
           </Button>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowUrlModal(false)}>
-            Close
-          </Button>
-        </Modal.Footer>
       </Modal>
     </div>
   );

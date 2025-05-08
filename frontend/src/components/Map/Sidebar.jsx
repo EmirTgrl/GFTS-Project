@@ -60,7 +60,8 @@ import {
   fetchStopsAndStopTimesByTripId,
   deleteStopTimeById,
 } from "../../api/stopTimeApi";
-import { deleteStopById, fetchStopsByProjectId } from "../../api/stopApi";
+import { fetchAllStopsByProjectId } from "../../api/stopApi";
+import { deleteStopById } from "../../api/stopApi";
 import { fetchDetailedFareForRoute } from "../../api/fareApi";
 import AgencyAddPage from "../../pages/AgencyAddPage";
 import AgencyEditPage from "../../pages/AgencyEditPage";
@@ -77,6 +78,7 @@ import FareSettingsPanel from "./FareSettingsPanel";
 import TripFilterPanel from "./TripFilterPanel";
 import "../../styles/Sidebar.css";
 import { fetchShapesByTripId } from "../../api/shapeApi";
+import { debounce } from "lodash";
 
 const Sidebar = ({
   token,
@@ -110,8 +112,8 @@ const Sidebar = ({
   const [pageAgencies, setPageAgencies] = useState(1);
   const [pageRoutes, setPageRoutes] = useState(1);
   const [pageTrips, setPageTrips] = useState(1);
-  const [pageStops, setPageStops] = useState(1);
   const [pageCalendars, setPageCalendars] = useState(1);
+  const [pageStops, setPageStops] = useState(1);
   const [formConfig, setFormConfig] = useState(null);
   const [searchTerms, setSearchTerms] = useState({
     agencies: "",
@@ -130,6 +132,7 @@ const Sidebar = ({
   const [expandedTransfer, setExpandedTransfer] = useState(null);
   const [showFloatingFareForms, setShowFloatingFareForms] = useState(false);
   const [showFareSettings, setShowFareSettings] = useState(false);
+  const [allStops, setAllStops] = useState([]);
   const itemsPerPage = 8;
 
   const categoryMap = {
@@ -158,9 +161,7 @@ const Sidebar = ({
       const [hB, mB, sB] = timeB.split(":").map(Number);
       const secondsA = hA * 3600 + mA * 60 + sA;
       const secondsB = hB * 3600 + mB * 60 + sB;
-      return sortDirection === "asc"
-        ? secondsA - secondsB
-        : secondsB - secondsA;
+      return sortDirection === "asc" ? secondsA - secondsB : secondsB - secondsA;
     });
   };
 
@@ -179,10 +180,38 @@ const Sidebar = ({
     return { data: paginatedTrips, total: sortedTrips.length };
   };
 
+  const filterStops = (stops, searchTerm) => {
+    if (!searchTerm) return stops;
+    return stops.filter((stop) =>
+      stop.stop_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  const debouncedSearch = debounce((category, term) => {
+    setSearchTerms((prev) => ({ ...prev, [category]: term }));
+    if (category === "agencies") setPageAgencies(1);
+    if (category === "routes") setPageRoutes(1);
+    if (category === "trips") setPageTrips(1);
+    if (category === "calendars") setPageCalendars(1);
+    if (category === "stops") setPageStops(1);
+  }, 300);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (!token || !project_id) return;
+
+        // Fetch All Stops
+        if (!selectedEntities.trip && !selectedEntities.agency && !selectedEntities.route) {
+          const allStopsData = await fetchAllStopsByProjectId(project_id, token);
+          setAllStops(allStopsData?.data || []);
+          if (!selectedEntities.trip) {
+            setStopsAndTimes({
+              data: allStopsData?.data || [],
+              total: allStopsData?.data?.length || 0,
+            });
+          }
+        }
 
         // Fetch Agencies
         const agencyData = await fetchAgenciesByProjectId(
@@ -293,7 +322,7 @@ const Sidebar = ({
           total: totalTrips,
         });
 
-        // Fetch Stops
+        // Fetch Stops for Selected Trip
         if (selectedEntities.trip) {
           const stopsResponse = await fetchStopsAndStopTimesByTripId(
             selectedEntities.trip.trip_id,
@@ -310,27 +339,6 @@ const Sidebar = ({
             token
           );
           setShapes(shapesResponse || []);
-        } else {
-          const stopsResponse = await fetchStopsByProjectId(
-            project_id,
-            token,
-            pageStops,
-            itemsPerPage,
-            searchTerms.stops || ""
-          );
-          if (!stopsResponse.data || stopsResponse.data.length === 0) {
-            console.warn("No stops found for project_id:", project_id);
-            Swal.fire({
-              icon: "warning",
-              title: "No Stops Found",
-              text: "No stops are available for this project. Please add stops to the GTFS.",
-              toast: true,
-              position: "top-end",
-              timer: 3000,
-            });
-          }
-          setStopsAndTimes(stopsResponse || { data: [], total: 0 });
-          setShapes([]);
         }
 
         // Fetch Fare Details
@@ -353,6 +361,7 @@ const Sidebar = ({
         setTrips({ data: [], total: 0 });
         setShapes([]);
         setStopsAndTimes({ data: [], total: 0 });
+        setAllStops([]);
         setTripTimes({});
         setFareDetails(null);
         Swal.fire({
@@ -373,12 +382,10 @@ const Sidebar = ({
     pageAgencies,
     pageRoutes,
     pageTrips,
-    pageStops,
     pageCalendars,
     searchTerms.agencies,
     searchTerms.routes,
     searchTerms.trips,
-    searchTerms.stops,
     searchTerms.calendars,
     selectedEntities.agency,
     selectedEntities.route,
@@ -396,12 +403,7 @@ const Sidebar = ({
   }, [action]);
 
   const handleSearch = (category, term) => {
-    setSearchTerms({ ...searchTerms, [category]: term });
-    if (category === "agencies") setPageAgencies(1);
-    if (category === "routes") setPageRoutes(1);
-    if (category === "trips") setPageTrips(1);
-    if (category === "stops") setPageStops(1);
-    if (category === "calendars") setPageCalendars(1);
+    debouncedSearch(category, term);
   };
 
   const handleAction = (actionType) => {
@@ -568,6 +570,7 @@ const Sidebar = ({
           setSelectedCategory("");
           setActiveKey("0");
           setFareDetails(null);
+          setStopsAndTimes({ data: allStops, total: allStops.length });
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -584,6 +587,7 @@ const Sidebar = ({
           setShowFareSettings(false);
           setShowFloatingFareForms(false);
           setFareDetails(null);
+          setStopsAndTimes({ data: allStops, total: allStops.length });
         }
         break;
       }
@@ -602,6 +606,7 @@ const Sidebar = ({
           setShowFareSettings(false);
           setShowFloatingFareForms(false);
           setFareDetails(null);
+          setStopsAndTimes({ data: allStops, total: allStops.length });
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -622,6 +627,7 @@ const Sidebar = ({
               token
             );
             setFareDetails(fareResponse || null);
+            setStopsAndTimes({ data: allStops, total: allStops.length });
           } catch (error) {
             console.error("Fare details could not be received:", error);
             setFareDetails(null);
@@ -644,6 +650,7 @@ const Sidebar = ({
           setShowFareSettings(false);
           setShowFloatingFareForms(false);
           setFareDetails(null);
+          setStopsAndTimes({ data: allStops, total: allStops.length });
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -658,6 +665,7 @@ const Sidebar = ({
           setShowFareSettings(false);
           setShowFloatingFareForms(false);
           setFareDetails(null);
+          setStopsAndTimes({ data: allStops, total: allStops.length });
         }
         break;
       }
@@ -671,18 +679,10 @@ const Sidebar = ({
           setSelectedCategory("calendar");
           setActiveKey("3");
           setShapes([]);
-          setStopsAndTimes({ data: [], total: 0 });
+          setStopsAndTimes({ data: allStops, total: allStops.length });
           setShowFareSettings(false);
           setShowFloatingFareForms(false);
           setFareDetails(null);
-          const stopsResponse = await fetchStopsByProjectId(
-            project_id,
-            token,
-            pageStops,
-            itemsPerPage,
-            searchTerms.stops || ""
-          );
-          setStopsAndTimes(stopsResponse || { data: [], total: 0 });
         } else {
           setSelectedEntities((prev) => ({
             ...prev,
@@ -723,7 +723,7 @@ const Sidebar = ({
               error
             );
             setShapes([]);
-            setStopsAndTimes({ data: [], total: 0 });
+            setStopsAndTimes({ data: allStops, total: allStops.length });
             setFareDetails(null);
             Swal.fire(
               "Error!",
@@ -849,6 +849,7 @@ const Sidebar = ({
             return newTripTimes;
           });
           setFareDetails(null);
+          setStopsAndTimes({ data: allStops, total: allStops.length });
         } else if (category === "stop") {
           await deleteStopTimeById(entity.trip_id, entity.stop_id, token);
           await deleteStopById(entity.stop_id, token);
@@ -857,6 +858,9 @@ const Sidebar = ({
             data: prev.data.filter((s) => s.stop_id !== entity.stop_id),
             total: prev.total - 1,
           }));
+          setAllStops((prev) =>
+            prev.filter((s) => s.stop_id !== entity.stop_id)
+          );
           setSelectedEntities((prev) => ({ ...prev, stop: null }));
           setFareDetails(null);
         } else if (category === "calendar") {
@@ -1456,99 +1460,20 @@ const Sidebar = ({
                             </div>
                             {fare.from_area_id && fare.to_area_id && (
                               <div className="mb-1">
-                                <strong>Alanlar:</strong>{" "}
-                                {`${fare.from_area_name || "Unspecified"} → ${
-                                  fare.to_area_name || "Unspecified"
-                                }`}
-                              </div>
-                            )}
-                          </div>
-                        </Collapse>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted mb-0">
-                      Stopover fare rule is not defined for this route.
-                    </p>
-                  )}
-                </div>
-
-                <div className="mb-4">
-                  <h6 className="mb-3">
-                    Distance Based Pricing (Pay As You Go)
-                  </h6>
-                  {fareDetails.distance_based_fares &&
-                  fareDetails.distance_based_fares.length > 0 ? (
-                    fareDetails.distance_based_fares.map((fare, index) => (
-                      <div
-                        key={fare.fare_product_id || `distance-fare-${index}`}
-                        className="mb-2"
-                      >
-                        <Card
-                          className="fare-card"
-                          onClick={() => toggleFareExpand(`distance-${index}`)}
-                          style={{
-                            cursor: "pointer",
-                            border: "1px solid #e0e0e0",
-                            borderRadius: "8px",
-                          }}
-                        >
-                          <Card.Body className="p-2 d-flex justify-content-between align-items-center">
-                            <div>
-                              <strong>
-                                {fare.rider_category_name || "Unspecified"}
-                              </strong>{" "}
-                              -{" "}
-                              {fare.amount
-                                ? `${fare.amount} ${fare.currency}`
-                                : "Yok"}{" "}
-                              ({fare.distance_label || "Distance Not Specified"}
-                              )
-                            </div>
-                            {expandedFare === `distance-${index}` ? (
-                              <ChevronUp size={16} />
-                            ) : (
-                              <ChevronDown size={16} />
-                            )}
-                          </Card.Body>
-                        </Card>
-                        <Collapse in={expandedFare === `distance-${index}`}>
-                          <div
-                            className="fare-details p-2"
-                            style={{
-                              backgroundColor: "#f9f9f9",
-                              borderRadius: "0 0 8px 8px",
-                              border: "1px solid #e0e0e0",
-                              borderTop: "none",
-                            }}
-                          >
-                            <div className="mb-1">
-                              <strong>Fare Product:</strong>{" "}
-                              {fare.fare_product_name || "Unspecified"}
-                            </div>
-                            <div className="mb-1">
-                              <strong>Distance:</strong>{" "}
-                              {fare.distance_label || "Tanımsız Mesafe"}
-                            </div>
-                            {fare.from_area_id && fare.to_area_id && (
-                              <div className="mb-1">
                                 <strong>Areas:</strong>{" "}
                                 {`${fare.from_area_name || "Unspecified"} → ${
                                   fare.to_area_name || "Unspecified"
                                 }`}
                               </div>
                             )}
-                            <div className="mb-1">
-                              <strong>Note:</strong> This fare is based on the
-                              distance traveled is calculated accordingly.
-                            </div>
                           </div>
                         </Collapse>
                       </div>
                     ))
                   ) : (
                     <p className="text-muted mb-0">
-                      No distance-based fare rule is defined for this line.
+                      Got off and got on fare rule is not defined for this
+                      route.
                     </p>
                   )}
                 </div>
@@ -1646,6 +1571,78 @@ const Sidebar = ({
           ) : (
             <p className="text-muted text-center">Please select a route.</p>
           )}
+        </Accordion.Body>
+      </Accordion.Item>
+    );
+  };
+
+  const renderStopsAccordion = () => {
+    const filteredStops = filterStops(
+      selectedEntities.trip ? stopsAndTimes.data : allStops,
+      searchTerms.stops
+    );
+    const paginatedStops = filteredStops.slice(
+      (pageStops - 1) * itemsPerPage,
+      pageStops * itemsPerPage
+    );
+
+    return (
+      <Accordion.Item eventKey="5">
+        <Accordion.Header>
+          <Clock size={20} className="me-2" /> Stops
+          {renderActionButtons("stop")}
+        </Accordion.Header>
+        <Accordion.Body>
+          <Form.Group className="mb-3">
+            <Form.Control
+              type="text"
+              placeholder="Search Stops..."
+              value={searchTerms.stops}
+              onChange={(e) => handleSearch("stops", e.target.value)}
+            />
+          </Form.Group>
+          {paginatedStops.length > 0 ? (
+            paginatedStops.map((stop) => (
+              <Card
+                key={`${stop.trip_id || "no-trip"}-${
+                  stop.stop_sequence || stop.stop_id
+                }`}
+                className={`mb-2 item-card ${
+                  selectedEntities.stop?.stop_id === stop.stop_id ? "active" : ""
+                }`}
+                onClick={() => handleSelectionChange("stop", stop)}
+              >
+                <Card.Body className="d-flex align-items-center p-2">
+                  <div className="flex-grow-1">
+                    <OverlayTrigger
+                      placement="top"
+                      overlay={renderTooltip(stop.stop_name || stop.stop_id)}
+                    >
+                      <div className="d-flex flex-column">
+                        <div className="item-title">
+                          {stop.stop_name || stop.stop_id}
+                        </div>
+                        {selectedEntities.trip && (
+                          <div style={{ fontSize: "0.8em" }}>
+                            {stop.departure_time && stop.arrival_time
+                              ? `${stop.arrival_time} - ${stop.departure_time}`
+                              : "N/A"}
+                          </div>
+                        )}
+                      </div>
+                    </OverlayTrigger>
+                  </div>
+                </Card.Body>
+              </Card>
+            ))
+          ) : (
+            <p className="text-muted text-center">
+              {selectedEntities.trip
+                ? "No stops found for this trip."
+                : "No stops found in the GTFS. Please add stops to the project."}
+            </p>
+          )}
+          {renderPagination(filteredStops.length, pageStops, setPageStops)}
         </Accordion.Body>
       </Accordion.Item>
     );
@@ -1797,72 +1794,7 @@ const Sidebar = ({
 
           {renderFareAccordion()}
 
-          <Accordion.Item eventKey="5">
-            <Accordion.Header>
-              <Clock size={20} className="me-2" /> Stops
-              {renderActionButtons("stop")}
-            </Accordion.Header>
-            <Accordion.Body>
-              <Form.Group className="mb-3">
-                <Form.Control
-                  type="text"
-                  placeholder="Search Stops..."
-                  value={searchTerms.stops}
-                  onChange={(e) => handleSearch("stops", e.target.value)}
-                />
-              </Form.Group>
-              {stopsAndTimes.data && stopsAndTimes.data.length > 0 ? (
-                stopsAndTimes.data.map((stop) => (
-                  <Card
-                    key={`${stop.trip_id || "no-trip"}-${
-                      stop.stop_sequence || stop.stop_id
-                    }`}
-                    className={`mb-2 item-card ${
-                      selectedEntities.stop?.stop_id === stop.stop_id
-                        ? "active"
-                        : ""
-                    }`}
-                    onClick={() => handleSelectionChange("stop", stop)}
-                  >
-                    <Card.Body className="d-flex align-items-center p-2">
-                      <div className="flex-grow-1">
-                        <OverlayTrigger
-                          placement="top"
-                          overlay={renderTooltip(
-                            stop.stop_name || stop.stop_id
-                          )}
-                        >
-                          <div className="d-flex flex-column">
-                            <div className="item-title">
-                              {stop.stop_name || stop.stop_id}
-                            </div>
-                            {selectedEntities.trip && (
-                              <div style={{ fontSize: "0.8em" }}>
-                                {stop.departure_time && stop.arrival_time
-                                  ? `${stop.arrival_time} - ${stop.departure_time}`
-                                  : "N/A"}
-                              </div>
-                            )}
-                          </div>
-                        </OverlayTrigger>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                ))
-              ) : (
-                <p className="text-muted text-center">
-                  {selectedEntities.trip
-                    ? "No stops found for this trip."
-                    : "No stops found in the GTFS. Please add stops to the project."}
-                </p>
-              )}
-              {renderPagination(
-                stopsAndTimes.total || 0,
-                pageStops,
-                setPageStops
-              )}
-            </Accordion.Body>
-          </Accordion.Item>
+          {renderStopsAccordion()}
         </Accordion>
       </div>
       {isFilterOpen && selectedEntities.route && (

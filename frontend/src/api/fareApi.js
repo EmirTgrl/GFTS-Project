@@ -175,6 +175,7 @@ export const addFareMedia = async (project_id, token, fareMediaData) => {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
+        fare_media_id: fareMediaData.fare_media_id,
         fare_media_name: fareMediaData.fare_media_name,
         fare_media_type: fareMediaData.fare_media_type,
       }),
@@ -184,7 +185,7 @@ export const addFareMedia = async (project_id, token, fareMediaData) => {
   if (!response.ok) {
     const errorData = await response.json();
     console.error("addFareMedia error:", errorData);
-    throw new Error(errorData.message || "Failed to add fare media.");
+    throw new Error(errorData.message || "Failed to add payment method.");
   }
 
   return response.json();
@@ -204,14 +205,20 @@ export const addRiderCategory = async (
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(riderCategoryData),
+      body: JSON.stringify({
+        rider_category_id: riderCategoryData.rider_category_id,
+        rider_category_name: riderCategoryData.rider_category_name,
+        is_default_fare_category:
+          riderCategoryData.is_default_fare_category || 0,
+        eligibility_url: riderCategoryData.eligibility_url || null,
+      }),
     }
   );
 
   if (!response.ok) {
     const errorData = await response.json();
     console.error("addRiderCategory error:", errorData);
-    throw new Error(errorData.message || "Failed to add rider category.");
+    throw new Error(errorData.message || "Failed to add passenger category.");
   }
 
   return response.json();
@@ -657,7 +664,7 @@ export const fetchAllAreas = async (project_id, token) => {
   if (!response.ok) {
     const errorData = await response.json();
     console.error("fetchAllAreas error:", errorData);
-    throw new Error(errorData.message || "Areas not be retrieved.");
+    throw new Error(errorData.message || "Areas could not be retrieved.");
   }
 
   return response.json();
@@ -674,6 +681,7 @@ export const addArea = async (project_id, token, areaData) => {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
+        area_id: areaData.area_id,
         area_name: areaData.area_name,
         stop_ids: areaData.stop_ids || [],
       }),

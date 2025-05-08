@@ -7,6 +7,7 @@ import PropTypes from "prop-types";
 const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({
+    rider_category_id: "",
     rider_category_name: "",
     is_default_fare_category: 0,
     eligibility_url: "",
@@ -20,8 +21,8 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.rider_category_name) {
-      Swal.fire("Error!", "Rider category name is required!", "error");
+    if (!formData.rider_category_id || !formData.rider_category_name) {
+      Swal.fire("Error!", "Rider category ID and name are required!", "error");
       return;
     }
 
@@ -40,6 +41,7 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
       try {
         setLoading(true);
         const payload = {
+          rider_category_id: formData.rider_category_id,
           rider_category_name: formData.rider_category_name,
           is_default_fare_category: parseInt(formData.is_default_fare_category),
           eligibility_url: formData.eligibility_url || null,
@@ -47,22 +49,19 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
 
         const response = await addRiderCategory(project_id, token, payload);
 
-        Swal.fire(
-          "Success!",
-          "Rider category added successfully.",
-          "success"
-        );
+        Swal.fire("Success!", "Rider category added successfully.", "success");
 
         if (onAdd) {
           onAdd(response);
         }
 
         setFormData({
+          rider_category_id: "",
           rider_category_name: "",
           is_default_fare_category: 0,
           eligibility_url: "",
         });
-        onClose(); 
+        onClose();
       } catch (error) {
         console.error("Error:", error);
         Swal.fire(
@@ -80,8 +79,22 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
     <div className="form-container">
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
+          <label htmlFor="rider_category_id" className="form-label">
+            Rider Category ID (*)
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="rider_category_id"
+            name="rider_category_id"
+            value={formData.rider_category_id}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="mb-2">
           <label htmlFor="rider_category_name" className="form-label">
-            Category Name (*)
+            Passenger Type Name (*)
           </label>
           <input
             type="text"

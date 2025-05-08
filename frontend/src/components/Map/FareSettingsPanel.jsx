@@ -562,7 +562,7 @@ const FareSettingsPanel = ({
           onSelect={(k) => setActiveTab(k)}
           className="mb-3"
         >
-          <Tab eventKey="rider_categories" title="Rider Categories">
+          <Tab eventKey="rider_categories" title="Passenger Types">
             <div className="d-flex justify-content-end mb-3">
               <Button
                 onClick={() => setShowRiderForm(true)}
@@ -574,7 +574,7 @@ const FareSettingsPanel = ({
             <Table striped bordered hover className="mt-3">
               <thead>
                 <tr>
-                  <th>Rider Category Name</th>
+                  <th>Passenger Type Name</th>
                   <th>Eligibility URL</th>
                   <th>Default</th>
                   <th>Actions</th>
@@ -638,7 +638,7 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Add New Rider Category</Modal.Title>
+                <Modal.Title>Add New Passenger Type</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 <RiderCategoriesAddPage
@@ -661,7 +661,7 @@ const FareSettingsPanel = ({
                 {selectedRiderCategory && (
                   <Form onSubmit={handleUpdateRiderCategory}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Rider Category Name</Form.Label>
+                      <Form.Label>Passenger Type Name</Form.Label>
                       <Form.Control
                         type="text"
                         name="rider_category_name"
@@ -695,7 +695,7 @@ const FareSettingsPanel = ({
               </Modal.Body>
             </Modal>
           </Tab>
-          <Tab eventKey="fare_media" title="Fare Media">
+          <Tab eventKey="fare_media" title="Payment Methods">
             <div className="d-flex justify-content-end mb-3">
               <Button
                 onClick={() => setShowFareMediaForm(true)}
@@ -707,7 +707,7 @@ const FareSettingsPanel = ({
             <Table striped bordered hover className="mt-3">
               <thead>
                 <tr>
-                  <th>Fare Media Name</th>
+                  <th>Payment Method Name</th>
                   <th>Type</th>
                   <th>Actions</th>
                 </tr>
@@ -776,7 +776,7 @@ const FareSettingsPanel = ({
                 {selectedFareMedia && (
                   <Form onSubmit={handleUpdateFareMedia}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Fare Media Name</Form.Label>
+                      <Form.Label>Payment Method Name</Form.Label>
                       <Form.Control
                         type="text"
                         name="fare_media_name"

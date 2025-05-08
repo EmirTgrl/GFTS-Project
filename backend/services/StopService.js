@@ -53,8 +53,8 @@ const stopService = {
     `;
 
     const dataQuery = `
-      SELECT s.*
-      FROM stops s
+      SELECT stop_id, stop_code, stop_name, stop_desc, stop_lat, stop_lon, zone_id, stop_url, location_type, parent_station, stop_timezone, wheelchair_boarding
+      FROM stops
       WHERE ${fields.join(" AND ")}
       LIMIT ${limit} OFFSET ${offset}
     `;

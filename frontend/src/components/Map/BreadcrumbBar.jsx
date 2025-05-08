@@ -26,7 +26,6 @@ const BreadcrumbBar = ({
           route: null,
           calendar: null,
           trip: null,
-          shape: null,
           stop: null,
         });
         setActiveKey("0");
@@ -37,7 +36,6 @@ const BreadcrumbBar = ({
           route: item,
           calendar: null,
           trip: null,
-          shape: null,
           stop: null,
         });
         setActiveKey("1");
@@ -48,7 +46,6 @@ const BreadcrumbBar = ({
           route: selectedEntities.route,
           calendar: item,
           trip: null,
-          shape: null,
           stop: null,
         });
         setActiveKey("2");
@@ -59,7 +56,6 @@ const BreadcrumbBar = ({
           route: selectedEntities.route,
           calendar: selectedEntities.calendar,
           trip: item,
-          shape: null,
           stop: null,
         });
         setActiveKey("3");
@@ -72,17 +68,6 @@ const BreadcrumbBar = ({
             setPageTrips(page);
           }
         }
-        break;
-      case "shape":
-        setSelectedEntities({
-          agency: selectedEntities.agency,
-          route: selectedEntities.route,
-          calendar: selectedEntities.calendar,
-          trip: selectedEntities.trip,
-          shape: item,
-          stop: null,
-        });
-        setActiveKey("4");
         break;
       case "stop":
         setSelectedEntities({

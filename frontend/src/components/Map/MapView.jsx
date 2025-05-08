@@ -6,11 +6,11 @@ import {
   Popup,
   useMap,
   useMapEvents,
+  Circle,
 } from "react-leaflet";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import PropTypes from "prop-types";
 import L from "leaflet";
-import MapUpdater from "./MapUpdater.jsx";
 import Swal from "sweetalert2";
 import {
   saveMultipleStopsAndTimes,
@@ -24,7 +24,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet-polylinedecorator";
-import { fetchAllStopsByProjectId } from "../../api/stopApi.js";
+import { debounce } from "lodash";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -101,20 +101,61 @@ PolylineWithDirectionalArrows.propTypes = {
 const BoundsTracker = ({ onBoundsChange }) => {
   const map = useMap();
 
+  const debouncedBoundsChange = useMemo(
+    () =>
+      debounce((bounds, zoom) => {
+        onBoundsChange({ bounds, zoom });
+      }, 200),
+    [onBoundsChange]
+  );
+
   useMapEvents({
     moveend: () => {
       const bounds = map.getBounds();
       const zoom = map.getZoom();
-      onBoundsChange({ bounds, zoom });
+      debouncedBoundsChange(bounds, zoom);
     },
     zoomend: () => {
       const bounds = map.getBounds();
       const zoom = map.getZoom();
-      onBoundsChange({ bounds, zoom });
+      debouncedBoundsChange(bounds, zoom);
     },
   });
 
   return null;
+};
+
+BoundsTracker.propTypes = {
+  onBoundsChange: PropTypes.func.isRequired,
+};
+
+const MapUpdater = ({ center, zoom }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (center && Array.isArray(center) && center.length === 2) {
+      const [lat, lng] = center;
+      if (
+        typeof lat === "number" &&
+        !isNaN(lat) &&
+        typeof lng === "number" &&
+        !isNaN(lng)
+      ) {
+        map.setView([lat, lng], zoom, { animate: true });
+      } else {
+        console.warn("MapUpdater: Invalid center coordinates:", center);
+      }
+    } else {
+      console.warn("MapUpdater: Invalid center format:", center);
+    }
+  }, [center, zoom, map]);
+
+  return null;
+};
+
+MapUpdater.propTypes = {
+  center: PropTypes.arrayOf(PropTypes.number).isRequired,
+  zoom: PropTypes.number.isRequired,
 };
 
 const MapView = ({
@@ -133,6 +174,7 @@ const MapView = ({
   token,
   setSelectedCategory,
   project_id,
+  areas,
 }) => {
   const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
   const [tempShapes, setTempShapes] = useState([]);
@@ -144,7 +186,10 @@ const MapView = ({
   const mapRef = useRef(null);
   const prevStopsAndTimesRef = useRef(null);
 
-  const isValidLatLng = (lat, lng) => {
+  // Durakların görüneceği minimum zoom seviyesi
+  const MIN_STOP_ZOOM = 12;
+
+  const isValidLatLng = useCallback((lat, lng) => {
     return (
       typeof lat === "number" &&
       !isNaN(lat) &&
@@ -155,12 +200,95 @@ const MapView = ({
       lng >= -180 &&
       lng <= 180
     );
-  };
+  }, []);
+
+  const calculateAreaCenters = useMemo(() => {
+    if (!selectedEntities.trip || !areas || !visibleStops.length) return [];
+
+    return areas
+      .map((area) => {
+        const areaStops = visibleStops.filter((stop) =>
+          area.stop_ids.map(String).includes(String(stop.stop_id))
+        );
+
+        if (areaStops.length === 0) {
+          console.warn(`No stops found for area: ${area.area_name}`);
+          return null;
+        }
+
+        const validStops = areaStops.filter((stop) =>
+          isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon))
+        );
+
+        if (validStops.length === 0) {
+          console.warn(`No valid stops found for area: ${area.area_name}`);
+          return null;
+        }
+
+        const lats = validStops.map((stop) => parseFloat(stop.stop_lat));
+        const lons = validStops.map((stop) => parseFloat(stop.stop_lon));
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        const minLon = Math.min(...lons);
+        const maxLon = Math.max(...lons);
+
+        const avgLat = (minLat + maxLat) / 2;
+        const avgLon = (minLon + maxLon) / 2;
+
+        const toRadians = (deg) => (deg * Math.PI) / 180;
+        const earthRadius = 6371000;
+        const distances = validStops.map((stop) => {
+          const lat = parseFloat(stop.stop_lat);
+          const lon = parseFloat(stop.stop_lon);
+          const dLat = toRadians(lat - avgLat);
+          const dLon = toRadians(lon - avgLon);
+          const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRadians(avgLat)) *
+              Math.cos(toRadians(lat)) *
+              Math.sin(dLon / 2) *
+              Math.sin(dLon / 2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          return earthRadius * c;
+        });
+
+        const radius = Math.max(...distances) * 1.2;
+
+        return {
+          area_id: area.area_id,
+          area_name: area.area_name,
+          center: [avgLat, avgLon],
+          radius: Math.max(radius, 100),
+          stops: validStops,
+        };
+      })
+      .filter((area) => area !== null);
+  }, [selectedEntities.trip, areas, visibleStops, isValidLatLng]);
+
+  const filterVisibleStops = useCallback(() => {
+    if (!currentBounds || currentZoom < MIN_STOP_ZOOM) {
+      setVisibleStops([]);
+      return;
+    }
+
+    const stopsToFilter = stopsAndTimes?.data || [];
+
+    const filteredStops = stopsToFilter.filter((stop) => {
+      const lat = parseFloat(stop.stop_lat);
+      const lon = parseFloat(stop.stop_lon);
+      return isValidLatLng(lat, lon) && currentBounds.contains([lat, lon]);
+    });
+
+    setVisibleStops(filteredStops);
+  }, [currentBounds, currentZoom, stopsAndTimes, isValidLatLng]);
 
   useEffect(() => {
-    // stopsAndTimes'ın veri yapısını kontrol et
+    filterVisibleStops();
+  }, [filterVisibleStops]);
+
+  useEffect(() => {
     const stopsData = stopsAndTimes?.data || [];
-    if (!stopsData.length) return;
+    if (!stopsData.length && selectedEntities.trip) return;
 
     if (
       JSON.stringify(stopsAndTimes) !==
@@ -183,480 +311,312 @@ const MapView = ({
             (shape) => shape.shape_id === selectedEntities.trip.shape_id
           )
         );
+      } else {
+        setVisibleShapes(newShapes);
       }
     }
-  }, [stopsAndTimes, shapes, selectedEntities.trip?.trip_id]);
+  }, [stopsAndTimes, shapes, selectedEntities.trip, isValidLatLng]);
 
+  // Trip seçildiğinde durakların ortalamasına göre zoom yap
   useEffect(() => {
     if (selectedEntities.trip && tempStopsAndTimes.length > 0) {
       const tripStops = tempStopsAndTimes.filter(
         (stop) => stop.trip_id === selectedEntities.trip.trip_id
-      );
-      const tripShapes = tempShapes.filter(
-        (shape) => shape.shape_id === selectedEntities.trip.shape_id
       );
 
       if (tripStops.length > 0) {
         const validStops = tripStops.filter((stop) =>
           isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon))
         );
+
         if (validStops.length > 0) {
-          const avgLat =
-            validStops.reduce(
-              (sum, stop) => sum + parseFloat(stop.stop_lat),
-              0
-            ) / validStops.length;
-          const avgLon =
-            validStops.reduce(
-              (sum, stop) => sum + parseFloat(stop.stop_lon),
-              0
-            ) / validStops.length;
-          const newCenter = [avgLat, avgLon];
-          if (mapRef.current && isValidLatLng(avgLat, avgLon)) {
-            mapRef.current.setView(newCenter, 12);
-          }
-          setVisibleStops(validStops);
-          setVisibleShapes(tripShapes);
-        } else {
-          console.warn("No valid stops with coordinates found for this trip.");
-          setVisibleStops([]);
-          setVisibleShapes(tripShapes);
-        }
-      }
-    }
-  }, [selectedEntities.trip, tempStopsAndTimes, tempShapes]);
-
-  const handleBoundsChange = ({ bounds, zoom }) => {
-    setCurrentBounds(bounds);
-    setCurrentZoom(zoom);
-
-    if (!selectedEntities.trip) {
-      if (zoom >= 10) {
-        const filteredStops = tempStopsAndTimes.filter(
-          (stop) =>
-            isValidLatLng(
-              parseFloat(stop.stop_lat),
-              parseFloat(stop.stop_lon)
-            ) &&
-            bounds.contains([
+          // Durakların sınırlarını hesapla
+          const bounds = L.latLngBounds(
+            validStops.map((stop) => [
               parseFloat(stop.stop_lat),
               parseFloat(stop.stop_lon),
             ])
-        );
-        setVisibleStops(filteredStops);
-        setVisibleShapes(tempShapes);
-      } else {
-        setVisibleStops([]);
-        setVisibleShapes([]);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (editorMode === "save") {
-      const saveData = async () => {
-        try {
-          await saveMultipleShapes(
-            tempShapes,
-            selectedEntities.trip.trip_id,
-            token
           );
-          await saveMultipleStopsAndTimes(tempStopsAndTimes, token);
-          setStopsAndTimes({
-            data: tempStopsAndTimes,
-            total: tempStopsAndTimes.length,
-          });
-          setShapes(tempShapes);
-          Swal.fire("Success!", "Stops and shapes are saved.", "success");
-        } catch (error) {
-          console.error("Saving error:", error);
-          Swal.fire("Hata!", "Saving unsuccessful: " + error.message, "error");
-        } finally {
-          setEditorMode("close");
-        }
-      };
-      saveData();
-    }
-  }, [editorMode, selectedEntities.trip, token, tempStopsAndTimes, tempShapes]);
 
-  useEffect(() => {
-    if (!clickedCoords || clickedCoords === prevClickedCoords.current) return;
-
-    prevClickedCoords.current = clickedCoords;
-
-    if (editorMode === "add-shape") {
-      if (tempShapes.length === 0) {
-        Swal.fire({
-          title: "Enter Shape ID (Number)",
-          input: "number",
-          inputAttributes: { autocapitalize: "off" },
-          showCancelButton: true,
-          confirmButtonText: "Save",
-          cancelButtonText: "Cancel",
-          showLoaderOnConfirm: true,
-          preConfirm: (shapeId) => {
-            const parsedShapeId = parseInt(shapeId);
-            if (!shapeId || isNaN(parsedShapeId)) {
-              Swal.showValidationMessage(`Shape ID must be a valid number`);
-            }
-            return parsedShapeId;
-          },
-          allowOutsideClick: () => !Swal.isLoading(),
-        }).then((result) => {
-          if (result.isConfirmed) {
-            const shapeId = result.value;
-            setTempShapes((prev) => [
-              ...prev,
-              {
-                shape_id: shapeId,
-                shape_pt_lat: clickedCoords.lat,
-                shape_pt_lon: clickedCoords.lng,
-                shape_pt_sequence:
-                  prev.length > 0
-                    ? Math.max(...prev.map((s) => s.shape_pt_sequence)) + 1
-                    : 1,
-                project_id: selectedEntities.trip.project_id,
-                shape_dist_traveled: null,
-              },
-            ]);
-          } else {
-            setEditorMode("open");
+          if (mapRef.current) {
+            mapRef.current.fitBounds(bounds, { padding: [50, 50] });
           }
-        });
-      } else {
-        setTempShapes((prev) => [
-          ...prev,
-          {
-            shape_id: tempShapes[0].shape_id,
-            shape_pt_lat: clickedCoords.lat,
-            shape_pt_lon: clickedCoords.lng,
-            shape_pt_sequence:
-              prev.length > 0
-                ? Math.max(...prev.map((s) => s.shape_pt_sequence)) + 1
-                : 1,
-            project_id: selectedEntities.trip.project_id,
-            shape_dist_traveled: null,
-          },
-        ]);
-      }
-    } else if (editorMode === "add-stop") {
-      Swal.fire({
-        title: "Enter Stop Name",
-        input: "text",
-        inputAttributes: { autocapitalize: "off" },
-        showCancelButton: true,
-        confirmButtonText: "Save",
-        cancelButtonText: "Cancel",
-        showLoaderOnConfirm: true,
-        preConfirm: (stopName) => {
-          if (!stopName) {
-            Swal.showValidationMessage(`Stop Name is required`);
-          }
-          return stopName;
-        },
-        allowOutsideClick: () => !Swal.isLoading(),
-      }).then((result) => {
-        if (result.isConfirmed) {
-          const stopName = result.value;
-          const newStopId = `${
-            selectedEntities.trip.trip_id
-          }_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-          setTempStopsAndTimes((prev) => [
-            ...prev,
-            {
-              stop_id: newStopId,
-              trip_id: selectedEntities.trip?.trip_id,
-              stop_name: stopName,
-              stop_lat: clickedCoords.lat,
-              stop_lon: clickedCoords.lng,
-              arrival_time: selectedEntities.trip ? "00:00:00" : undefined,
-              departure_time: selectedEntities.trip ? "00:00:00" : undefined,
-              stop_sequence:
-                prev.length > 0
-                  ? Math.max(...prev.map((s) => s.stop_sequence || 0)) + 1
-                  : 1,
-              project_id: selectedEntities.trip?.project_id,
-            },
-          ]);
+
+          setVisibleStops(validStops);
+          setVisibleShapes(
+            tempShapes.filter(
+              (shape) => shape.shape_id === selectedEntities.trip.shape_id
+            )
+          );
         } else {
-          setEditorMode("open");
+          console.warn("No valid stops with coordinates found for this trip.");
+          setVisibleStops([]);
+          setVisibleShapes(
+            tempShapes.filter(
+              (shape) => shape.shape_id === selectedEntities.trip.shape_id
+            )
+          );
         }
-      });
+      }
+    } else if (!selectedEntities.trip && tempStopsAndTimes.length > 0) {
+      const validStops = tempStopsAndTimes.filter((stop) =>
+        isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon))
+      );
+      setVisibleStops(currentZoom >= MIN_STOP_ZOOM ? validStops : []);
+      setVisibleShapes([]);
     }
-  }, [clickedCoords, editorMode, selectedEntities.trip]);
+  }, [
+    selectedEntities.trip,
+    tempStopsAndTimes,
+    tempShapes,
+    isValidLatLng,
+    currentZoom,
+  ]);
 
   useEffect(() => {
-    if (editorMode === "add-stop") {
-      Swal.fire({
-        icon: "info",
-        title: "Add Stop",
-        text: "Click on the map to add a new stop.",
-        toast: true,
-        position: "top",
-        showConfirmButton: false,
-      });
-    } else if (editorMode === "add-shape") {
-      Swal.fire({
-        icon: "info",
-        title: "Add Shape Point",
-        text: "Click on the map to add a shape point.",
-        toast: true,
-        position: "top",
-        showConfirmButton: false,
-      });
+    if (
+      clickedCoords &&
+      (!prevClickedCoords.current ||
+        clickedCoords.lat !== prevClickedCoords.current.lat ||
+        clickedCoords.lng !== prevClickedCoords.current.lng)
+    ) {
+      if (editorMode === "addStop") {
+        setSelectedCategory("stop");
+        onMapClick(clickedCoords);
+      }
+      prevClickedCoords.current = clickedCoords;
     }
-  }, [editorMode]);
+  }, [clickedCoords, editorMode, onMapClick, setSelectedCategory]);
 
-  const handleStopClick = (stopTime) => {
-    setSelectedCategory("stop");
-    setSelectedEntities((prev) => ({ ...prev, stop: stopTime }));
-  };
+  const handleBoundsChange = useCallback(({ bounds, zoom }) => {
+    setCurrentBounds(bounds);
+    setCurrentZoom(zoom);
+  }, []);
 
-  const handleShapeClick = (shape) => {
-    setSelectedCategory("shape");
-    setSelectedEntities((prev) => ({ ...prev, shape }));
-  };
+  const handleStopClick = useCallback(
+    (stop) => {
+      if (editorMode === "addStop" || editorMode === "editStop") {
+        setSelectedEntities((prev) => ({ ...prev, stop }));
+        setSelectedCategory("stop");
+        if (stop.stop_lat && stop.stop_lon) {
+          mapRef.current?.flyTo(
+            [parseFloat(stop.stop_lat), parseFloat(stop.stop_lon)],
+            18
+          );
+        }
+      }
+    },
+    [editorMode, setSelectedEntities, setSelectedCategory]
+  );
 
-  const handleStopDrag = (e, stopSequence) => {
-    if (editorMode === "close") return;
-    const newLatLng = e.target.getLatLng();
-    setTempStopsAndTimes((prev) =>
-      prev.map((stopTime) =>
-        stopTime.stop_sequence === stopSequence
-          ? { ...stopTime, stop_lat: newLatLng.lat, stop_lon: newLatLng.lng }
-          : stopTime
-      )
-    );
-  };
-
-  const handleShapeDrag = (e, shapePtSequence) => {
-    if (editorMode === "close") return;
-    const newLatLng = e.target.getLatLng();
-    setTempShapes((prev) =>
-      prev.map((shape) =>
-        shape.shape_pt_sequence === shapePtSequence
-          ? {
-              ...shape,
-              shape_pt_lat: newLatLng.lat,
-              shape_pt_lon: newLatLng.lng,
-            }
-          : shape
-      )
-    );
-  };
-
-  const handleCalculateRoute = async () => {
-    if (!tempStopsAndTimes.length) {
-      Swal.fire("Error", "No stops to calculate route!", "error");
+  const handleSaveStopsAndShapes = useCallback(async () => {
+    if (!selectedEntities.trip || !tempStopsAndTimes.length) {
+      Swal.fire({
+        icon: "warning",
+        title: "No Data",
+        text: "No stops or shapes to save.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+      });
       return;
     }
 
     try {
-      const routeData = await calculateRouteBetweenStops(
-        tempStopsAndTimes,
+      const stopsToSave = tempStopsAndTimes.map((stop, index) => ({
+        ...stop,
+        stop_sequence: stop.stop_sequence || index + 1,
+        trip_id: selectedEntities.trip.trip_id,
+      }));
+
+      await saveMultipleStopsAndTimes(
+        selectedEntities.trip.trip_id,
+        project_id,
+        stopsToSave,
         token
       );
 
-      const snappedShapes = await snapShapesToRoads(
-        tempShapes.length > 0
-          ? tempShapes
-          : routeData.geometry.map((coord, index) => ({
-              shape_id: parseInt(`1000${Date.now()}`),
-              shape_pt_lat: coord[1],
-              shape_pt_lon: coord[0],
-              shape_pt_sequence: index + 1,
-              project_id: selectedEntities.trip.project_id,
-              shape_dist_traveled: null,
-            })),
-        token
-      );
-
-      setTempShapes(snappedShapes);
-      Swal.fire(
-        "Route Snap Success",
-        `Distance: ${routeData.distance.toFixed(
-          2
-        )} km\nDuration: ${routeData.duration.toFixed(2)} min`,
-        "success"
-      );
-    } catch (error) {
-      console.error("Error snapping route:", error);
-      Swal.fire(
-        "Error",
-        `Failed to snap route between stops: ${error.message}`,
-        "error"
-      );
-    }
-  };
-
-  const defaultCenter = [51.505, -0.09];
-
-  const fetchAllStops = async () => {
-    // Token ve project_id kontrolü
-    if (!token) {
-      console.error("No token available");
-      return;
-    }
-
-    if (!project_id) {
-      console.error("No project_id available");
-      return;
-    }
-
-    // Seçili bir trip yoksa ve zoom seviyesi 10 veya üzerindeyse tüm durakları al
-    if (!selectedEntities.trip && currentZoom >= 10) {
-      try {
-        const allStops = await fetchAllStopsByProjectId(project_id, token);
-        if (currentBounds && allStops?.data) {
-          const filteredStops = allStops.data.filter(
-            (stop) =>
-              isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon)) &&
-              currentBounds.contains([parseFloat(stop.stop_lat), parseFloat(stop.stop_lon)])
-          );
-          setVisibleStops(filteredStops);
-        }
-      } catch (error) {
-        console.error("Error fetching all stops:", error);
+      if (tempShapes.length > 0) {
+        await saveMultipleShapes(
+          selectedEntities.trip.shape_id,
+          project_id,
+          tempShapes,
+          token
+        );
       }
-    }
-  };
 
-  useEffect(() => {
-    fetchAllStops();
-  }, [currentBounds, currentZoom, selectedEntities.trip, token, project_id]);
+      setStopsAndTimes({ data: stopsToSave, total: stopsToSave.length });
+      setShapes(tempShapes);
+      setEditorMode(null);
+
+      Swal.fire({
+        icon: "success",
+        title: "Saved",
+        text: "Stops and shapes saved successfully.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+      });
+    } catch (error) {
+      console.error("Error saving stops and shapes:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to save stops and shapes.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+      });
+    }
+  }, [
+    selectedEntities.trip,
+    tempStopsAndTimes,
+    tempShapes,
+    project_id,
+    token,
+    setStopsAndTimes,
+    setShapes,
+    setEditorMode,
+  ]);
+
+  const handleCalculateRoute = useCallback(async () => {
+    if (!selectedEntities.trip || tempStopsAndTimes.length < 2) {
+      Swal.fire({
+        icon: "warning",
+        title: "Insufficient Stops",
+        text: "At least two stops are required to calculate a route.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+      });
+      return;
+    }
+
+    try {
+      const coordinates = tempStopsAndTimes
+        .filter((stop) =>
+          isValidLatLng(parseFloat(stop.stop_lat), parseFloat(stop.stop_lon))
+        )
+        .map((stop) => ({
+          lat: parseFloat(stop.stop_lat),
+          lon: parseFloat(stop.stop_lon),
+        }));
+
+      const routeResponse = await calculateRouteBetweenStops(
+        coordinates,
+        token
+      );
+      const snappedShapes = await snapShapesToRoads(
+        routeResponse.coordinates,
+        token
+      );
+
+      const newShapes = snappedShapes.map((coord, index) => ({
+        shape_id: selectedEntities.trip.shape_id,
+        shape_pt_lat: coord.lat,
+        shape_pt_lon: coord.lon,
+        shape_pt_sequence: index + 1,
+      }));
+
+      setTempShapes(newShapes);
+      setShapes(newShapes);
+      setVisibleShapes(newShapes);
+
+      Swal.fire({
+        icon: "success",
+        title: "Route Calculated",
+        text: "Route calculated and shapes updated.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+      });
+    } catch (error) {
+      console.error("Error calculating route:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to calculate route.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+      });
+    }
+  }, [
+    selectedEntities.trip,
+    tempStopsAndTimes,
+    token,
+    setShapes,
+    isValidLatLng,
+  ]);
 
   return (
     <MapContainer
-      center={
-        isValidLatLng(mapCenter[0], mapCenter[1]) ? mapCenter : defaultCenter
-      }
+      center={mapCenter}
       zoom={zoom}
-      id="map"
-      zoomControl={false}
-      ref={mapRef}
+      style={{ height: "100%", width: "100%" }}
+      whenCreated={(map) => (mapRef.current = map)}
+      zoomControl={false} 
     >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <MapUpdater center={mapCenter} zoom={zoom} />
       <MapClickHandler onMapClick={onMapClick} />
-      <MapUpdater mapCenter={mapCenter} zoom={zoom} />
       <BoundsTracker onBoundsChange={handleBoundsChange} />
 
-      <MarkerClusterGroup
-        maxClusterRadius={80}
-        disableClusteringAtZoom={15}
-        chunkedLoading={true}
-        showCoverageOnHover={false}
-      >
-        {visibleStops.map((stopTime, index) => {
-          const lat = parseFloat(stopTime.stop_lat);
-          const lon = parseFloat(stopTime.stop_lon);
-          if (!isValidLatLng(lat, lon)) return null;
-          return (
-            <Marker
-              key={stopTime.stop_id || index}
-              position={[lat, lon]}
-              icon={stopIcon}
-              draggable={editorMode !== "close"}
-              eventHandlers={{
-                click: () => handleStopClick(stopTime),
-                dragend: (e) => handleStopDrag(e, stopTime.stop_sequence),
-              }}
-            >
-              <Popup>
-                <strong>
-                  {stopTime.stop_sequence || index + 1}.{" "}
-                  {stopTime.stop_name || "Bilinmeyen Durak"}
-                </strong>
-                <br />
-                Varış:{" "}
-                {stopTime.arrival_time ? stopTime.arrival_time : "Bilinmiyor"}
-                <br />
-                Kalkış:{" "}
-                {stopTime.departure_time
-                  ? stopTime.departure_time
-                  : "Bilinmiyor"}
-              </Popup>
-            </Marker>
-          );
-        })}
+      <MarkerClusterGroup maxClusterRadius={50} disableClusteringAtZoom={15}>
+        {visibleStops.map((stop) => (
+          <Marker
+            key={`${stop.stop_id}-${stop.trip_id || "no-trip"}`}
+            position={[parseFloat(stop.stop_lat), parseFloat(stop.stop_lon)]}
+            icon={stopIcon}
+            eventHandlers={{
+              click: () => handleStopClick(stop),
+            }}
+          >
+            <Popup>
+              <strong>{stop.stop_name || stop.stop_id}</strong>
+              {stop.arrival_time && stop.departure_time && (
+                <div>
+                  Arrival: {stop.arrival_time}
+                  <br />
+                  Departure: {stop.departure_time}
+                </div>
+              )}
+            </Popup>
+          </Marker>
+        ))}
       </MarkerClusterGroup>
 
       {visibleShapes.length > 0 && (
-        <>
-          <PolylineWithDirectionalArrows
-            positions={visibleShapes
-              .sort((a, b) => a.shape_pt_sequence - b.shape_pt_sequence)
-              .filter((shape) =>
-                isValidLatLng(
-                  parseFloat(shape.shape_pt_lat),
-                  parseFloat(shape.shape_pt_lon)
-                )
-              )
-              .map((shape) => [
-                parseFloat(shape.shape_pt_lat),
-                parseFloat(shape.shape_pt_lon),
-              ])}
-            color={editorMode !== "close" ? "red" : "#FF0000"}
-            weight={8}
-          />
-          {editorMode !== "close" &&
-            visibleShapes.map((shape) => {
-              const lat = parseFloat(shape.shape_pt_lat);
-              const lon = parseFloat(shape.shape_pt_lon);
-              if (!isValidLatLng(lat, lon)) return null;
-              const position = [lat, lon];
-              const isHighlighted =
-                shape.shape_pt_sequence ===
-                selectedEntities.shape?.shape_pt_sequence;
-              return (
-                <Marker
-                  key={shape.shape_pt_sequence}
-                  position={position}
-                  draggable={editorMode !== "close"}
-                  icon={L.divIcon({
-                    className: "custom-circle-marker",
-                    iconSize: [
-                      isHighlighted ? 20 : 12,
-                      isHighlighted ? 20 : 12,
-                    ],
-                    iconAnchor: [
-                      isHighlighted ? 10 : 6,
-                      isHighlighted ? 10 : 6,
-                    ],
-                    html: `<div style="${
-                      isHighlighted
-                        ? "background-color: yellow; border: 2px solid yellow;"
-                        : "background-color: white; border: 1px solid red;"
-                    } width: 100%; height: 100%; border-radius: 50%;"></div>`,
-                  })}
-                  eventHandlers={{
-                    dragend: (e) => handleShapeDrag(e, shape.shape_pt_sequence),
-                    click: () => handleShapeClick(shape),
-                  }}
-                >
-                  <Popup>Shape Point {shape.shape_pt_sequence}</Popup>
-                </Marker>
-              );
-            })}
-        </>
+        <PolylineWithDirectionalArrows
+          positions={visibleShapes.map((shape) => [
+            parseFloat(shape.shape_pt_lat),
+            parseFloat(shape.shape_pt_lon),
+          ])}
+          color="#ff0000"
+          weight={5}
+        />
       )}
 
-      {editorMode !== "close" && (
-        <div style={{ position: "absolute", top: 10, right: 10, zIndex: 1000 }}>
-          {tempStopsAndTimes.length > 1 && (
-            <button
-              onClick={handleCalculateRoute}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Snap The Route
-            </button>
-          )}
+      {calculateAreaCenters.map((area) => (
+        <Circle
+          key={area.area_id}
+          center={area.center}
+          radius={area.radius}
+          color="#ff7800"
+          fillColor="#ff7800"
+          fillOpacity={0.2}
+        >
+          <Popup>{area.area_name}</Popup>
+        </Circle>
+      ))}
+
+      {editorMode && (
+        <div className="map-controls">
+          <button onClick={handleSaveStopsAndShapes}>Save</button>
+          <button onClick={handleCalculateRoute}>Calculate Route</button>
+          <button onClick={() => setEditorMode(null)}>Cancel</button>
         </div>
       )}
     </MapContainer>
@@ -666,8 +626,7 @@ const MapView = ({
 MapView.propTypes = {
   mapCenter: PropTypes.arrayOf(PropTypes.number).isRequired,
   zoom: PropTypes.number.isRequired,
-  stopsAndTimes: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
-    .isRequired,
+  stopsAndTimes: PropTypes.object.isRequired,
   setStopsAndTimes: PropTypes.func.isRequired,
   setShapes: PropTypes.func.isRequired,
   onMapClick: PropTypes.func.isRequired,
@@ -676,17 +635,20 @@ MapView.propTypes = {
     lat: PropTypes.number,
     lng: PropTypes.number,
   }),
-  editorMode: PropTypes.string.isRequired,
+  editorMode: PropTypes.string,
   setEditorMode: PropTypes.func.isRequired,
-  selectedEntities: PropTypes.object.isRequired,
+  selectedEntities: PropTypes.shape({
+    agency: PropTypes.object,
+    route: PropTypes.object,
+    calendar: PropTypes.object,
+    trip: PropTypes.object,
+    stop: PropTypes.object,
+  }).isRequired,
   setSelectedEntities: PropTypes.func.isRequired,
   token: PropTypes.string.isRequired,
-  project_id: PropTypes.string.isRequired,
   setSelectedCategory: PropTypes.func.isRequired,
-};
-
-BoundsTracker.propTypes = {
-  onBoundsChange: PropTypes.func.isRequired,
+  project_id: PropTypes.string.isRequired,
+  areas: PropTypes.array.isRequired,
 };
 
 export default MapView;

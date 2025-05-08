@@ -25,7 +25,6 @@ const StatsDashboard = ({ token }) => {
       setError(null);
       try {
         const statsData = await fetchGlobalStats(token);
-        console.log("Stats Data:", statsData);
         setStats(statsData);
       } catch (error) {
         setError(`Failed to load statistics: ${error.message}`);

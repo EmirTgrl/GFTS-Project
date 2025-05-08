@@ -545,6 +545,10 @@ class ImportService {
         let validationResult;
         try {
           validationResult = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+          console.log(
+            "Raw Validation Report:",
+            JSON.stringify(validationResult, null, 2)
+          );
         } catch (parseError) {
           console.error(
             `❌ Error parsing validation report: ${parseError.message}`
@@ -567,15 +571,51 @@ class ImportService {
           success: errors.length === 0,
           errors: errors.map((notice) => ({
             code: notice.code,
-            message: notice.message || "No description",
+            userFriendlyMessage:
+              notice.userFriendlyMessage ||
+              notice.message ||
+              notice.description ||
+              "No description available",
+            suggestion:
+              notice.suggestion ||
+              notice.recommendation ||
+              "No suggestion available",
             total: notice.totalNotices,
-            samples: notice.sampleNotices || [],
+            samples: (notice.sampleNotices || []).map((sample) => ({
+              location:
+                sample.csvRowNumber && sample.file
+                  ? `${sample.file}, Row ${sample.csvRowNumber}`
+                  : "Unknown location",
+              details: sample.field
+                ? `Field: ${sample.field}, Value: ${sample.value || "N/A"}`
+                : Object.keys(sample).length > 0
+                ? JSON.stringify(sample, null, 2)
+                : "No details available",
+            })),
           })),
           warnings: warnings.map((notice) => ({
             code: notice.code,
-            message: notice.message || "No description",
+            userFriendlyMessage:
+              notice.userFriendlyMessage ||
+              notice.message ||
+              notice.description ||
+              "No description available",
+            suggestion:
+              notice.suggestion ||
+              notice.recommendation ||
+              "No suggestion available",
             total: notice.totalNotices,
-            samples: notice.sampleNotices || [],
+            samples: (notice.sampleNotices || []).map((sample) => ({
+              location:
+                sample.csvRowNumber && sample.file
+                  ? `${sample.file}, Row ${sample.csvRowNumber}`
+                  : "Unknown location",
+              details: sample.field
+                ? `Field: ${sample.field}, Value: ${sample.value || "N/A"}`
+                : Object.keys(sample).length > 0
+                ? JSON.stringify(sample, null, 2)
+                : "No details available",
+            })),
           })),
         });
       });
@@ -726,7 +766,7 @@ class ImportService {
             .join(", ") || "None"
         }`
       );
-      console.log(`  Total Rows: ${this.importReport.totalRows}`);
+      console.log(`Total Rows: ${this.importReport.totalRows}`);
 
       return res.status(200).json({
         message: "GTFS data import completed",

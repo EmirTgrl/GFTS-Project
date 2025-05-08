@@ -262,14 +262,6 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
           />
         </Form.Group>
         <div className="d-flex justify-content-end gap-2">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Cancel
-          </button>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? "Adding..." : "Add Network"}
           </button>

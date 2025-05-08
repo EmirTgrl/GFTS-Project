@@ -41,10 +41,10 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       [route_id, user_id, project_id]
     );
 
-    if (!routeData) {
-      console.log("Route not found for route_id:", route_id);
-      return null;
-    }
+    // if (!routeData) {
+    //   console.log("Route not found for route_id:", route_id);
+    //   return null;
+    // }
 
     const {
       route_id: fetchedRouteId,
@@ -54,10 +54,10 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       network_name,
     } = routeData;
 
-    if (!network_id) {
-      console.log("Network not found for route_id:", route_id);
-      return null;
-    }
+    // if (!network_id) {
+    //   console.log("Network not found for route_id:", route_id);
+    //   return null;
+    // }
 
     // 2. Rota için alanları (from_area, to_area) belirle
     const [stopAreas] = await pool.query(
@@ -73,12 +73,10 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       [route_id, user_id, project_id]
     );
 
-    if (!stopAreas || stopAreas.length === 0) {
-      console.log("No areas found for route_id:", route_id);
-      return null;
-    }
-
-    console.log("Stop areas found:", stopAreas);
+    // if (!stopAreas || stopAreas.length === 0) {
+    //   console.log("No areas found for route_id:", route_id);
+    //   return null;
+    // }
 
     // 3. İndi-Bindi (Sabit) ücretleri al
     const [fixedFares] = await pool.query(
@@ -114,8 +112,6 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       [network_id, user_id, project_id]
     );
 
-    console.log("Fixed fares:", fixedFares);
-
     // 4. Mesafeye dayalı ücretlendirme
     const [distanceBasedFares] = await pool.query(
       `
@@ -143,8 +139,6 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       `,
       [network_id, user_id, project_id]
     );
-
-    console.log("Distance-based fares:", distanceBasedFares);
 
     // Mesafe hesaplama
     const categorizedDistanceFares = await Promise.all(
@@ -876,11 +870,11 @@ const addFareProduct = async (
 const addFareMedia = async (
   user_id,
   project_id,
+  fare_media_id,
   fare_media_name,
   fare_media_type
 ) => {
   try {
-    // user_id ve project_id kontrolü
     if (!user_id || !project_id) {
       console.error("Missing user_id or project_id:", { user_id, project_id });
       throw new Error("User ID or project ID is missing.");
@@ -894,22 +888,25 @@ const addFareMedia = async (
       throw new Error("Invalid user ID or project ID.");
     }
 
-    // Gerekli alanların kontrolü
-    if (!fare_media_name || fare_media_type == null) {
-      throw new Error("Payment method name and type are required fields.");
+    if (!fare_media_id || !fare_media_name || fare_media_type == null) {
+      throw new Error("Payment method ID, name, and type are required fields.");
     }
 
-    // fare_media_type kontrolü (0: none, 1: paper ticket, 2: transit card, 3: cEMV, 4: mobile app)
     if (![0, 1, 2, 3, 4].includes(fare_media_type)) {
       throw new Error(
         "Invalid payment method type. Valid options: Cash (0), Paper Ticket (1), Transit Card (2), Contactless Card (3), Mobile Application (4)."
       );
     }
 
-    // Benzersiz fare_media_id oluştur
-    const fare_media_id = `fare_media_${Date.now()}`;
+    const [[existingFareMedia]] = await pool.query(
+      `SELECT fare_media_id FROM fare_media WHERE fare_media_id = ? AND user_id = ? AND project_id = ?`,
+      [fare_media_id, user_id, project_id]
+    );
 
-    // fare_media tablosuna ekleme
+    if (existingFareMedia) {
+      throw new Error(`Fare media ID ${fare_media_id} already exists.`);
+    }
+
     await pool.query(
       `
         INSERT INTO fare_media 
@@ -934,12 +931,12 @@ const addFareMedia = async (
 const addRiderCategory = async (
   user_id,
   project_id,
+  rider_category_id,
   rider_category_name,
   is_default_fare_category = 0,
   eligibility_url = null
 ) => {
   try {
-    // user_id ve project_id kontrolü
     if (!user_id || !project_id) {
       console.error("Missing user_id or project_id:", { user_id, project_id });
       throw new Error("User ID or project ID is missing.");
@@ -953,20 +950,25 @@ const addRiderCategory = async (
       throw new Error("Invalid user ID or project ID.");
     }
 
-    // Gerekli alanların kontrolü
-    if (!rider_category_name) {
-      throw new Error("Invalid passenger category data: Name is required.");
+    if (!rider_category_id || !rider_category_name) {
+      throw new Error(
+        "Invalid passenger category data: ID and name are required."
+      );
     }
 
-    // is_default_fare_category kontrolü
     if (![0, 1].includes(is_default_fare_category)) {
       throw new Error("Invalid default category value. (Must be 0 or 1)");
     }
 
-    // Benzersiz rider_category_id oluştur
-    const rider_category_id = `rider_category_${Date.now()}`;
+    const [[existingRiderCategory]] = await pool.query(
+      `SELECT rider_category_id FROM rider_categories WHERE rider_category_id = ? AND user_id = ? AND project_id = ?`,
+      [rider_category_id, user_id, project_id]
+    );
 
-    // rider_categories tablosuna ekleme
+    if (existingRiderCategory) {
+      throw new Error(`Rider category ID ${rider_category_id} already exists.`);
+    }
+
     await pool.query(
       `
         INSERT INTO rider_categories 
@@ -2039,13 +2041,13 @@ const updateArea = async (
     }
 
     // Mevcut stop_areas kayıtlarını sil
-    // await pool.query(
-    //   `
-    //     DELETE FROM stop_areas
-    //     WHERE area_id = ? AND user_id = ? AND project_id = ?
-    //   `,
-    //   [area_id, user_id, project_id]
-    // );
+    await pool.query(
+      `
+        DELETE FROM stop_areas
+        WHERE area_id = ? AND user_id = ? AND project_id = ?
+      `,
+      [area_id, user_id, project_id]
+    );
 
     // Yeni stop_ids varsa, stop_areas tablosuna ekle
     if (stop_ids.length > 0) {

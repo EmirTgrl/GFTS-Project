@@ -24,7 +24,6 @@ import {
   Download,
   Eye,
   ExclamationTriangle,
-  PlusLg,
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import { MapContainer, TileLayer } from "react-leaflet";
@@ -39,7 +38,7 @@ const ProjectsPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [exportLoading, setExportLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState({}); // Proje bazlı yükleme durumu
+  const [deleteLoading, setDeleteLoading] = useState({});
   const projectsPerPage = 10;
   const navigate = useNavigate();
   const { isAuthenticated, token } = useContext(AuthContext);
@@ -88,10 +87,10 @@ const ProjectsPage = () => {
     });
 
     if (result.isConfirmed) {
-      setDeleteLoading((prev) => ({ ...prev, [projectId]: true })); // Proje bazlı yükleme başlat
+      setDeleteLoading((prev) => ({ ...prev, [projectId]: true }));
       try {
         await deleteProject(projectId, token);
-        await loadProjects(); // Proje listesini yenile
+        await loadProjects();
         Swal.fire(
           "Deleted!",
           "Your project and associated GTFS data have been deleted.",
@@ -109,7 +108,7 @@ const ProjectsPage = () => {
           icon: "error",
         });
       } finally {
-        setDeleteLoading((prev) => ({ ...prev, [projectId]: false })); // Yükleme durumunu sıfırla
+        setDeleteLoading((prev) => ({ ...prev, [projectId]: false }));
       }
     }
   };
@@ -281,7 +280,7 @@ const ProjectsPage = () => {
                                     project.file_name
                                   )
                                 }
-                                disabled={deleteLoading[project.project_id]} // Proje bazlı yükleme durumu
+                                disabled={deleteLoading[project.project_id]}
                                 title="Delete"
                               >
                                 {deleteLoading[project.project_id] ? (
@@ -387,7 +386,6 @@ const ProjectsPage = () => {
                       <span className="text-danger me-2">
                         Errors ({selectedProject.validation_data.errors.length})
                       </span>
-                      <PlusLg size={16} />
                     </Accordion.Header>
                     <Accordion.Body>
                       <Accordion defaultActiveKey={[]}>
@@ -399,42 +397,63 @@ const ProjectsPage = () => {
                             >
                               <Accordion.Header className="inner-accordion-header">
                                 <span className="me-2">
-                                  {err.code} (Total: {err.total})
+                                  {err.code} (Total: {err.total || 0})
                                 </span>
-                                <PlusLg size={16} />
                               </Accordion.Header>
                               <Accordion.Body>
                                 <p className="mb-2">
+                                  <strong>Error Code:</strong> {err.code}
+                                </p>
+                                <p className="mb-2">
                                   <strong>Description:</strong>{" "}
-                                  {err.userFriendlyMessage}
+                                  {err.userFriendlyMessage ||
+                                    err.message ||
+                                    err.description ||
+                                    "No description available"}
                                 </p>
                                 <p className="mb-3">
-                                  <strong>Suggestion:</strong> {err.suggestion}
+                                  <strong>Suggestion:</strong>{" "}
+                                  {err.suggestion ||
+                                    err.recommendation ||
+                                    "No suggestion available"}
                                 </p>
-                                <div className="table-container">
-                                  <Table
-                                    striped
-                                    bordered
-                                    hover
-                                    size="sm"
-                                    className="mt-2"
-                                  >
-                                    <thead>
-                                      <tr>
-                                        <th>Location</th>
-                                        <th>Details</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {err.samples.map((sample, i) => (
-                                        <tr key={`${index}-${i}`}>
-                                          <td>{sample.location}</td>
-                                          <td>{sample.details}</td>
+                                {err.samples?.length > 0 ? (
+                                  <div className="table-container">
+                                    <Table
+                                      striped
+                                      bordered
+                                      hover
+                                      size="sm"
+                                      className="mt-2"
+                                    >
+                                      <thead>
+                                        <tr>
+                                          <th>Location</th>
+                                          <th>Details</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </Table>
-                                </div>
+                                      </thead>
+                                      <tbody>
+                                        {err.samples.map((sample, i) => (
+                                          <tr key={`${index}-${i}`}>
+                                            <td>
+                                              {sample.location || "Unknown"}
+                                            </td>
+                                            <td>
+                                              <pre>
+                                                {sample.details || "No details"}
+                                              </pre>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </Table>
+                                  </div>
+                                ) : (
+                                  <p className="text-warning">
+                                    No sample data available for this error.
+                                    Check the validator output or database data.
+                                  </p>
+                                )}
                               </Accordion.Body>
                             </Accordion.Item>
                           )
@@ -452,7 +471,6 @@ const ProjectsPage = () => {
                         Warnings (
                         {selectedProject.validation_data.warnings.length})
                       </span>
-                      <PlusLg size={16} />
                     </Accordion.Header>
                     <Accordion.Body>
                       <Accordion defaultActiveKey={[]}>
@@ -464,42 +482,63 @@ const ProjectsPage = () => {
                             >
                               <Accordion.Header className="inner-accordion-header">
                                 <span className="me-2">
-                                  {warn.code} (Total: {warn.total})
+                                  {warn.code} (Total: {warn.total || 0})
                                 </span>
-                                <PlusLg size={16} />
                               </Accordion.Header>
                               <Accordion.Body>
                                 <p className="mb-2">
+                                  <strong>Warning Code:</strong> {warn.code}
+                                </p>
+                                <p className="mb-2">
                                   <strong>Description:</strong>{" "}
-                                  {warn.userFriendlyMessage}
+                                  {warn.userFriendlyMessage ||
+                                    warn.message ||
+                                    warn.description ||
+                                    "No description available"}
                                 </p>
                                 <p className="mb-3">
-                                  <strong>Suggestion:</strong> {warn.suggestion}
+                                  <strong>Suggestion:</strong>{" "}
+                                  {warn.suggestion ||
+                                    warn.recommendation ||
+                                    "No suggestion available"}
                                 </p>
-                                <div className="table-container">
-                                  <Table
-                                    striped
-                                    bordered
-                                    hover
-                                    size="sm"
-                                    className="mt-2"
-                                  >
-                                    <thead>
-                                      <tr>
-                                        <th>Location</th>
-                                        <th>Details</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {warn.samples.map((sample, i) => (
-                                        <tr key={`${index}-${i}`}>
-                                          <td>{sample.location}</td>
-                                          <td>{sample.details}</td>
+                                {warn.samples?.length > 0 ? (
+                                  <div className="table-container">
+                                    <Table
+                                      striped
+                                      bordered
+                                      hover
+                                      size="sm"
+                                      className="mt-2"
+                                    >
+                                      <thead>
+                                        <tr>
+                                          <th>Location</th>
+                                          <th>Details</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </Table>
-                                </div>
+                                      </thead>
+                                      <tbody>
+                                        {warn.samples.map((sample, i) => (
+                                          <tr key={`${index}-${i}`}>
+                                            <td>
+                                              {sample.location || "Unknown"}
+                                            </td>
+                                            <td>
+                                              <pre>
+                                                {sample.details || "No details"}
+                                              </pre>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </Table>
+                                  </div>
+                                ) : (
+                                  <p className="text-warning">
+                                    No sample data available for this warning.
+                                    Check the validator output or database data.
+                                  </p>
+                                )}
                               </Accordion.Body>
                             </Accordion.Item>
                           )
