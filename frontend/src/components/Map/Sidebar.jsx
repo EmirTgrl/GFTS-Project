@@ -194,7 +194,7 @@ const Sidebar = ({
     if (category === "trips") setPageTrips(1);
     if (category === "calendars") setPageCalendars(1);
     if (category === "stops") setPageStops(1);
-  }, 300);
+  }, 50);
 
   useEffect(() => {
     const fetchData = async () => {

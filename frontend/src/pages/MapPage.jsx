@@ -10,7 +10,9 @@ import Swal from "sweetalert2";
 import { Modal, Button } from "react-bootstrap";
 import { fetchShapesByTripId } from "../api/shapeApi";
 import { fetchStopsAndStopTimesByTripId } from "../api/stopTimeApi";
-import { fetchAllAreas } from "../api/fareApi"; // Yeni import
+import { fetchAllAreas } from "../api/fareApi";
+import { fetchAllStopsByProjectId } from "../api/stopApi";
+import StopTimeAddPage from "../pages/StopTimeAddPage.jsx"; 
 
 const MapPage = () => {
   const { token } = useContext(AuthContext);
@@ -22,7 +24,8 @@ const MapPage = () => {
   const [stopsAndTimes, setStopsAndTimes] = useState([]);
   const [calendars, setCalendars] = useState([]);
   const [agencies, setAgencies] = useState([]);
-  const [areas, setAreas] = useState([]); // Yeni state
+  const [areas, setAreas] = useState([]);
+  const [allStops, setAllStops] = useState([]);
   const [mapCenter, setMapCenter] = useState([39.0, 35.0]);
   const [zoom, setZoom] = useState(6);
   const [clickedCoords, setClickedCoords] = useState(null);
@@ -46,8 +49,9 @@ const MapPage = () => {
   const [activeKey, setActiveKey] = useState("0");
   const [showUrlModal, setShowUrlModal] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState("");
+  const [newStopCoords, setNewStopCoords] = useState(null);
 
-  useState(() => {
+  useEffect(() => {
     const fetchAreasData = async () => {
       try {
         const areasData = await fetchAllAreas(project_id, token);
@@ -58,7 +62,18 @@ const MapPage = () => {
       }
     };
 
+    const fetchAllStopsData = async () => {
+      try {
+        const stopsData = await fetchAllStopsByProjectId(project_id, token);
+        setAllStops(stopsData || []);
+      } catch (error) {
+        console.error("Error fetching all stops:", error);
+        setAllStops([]);
+      }
+    };
+
     fetchAreasData();
+    fetchAllStopsData();
   }, [project_id, token]);
 
   useEffect(() => {
@@ -229,12 +244,14 @@ const MapPage = () => {
     setClickedCoords(null);
   };
 
-  const openStopTimeAdd = () => {
+  const openStopTimeAdd = (lat, lon) => {
+    setNewStopCoords({ lat, lon }); // Koordinatları sakla
     setIsStopTimeAddOpen(true);
   };
 
   const closeStopTimeAdd = () => {
     setIsStopTimeAddOpen(false);
+    setNewStopCoords(null);
     resetClickedCoords();
   };
 
@@ -344,7 +361,6 @@ const MapPage = () => {
         onMapClick={handleMapClick}
         shapes={shapes}
         clickedCoords={clickedCoords}
-        isStopTimeAddOpen={isStopTimeAddOpen}
         editorMode={editorMode}
         setEditorMode={setEditorMode}
         selectedEntities={selectedEntities}
@@ -352,7 +368,9 @@ const MapPage = () => {
         setSelectedCategory={setSelectedCategory}
         token={token}
         project_id={project_id}
-        areas={areas} // Yeni prop
+        areas={areas}
+        allStops={allStops}
+        openStopTimeAdd={openStopTimeAdd} // Prop'u ekledik
       />
 
       <FloatingActions
@@ -379,6 +397,24 @@ const MapPage = () => {
           <Button variant="primary" onClick={copyToClipboard}>
             Copy URL
           </Button>
+        </Modal.Body>
+      </Modal>
+
+      <Modal show={isStopTimeAddOpen} onHide={closeStopTimeAdd}>
+        <Modal.Header closeButton>
+          <Modal.Title>Add Stop Time</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <StopTimeAddPage
+            project_id={project_id}
+            trip_id={selectedEntities.trip?.trip_id || ""}
+            onClose={closeStopTimeAdd}
+            setStopsAndTimes={setStopsAndTimes}
+            initialLat={newStopCoords?.lat}
+            initialLon={newStopCoords?.lon}
+            resetClickedCoords={resetClickedCoords}
+            route_id={selectedEntities.route?.route_id || ""}
+          />
         </Modal.Body>
       </Modal>
     </div>

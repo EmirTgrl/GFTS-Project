@@ -30,7 +30,7 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
     }
 
     // 1. Route bilgilerini al
-    const [[routeData]] = await pool.query(
+    const [routeResult] = await pool.query(
       `
         SELECT r.route_id, r.route_long_name, r.route_short_name, rn.network_id, n.network_name
         FROM routes r
@@ -41,10 +41,12 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       [route_id, user_id, project_id]
     );
 
-    // if (!routeData) {
-    //   console.log("Route not found for route_id:", route_id);
-    //   return null;
-    // }
+    const [routeData] = routeResult; // Tek bir satır alıyoruz
+
+    if (!routeData) {
+      console.log("Route not found for route_id:", route_id, { user_id, project_id });
+      return null; // Route bulunamazsa null dön
+    }
 
     const {
       route_id: fetchedRouteId,
@@ -53,11 +55,6 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       network_id,
       network_name,
     } = routeData;
-
-    // if (!network_id) {
-    //   console.log("Network not found for route_id:", route_id);
-    //   return null;
-    // }
 
     // 2. Rota için alanları (from_area, to_area) belirle
     const [stopAreas] = await pool.query(
@@ -73,10 +70,10 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
       [route_id, user_id, project_id]
     );
 
-    // if (!stopAreas || stopAreas.length === 0) {
-    //   console.log("No areas found for route_id:", route_id);
-    //   return null;
-    // }
+    if (!stopAreas || stopAreas.length === 0) {
+      console.log("No areas found for route_id:", route_id);
+      return null; // Alanlar bulunamazsa null dön
+    }
 
     // 3. İndi-Bindi (Sabit) ücretleri al
     const [fixedFares] = await pool.query(

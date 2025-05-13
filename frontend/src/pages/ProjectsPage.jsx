@@ -559,11 +559,6 @@ const ProjectsPage = () => {
               </p>
             )}
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleCloseValidationModal}>
-              Close
-            </Button>
-          </Modal.Footer>
         </Modal>
       </Container>
     </div>

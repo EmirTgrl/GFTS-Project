@@ -210,7 +210,6 @@ const stopService = {
     }
   },
 
-  // getAllStopsByProjectId fonksiyonunu ekleyin
   getAllStopsByProjectId: async (req, res) => {
     const user_id = req.user.id;
     const { project_id } = req.query;
@@ -229,10 +228,64 @@ const stopService = {
       const [rows] = await pool.query(query, [user_id, project_id]);
       res.json({
         data: rows,
-        total: rows.length
+        total: rows.length,
       });
     } catch (error) {
       console.error("Query execution error:", error);
+      res.status(500).json({ error: "Server Error", details: error.message });
+    }
+  },
+
+  getRoutesByStopId: async (req, res) => {
+    const user_id = req.user.id;
+    const { stop_id, project_id } = req.params;
+
+    if (!stop_id || !project_id) {
+      return res
+        .status(400)
+        .json({ error: "stop_id and project_id are required" });
+    }
+
+    const query = `
+    SELECT 
+      s.stop_id, s.stop_code, s.stop_name, s.stop_desc, s.stop_lat, s.stop_lon, 
+      s.zone_id, s.stop_url, s.location_type, s.parent_station, s.stop_timezone, 
+      s.wheelchair_boarding, s.project_id,
+      COALESCE(
+        (SELECT JSON_ARRAYAGG(r2.route_long_name)
+         FROM (SELECT DISTINCT r.route_long_name
+               FROM routes r
+               JOIN trips t ON r.route_id = t.route_id AND r.project_id = t.project_id
+               JOIN stop_times st ON t.trip_id = st.trip_id AND t.project_id = st.project_id
+               WHERE st.stop_id = s.stop_id AND st.project_id = s.project_id
+                 AND r.route_long_name IS NOT NULL) r2),
+        '[]'
+      ) AS route_names
+    FROM stops s
+    WHERE s.user_id = ? AND s.project_id = ? AND s.stop_id = ?
+    GROUP BY s.stop_id
+  `;
+
+    try {
+      const [rows] = await pool.query(query, [user_id, project_id, stop_id]);
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: "Stop not found" });
+      }
+
+      const formattedRow = {
+        ...rows[0],
+        route_names:
+          rows[0].route_names && rows[0].route_names !== "[]"
+            ? JSON.parse(rows[0].route_names).filter((name) => name)
+            : [],
+      };
+
+      res.json({
+        data: formattedRow,
+      });
+    } catch (error) {
+      console.error("Query execution error:", error.stack);
       res.status(500).json({ error: "Server Error", details: error.message });
     }
   },

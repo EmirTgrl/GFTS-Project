@@ -76,28 +76,65 @@ export const saveStop = async (stopData, token) => {
 
 export const fetchAllStopsByProjectId = async (projectId, token) => {
   if (!token) {
-    throw new Error('Token is required');
+    throw new Error("Token is required");
   }
 
   if (!projectId) {
-    throw new Error('Project ID is required');
+    throw new Error("Project ID is required");
   }
 
   const url = new URL(`${API_BASE_URL}/all`);
   url.searchParams.append("project_id", projectId);
 
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("HTTP error in fetchAllStopsByProjectId!", response.status, errorText);
+    console.error(
+      "HTTP error in fetchAllStopsByProjectId!",
+      response.status,
+      errorText
+    );
     throw new Error(`Fetch all stops failed: ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data;
+};
+
+export const fetchRoutesByStopId = async (projectId, stopId, token) => {
+  if (!token) {
+    throw new Error("Token is required");
+  }
+
+  if (!projectId || !stopId) {
+    throw new Error("Project ID and Stop ID are required");
+  }
+
+  const url = `${API_BASE_URL}/${projectId}/${stopId}/routes`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(
+      "HTTP error in fetchRoutesByStopId!",
+      response.status,
+      errorText
+    );
+    throw new Error(`Fetch routes for stop failed: ${errorText}`);
   }
 
   const data = await response.json();
