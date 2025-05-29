@@ -7,6 +7,7 @@ import {
   GeoAlt,
   Copy,
   Link45deg,
+  GeoFill,
 } from "react-bootstrap-icons";
 import PropTypes from "prop-types";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
@@ -23,12 +24,32 @@ const FloatingActions = ({
     <Tooltip id={`tooltip-${text.toLowerCase()}`}>{text}</Tooltip>
   );
 
+  const handleRoutePlanningToggle = () => {
+    // Eğer route-planning modundaysa, close moduna geç; değilse route-planning'e geç
+    setEditorMode(editorMode === "route-planning" ? "close" : "route-planning");
+    setAction(editorMode === "route-planning" ? "" : "route-planning");
+  };
+
   return (
     <div className="floating-actions">
       <div className="secondary-actions">
-        {editorMode === "close" ? (
+        {editorMode === "close" || editorMode === "route-planning" ? (
           <>
-            {selectedEntities.trip !== null && (
+            <OverlayTrigger
+              placement="left"
+              overlay={renderTooltip("Route Planning")}
+              trigger={["hover", "focus"]}
+            >
+              <button
+                className={`fab-secondary ${
+                  editorMode === "route-planning" ? "active" : ""
+                }`}
+                onClick={handleRoutePlanningToggle}
+              >
+                <GeoFill size={20} />
+              </button>
+            </OverlayTrigger>
+            {selectedEntities.trip && (
               <>
                 <OverlayTrigger
                   placement="left"
@@ -68,6 +89,20 @@ const FloatingActions = ({
           </>
         ) : (
           <>
+            <OverlayTrigger
+              placement="left"
+              overlay={renderTooltip("Route Planning")}
+              trigger={["hover", "focus"]}
+            >
+              <button
+                className={`fab-secondary ${
+                  editorMode === "route-planning" ? "active" : ""
+                }`}
+                onClick={handleRoutePlanningToggle}
+              >
+                <GeoFill size={20} />
+              </button>
+            </OverlayTrigger>
             <OverlayTrigger
               placement="left"
               overlay={renderTooltip("Add Stop")}

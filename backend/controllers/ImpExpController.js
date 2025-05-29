@@ -6,14 +6,19 @@ const exportService = require("../services/ExportService.js");
 
 router.use(authService.auth);
 
+// GTFS import rotası
 router.post(
   "/import",
   importService.upload.single("file"),
   importService.importGTFSData.bind(importService)
 );
 
-router.get("/export/:project_id", exportService.exportGTFS);
+// GTFS export rotası (Frontend ile uyumlu hale getirildi: GET ve /io/export/:projectId)
+router.get("/export/:projectId", async (req, res) => {
+  await exportService.exportGTFS(req, res);
+});
 
+// GTFS validation rotası
 router.post(
   "/validate/:project_id",
   importService.upload.single("file"),

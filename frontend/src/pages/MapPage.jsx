@@ -1,3 +1,4 @@
+// MapPage.jsx
 import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../components/Auth/AuthContext";
@@ -12,7 +13,7 @@ import { fetchShapesByTripId } from "../api/shapeApi";
 import { fetchStopsAndStopTimesByTripId } from "../api/stopTimeApi";
 import { fetchAllAreas } from "../api/fareApi";
 import { fetchAllStopsByProjectId } from "../api/stopApi";
-import StopTimeAddPage from "../pages/StopTimeAddPage.jsx"; 
+import StopTimeAddPage from "../pages/StopTimeAddPage.jsx";
 
 const MapPage = () => {
   const { token } = useContext(AuthContext);
@@ -50,6 +51,7 @@ const MapPage = () => {
   const [showUrlModal, setShowUrlModal] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState("");
   const [newStopCoords, setNewStopCoords] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar durumunu takip et
 
   useEffect(() => {
     const fetchAreasData = async () => {
@@ -245,7 +247,7 @@ const MapPage = () => {
   };
 
   const openStopTimeAdd = (lat, lon) => {
-    setNewStopCoords({ lat, lon }); // Koordinatları sakla
+    setNewStopCoords({ lat, lon });
     setIsStopTimeAddOpen(true);
   };
 
@@ -340,6 +342,7 @@ const MapPage = () => {
         setSelectedCategory={setSelectedCategory}
         activeKey={activeKey}
         setActiveKey={setActiveKey}
+        setIsSidebarOpen={setIsSidebarOpen} // Sidebar durumunu güncellemek için prop
       />
 
       <BreadcrumbBar
@@ -370,7 +373,8 @@ const MapPage = () => {
         project_id={project_id}
         areas={areas}
         allStops={allStops}
-        openStopTimeAdd={openStopTimeAdd} // Prop'u ekledik
+        openStopTimeAdd={openStopTimeAdd}
+        isSidebarOpen={isSidebarOpen} // Sidebar durumunu MapView'e geçir
       />
 
       <FloatingActions

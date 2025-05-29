@@ -77,12 +77,12 @@ const ProjectsPage = () => {
   const handleDeleteProject = async (projectId, projectName) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: `You are about to delete "${projectName}" and all associated GTFS data. This action cannot be undone!`,
+      text: `"You are about to delete the project ${projectName}" and its associated GTFS data. This operation cannot be undone!`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc3545",
       cancelButtonColor: "#6c757d",
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: "Yes, delete!",
       cancelButtonText: "Cancel",
     });
 
@@ -93,7 +93,7 @@ const ProjectsPage = () => {
         await loadProjects();
         Swal.fire(
           "Deleted!",
-          "Your project and associated GTFS data have been deleted.",
+          "Your project and associated GTFS data has been deleted.",
           "success"
         );
       } catch (error) {
@@ -102,9 +102,9 @@ const ProjectsPage = () => {
           title: "Error!",
           text:
             error.response?.data?.message === "Project not found"
-              ? "The project could not be found. It may have been deleted already."
+              ? "Project not found. May have already been deleted."
               : error.response?.data?.details ||
-                "Failed to delete the project and GTFS data.",
+                "An error occurred while deleting project and GTFS data.",
           icon: "error",
         });
       } finally {
@@ -116,19 +116,36 @@ const ProjectsPage = () => {
   const handleExportProject = async (projectId) => {
     setExportLoading(true);
     try {
-      const { blob, link } = await exportProject(projectId, token);
+      const { blob, filename } = await exportProject(projectId, token);
+
+      // Blob nesnesini kontrol et
+      if (!blob || !(blob instanceof Blob)) {
+        throw new Error("Invalid blob received.");
+      }
+
+      // Filename'in geçerli bir string olduğundan emin ol
+      const fileName =
+        typeof filename === "string" && filename
+          ? filename
+          : `project-${projectId}.zip`;
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = link;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+
       Swal.fire("Success!", "Your project has been exported.", "success");
     } catch (error) {
       console.error("Export error:", error);
-      Swal.fire("Error!", "Failed to export the project.", "error");
+      Swal.fire(
+        "Error!",
+        error.message || "An error occurred while exporting the project.",
+        "error"
+      );
     } finally {
       setExportLoading(false);
     }
@@ -213,7 +230,7 @@ const ProjectsPage = () => {
                       <thead>
                         <tr>
                           <th>GTFS File Name</th>
-                          <th>Imported Date</th>
+                          <th>Import Date</th>
                           <th style={{ width: "200px" }}>Actions</th>
                         </tr>
                       </thead>
@@ -324,17 +341,17 @@ const ProjectsPage = () => {
                           />
                         </Pagination>
                         <small className="text-muted">
-                          Page {currentPage} of {totalPages} (
+                          Sayfa {currentPage} / {totalPages} (
                           {indexOfFirstProject + 1}-
-                          {Math.min(indexOfLastProject, projects.length)} of{" "}
-                          {projects.length} projects)
+                          {Math.min(indexOfLastProject, projects.length)} /{" "}
+                          {projects.length} proje)
                         </small>
                       </div>
                     )}
                   </>
                 ) : (
                   <p className="text-muted text-center py-3 fw-medium">
-                    No projects yet. Create one or import a GTFS file!
+                    No project yet. Create a project or import a GTFS file!
                   </p>
                 )}
               </Card.Body>
@@ -353,13 +370,13 @@ const ProjectsPage = () => {
               <h2 className="h5 mb-3">Create New Project</h2>
               <input
                 type="text"
-                placeholder="Project Name"
+                placeholder="Proje Adı"
                 value={projectName}
                 onChange={handleInputChange}
                 className="form-control mb-3"
               />
               <Button variant="primary" onClick={handleCreateProject}>
-                Create
+                Oluştur
               </Button>
             </div>
           </div>
@@ -409,13 +426,13 @@ const ProjectsPage = () => {
                                   {err.userFriendlyMessage ||
                                     err.message ||
                                     err.description ||
-                                    "No description available"}
+                                    "Açıklama mevcut değil"}
                                 </p>
                                 <p className="mb-3">
-                                  <strong>Suggestion:</strong>{" "}
+                                  <strong>Recommendation:</strong>{" "}
                                   {err.suggestion ||
                                     err.recommendation ||
-                                    "No suggestion available"}
+                                    "Suggestion not available"}
                                 </p>
                                 {err.samples?.length > 0 ? (
                                   <div className="table-container">
@@ -450,8 +467,8 @@ const ProjectsPage = () => {
                                   </div>
                                 ) : (
                                   <p className="text-warning">
-                                    No sample data available for this error.
-                                    Check the validator output or database data.
+                                    Sample data is not available for this error.
+                                    Check the validator output or database.
                                   </p>
                                 )}
                               </Accordion.Body>
@@ -487,20 +504,20 @@ const ProjectsPage = () => {
                               </Accordion.Header>
                               <Accordion.Body>
                                 <p className="mb-2">
-                                  <strong>Warning Code:</strong> {warn.code}
+                                  <strong>Error Code:</strong> {warn.code}
                                 </p>
                                 <p className="mb-2">
                                   <strong>Description:</strong>{" "}
                                   {warn.userFriendlyMessage ||
                                     warn.message ||
                                     warn.description ||
-                                    "No description available"}
+                                    "Açıklama mevcut değil"}
                                 </p>
                                 <p className="mb-3">
-                                  <strong>Suggestion:</strong>{" "}
+                                  <strong>Recommendation:</strong>{" "}
                                   {warn.suggestion ||
                                     warn.recommendation ||
-                                    "No suggestion available"}
+                                    "Recommendation not available"}
                                 </p>
                                 {warn.samples?.length > 0 ? (
                                   <div className="table-container">
@@ -535,8 +552,8 @@ const ProjectsPage = () => {
                                   </div>
                                 ) : (
                                   <p className="text-warning">
-                                    No sample data available for this warning.
-                                    Check the validator output or database data.
+                                    Sample data is not available for this error.
+                                    Check the validator output or database.
                                   </p>
                                 )}
                               </Accordion.Body>
@@ -550,12 +567,12 @@ const ProjectsPage = () => {
 
                 {!selectedProject.validation_data.errors?.length &&
                   !selectedProject.validation_data.warnings?.length && (
-                    <p className="text-muted">No errors or warnings found.</p>
+                    <p className="text-muted">Error or warning not found.</p>
                   )}
               </Accordion>
             ) : (
               <p className="text-muted">
-                No validation data available for this project.
+                Validation data is not available for this project.
               </p>
             )}
           </Modal.Body>

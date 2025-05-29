@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -8,7 +9,6 @@ import {
   useMapEvents,
   Circle,
 } from "react-leaflet";
-import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import PropTypes from "prop-types";
 import L from "leaflet";
 import Swal from "sweetalert2";
@@ -27,6 +27,7 @@ import {
   calculateRouteBetweenStops,
 } from "../../api/stopTimeApi.js";
 import { fetchRoutesByStopId } from "../../api/stopApi.js";
+import { planTrip } from "../../api/otpApi.js";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -37,9 +38,30 @@ const stopIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-const MapClickHandler = ({ onMapClick }) => {
+const startIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  shadowSize: [41, 41],
+});
+
+const endIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  shadowSize: [41, 41],
+});
+
+const MapClickHandler = ({ onMapClick, isRoutePlanning }) => {
   useMapEvents({
     click(e) {
+      if (!isRoutePlanning) return; // Only enable clicking in route planning mode
       const { lat, lng } = e.latlng;
       onMapClick({ lat, lng });
     },
@@ -49,6 +71,7 @@ const MapClickHandler = ({ onMapClick }) => {
 
 MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
+  isRoutePlanning: PropTypes.bool.isRequired,
 };
 
 function PolylineWithDirectionalArrows({ positions, color, weight }) {
@@ -107,7 +130,7 @@ const BoundsTracker = ({ onBoundsChange }) => {
     () =>
       debounce((bounds, zoom) => {
         onBoundsChange({ bounds, zoom });
-      }, 200),
+      }, 500),
     [onBoundsChange]
   );
 
@@ -188,6 +211,11 @@ const MapView = ({
   const [currentZoom, setCurrentZoom] = useState(zoom);
   const [selectedStop, setSelectedStop] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [startPoint, setStartPoint] = useState(null);
+  const [endPoint, setEndPoint] = useState(null);
+  const [route, setRoute] = useState(null);
+  const [date, setDate] = useState("2025-05-14");
+  const [time, setTime] = useState("16:10");
   const prevClickedCoords = useRef(null);
   const mapRef = useRef(null);
   const prevStopsAndTimesRef = useRef(null);
@@ -296,7 +324,15 @@ const MapView = ({
       return isValidLatLng(lat, lon) && currentBounds.contains([lat, lon]);
     });
 
-    setVisibleStops(filteredStops);
+    setVisibleStops((prevStops) => {
+      if (
+        JSON.stringify(prevStops.map((s) => s.stop_id)) ===
+        JSON.stringify(filteredStops.map((s) => s.stop_id))
+      ) {
+        return prevStops;
+      }
+      return filteredStops;
+    });
   }, [currentBounds, currentZoom, stopsAndTimes, allStops, isValidLatLng]);
 
   useEffect(() => {
@@ -401,7 +437,7 @@ const MapView = ({
         if (openStopTimeAdd) {
           openStopTimeAdd(clickedCoords.lat, clickedCoords.lng);
         } else {
-          console.warn("openStopTimeAdd fonksiyonu tanımlı değil!");
+          console.warn("openStopTimeAdd function is not defined!");
         }
       } else if (editorMode === "add-shape") {
         const newShape = {
@@ -414,6 +450,16 @@ const MapView = ({
         setTempShapes((prev) => [...prev, newShape]);
         setVisibleShapes((prev) => [...prev, newShape]);
         onMapClick(clickedCoords);
+      } else if (editorMode === "route-planning") {
+        if (!startPoint) {
+          setStartPoint(clickedCoords);
+        } else if (!endPoint) {
+          setEndPoint(clickedCoords);
+        } else {
+          setStartPoint(clickedCoords);
+          setEndPoint(null);
+          setRoute(null);
+        }
       }
       prevClickedCoords.current = clickedCoords;
     }
@@ -426,6 +472,8 @@ const MapView = ({
     tempShapes,
     project_id,
     openStopTimeAdd,
+    startPoint,
+    endPoint,
   ]);
 
   const handleBoundsChange = useCallback(({ bounds, zoom }) => {
@@ -463,8 +511,8 @@ const MapView = ({
             stop.stop_id,
             token
           );
-          console.log("Fetch routes response:", response); // API yanıtını logla
-          const routeNames = response.data?.route_names || []; // Orijinal mantığı geri yükledim
+          console.log("Fetch routes response:", response);
+          const routeNames = response.data?.route_names || [];
           setSelectedStop((prev) => ({
             ...prev,
             route_names: routeNames,
@@ -513,6 +561,58 @@ const MapView = ({
       isValidLatLng,
     ]
   );
+
+  const handlePlanRoute = useCallback(async () => {
+    if (!startPoint || !endPoint) {
+      Swal.fire({
+        icon: "warning",
+        title: "Selection Error",
+        text: "Please select both start and end points on the map.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+      });
+      return;
+    }
+
+    try {
+      const tripData = {
+        fromLat: startPoint.lat,
+        fromLon: startPoint.lng,
+        toLat: endPoint.lat,
+        toLon: endPoint.lng,
+        date: date,
+        time: time,
+      };
+      const response = await planTrip(tripData, token);
+      setRoute(response.data);
+      setIsMenuOpen(true);
+      Swal.fire({
+        icon: "success",
+        title: "Route Planned",
+        text: "Route calculated successfully.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+      });
+    } catch (error) {
+      console.error("Route Planning Error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to plan route.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+      });
+    }
+  }, [startPoint, endPoint, date, time, token]);
+
+  const handleClearPoints = useCallback(() => {
+    setStartPoint(null);
+    setEndPoint(null);
+    setRoute(null);
+  }, []);
 
   const handleSaveStopsAndShapes = useCallback(async () => {
     if (
@@ -659,6 +759,27 @@ const MapView = ({
     }
   }, [editorMode, handleSaveStopsAndShapes]);
 
+  const markerElements = useMemo(() => {
+    return visibleStops.length > 0
+      ? visibleStops.map((stop) => (
+          <Marker
+            key={`${stop.stop_id}-${stop.trip_id || "no-trip"}`}
+            position={[parseFloat(stop.stop_lat), parseFloat(stop.stop_lon)]}
+            icon={stopIcon}
+            eventHandlers={{ click: () => handleStopClick(stop) }}
+          >
+            <Popup>
+              {stop.stop_name || stop.stop_id}
+              <br />
+              {stop.arrival_time && stop.departure_time
+                ? `${stop.arrival_time} - ${stop.departure_time}`
+                : "N/A"}
+            </Popup>
+          </Marker>
+        ))
+      : null;
+  }, [visibleStops, handleStopClick]);
+
   return (
     <div
       style={{
@@ -686,35 +807,20 @@ const MapView = ({
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <MapUpdater center={mapCenter || [39.9255, 32.8663]} zoom={zoom || 6} />
-        <MapClickHandler onMapClick={onMapClick} />
+        <MapClickHandler
+          onMapClick={onMapClick}
+          isRoutePlanning={editorMode === "route-planning"}
+        />
         <BoundsTracker onBoundsChange={handleBoundsChange} />
 
-        <MarkerClusterGroup maxClusterRadius={50} disableClusteringAtZoom={15}>
-          {visibleStops.length > 0 ? (
-            visibleStops.map((stop) => (
-              <Marker
-                key={`${stop.stop_id}-${stop.trip_id || "no-trip"}`}
-                position={[
-                  parseFloat(stop.stop_lat),
-                  parseFloat(stop.stop_lon),
-                ]}
-                icon={stopIcon}
-                eventHandlers={{
-                  click: () => handleStopClick(stop),
-                }}
-              >
-                <Popup>
-                  {stop.stop_name || stop.stop_id}
-                  <br />
-                  {stop.arrival_time && stop.departure_time
-                    ? `${stop.arrival_time} - ${stop.departure_time}`
-                    : "N/A"}
-                </Popup>
-              </Marker>
-            ))
-          ) : (
-            <></>
-          )}
+        <MarkerClusterGroup
+          maxClusterRadius={120}
+          disableClusteringAtZoom={18}
+          showCoverageOnHover={false}
+          spiderfyOnMaxZoom={true}
+          chunkedLoading
+        >
+          {markerElements}
         </MarkerClusterGroup>
 
         {visibleShapes.length > 0 && (
@@ -724,6 +830,26 @@ const MapView = ({
               parseFloat(shape.shape_pt_lon),
             ])}
             color="#ff0000"
+            weight={5}
+          />
+        )}
+
+        {startPoint && (
+          <Marker position={[startPoint.lat, startPoint.lng]} icon={startIcon}>
+            <Popup>Start Point</Popup>
+          </Marker>
+        )}
+        {endPoint && (
+          <Marker position={[endPoint.lat, endPoint.lng]} icon={endIcon}>
+            <Popup>End Point</Popup>
+          </Marker>
+        )}
+        {route && route.length > 0 && (
+          <PolylineWithDirectionalArrows
+            positions={route[0].legs.flatMap((leg) =>
+              leg.geometry.map((point) => [point[1], point[0]])
+            )}
+            color="#00ff00"
             weight={5}
           />
         )}
@@ -745,6 +871,189 @@ const MapView = ({
           <Marker position={[clickedCoords.lat, clickedCoords.lng]} />
         )}
       </MapContainer>
+
+      {/* Route Planning Panel - Placed below "Snap the Routes" button */}
+      {editorMode === "route-planning" && (
+        <div
+          style={{
+            position: "absolute",
+            top: "70px", // Just below "Snap the Routes" button (top: 7px + padding + height adjustment)
+            right: isMenuOpen ? "320px" : "20px", // Aligns with "Snap the Routes" button position
+            width: "300px",
+            maxHeight: "calc(100vh - 100px)",
+            background: "#fff",
+            padding: "15px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 1000,
+            overflowY: "auto",
+            transition: "all 0.3s ease-in-out",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "15px",
+            }}
+          >
+            <h4 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "500" }}>
+              Trip Planning
+            </h4>
+            <button
+              onClick={() => setEditorMode("close")}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: "1.5rem",
+                cursor: "pointer",
+                color: "#666",
+                padding: "0",
+                lineHeight: "1",
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <div style={{ marginBottom: "10px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.9rem",
+                color: "#444",
+                marginBottom: "5px",
+              }}
+            >
+              Start Point:
+            </label>
+            <div
+              style={{
+                fontSize: "0.85rem",
+                color: startPoint ? "#333" : "#999",
+                padding: "5px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                background: startPoint ? "#f9f9f9" : "#fff",
+              }}
+            >
+              {startPoint
+                ? `Lat: ${startPoint.lat.toFixed(
+                    5
+                  )}, Lng: ${startPoint.lng.toFixed(5)}`
+                : "Select on map (click)"}
+            </div>
+          </div>
+          <div style={{ marginBottom: "10px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.9rem",
+                color: "#444",
+                marginBottom: "5px",
+              }}
+            >
+              End Point:
+            </label>
+            <div
+              style={{
+                fontSize: "0.85rem",
+                color: endPoint ? "#333" : "#999",
+                padding: "5px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                background: endPoint ? "#f9f9f9" : "#fff",
+              }}
+            >
+              {endPoint
+                ? `Lat: ${endPoint.lat.toFixed(5)}, Lng: ${endPoint.lng.toFixed(
+                    5
+                  )}`
+                : "Select on map (click)"}
+            </div>
+          </div>
+          <div style={{ marginBottom: "10px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.9rem",
+                color: "#444",
+                marginBottom: "5px",
+              }}
+            >
+              Date:
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "5px",
+                border: `1px solid ${date ? "#ddd" : "#ff0000"}`, // Highlight if empty
+                borderRadius: "4px",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+          <div style={{ marginBottom: "15px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.9rem",
+                color: "#444",
+                marginBottom: "5px",
+              }}
+            >
+              Time:
+            </label>
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "5px",
+                border: `1px solid ${time ? "#ddd" : "#ff0000"}`, // Highlight if empty
+                borderRadius: "4px",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              onClick={handlePlanRoute}
+              style={{
+                flex: 1,
+                padding: "8px",
+                background: "#007bff",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+              }}
+            >
+              Plan Route
+            </button>
+            <button
+              onClick={handleClearPoints}
+              style={{
+                flex: 1,
+                padding: "8px",
+                background: "#6c757d",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
 
       <div
         style={{
@@ -777,7 +1086,7 @@ const MapView = ({
             >
               <h5
                 style={{
-                  margin: 0,
+                  margin: "0",
                   fontSize: "1.2rem",
                   color: "#2c3e50",
                   fontWeight: "600",
@@ -811,7 +1120,7 @@ const MapView = ({
                   display: "block",
                 }}
               >
-                Hatlar:
+                Routes:
               </strong>
               {selectedStop.route_names === null ? (
                 <p
@@ -821,7 +1130,7 @@ const MapView = ({
                     textAlign: "center",
                   }}
                 >
-                  Yükleniyor...
+                  Loading...
                 </p>
               ) : selectedStop.error ? (
                 <p
@@ -831,7 +1140,7 @@ const MapView = ({
                     textAlign: "center",
                   }}
                 >
-                  Durak bilgileri yüklenemedi.
+                  Failed to load stop information.
                 </p>
               ) : Array.isArray(selectedStop.route_names) &&
                 selectedStop.route_names.length > 0 ? (
@@ -880,45 +1189,69 @@ const MapView = ({
                     textAlign: "center",
                   }}
                 >
-                  Bu duraktan geçen hat bulunmamaktadır.
+                  No routes pass through this stop.
                 </p>
               )}
             </div>
           </div>
         )}
+        {route && (
+          <div style={{ marginTop: "20px" }}>
+            <h5>Route Details</h5>
+            {route.map((itinerary, index) => (
+              <div key={index} style={{ marginBottom: "15px" }}>
+                <p>
+                  <strong>Option {index + 1}:</strong>{" "}
+                  {Math.round(itinerary.duration / 60)} minutes
+                </p>
+                <ul>
+                  {itinerary.legs.map((leg, legIndex) => (
+                    <li key={legIndex}>
+                      {leg.mode}: {leg.from} → {leg.to} (
+                      {Math.round(leg.distance)} m)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {editorMode && editorMode !== "close" && editorMode !== "save" && (
-        <Button
-          variant="primary"
-          style={{
-            position: "absolute",
-            top: "7px",
-            right: isMenuOpen ? "320px" : "20px", // Menü açıkken 300px + 20px margin
-            zIndex: 1000,
-            padding: "10px 20px",
-            fontSize: "14px",
-            fontWeight: "500",
-            borderRadius: "12px",
-            backgroundColor: "#007bff",
-            border: "none",
-            boxShadow: "0 3px 8px rgba(0, 0, 0, 0.15)",
-            transition:
-              "transform 0.2s ease, background-color 0.3s ease, right 0.3s ease",
-          }}
-          onClick={handleCalculateRoute}
-          onMouseEnter={(e) => {
-            e.target.style.transform = "scale(1.05)";
-            e.target.style.backgroundColor = "#0056b3";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = "scale(1)";
-            e.target.style.backgroundColor = "#007bff";
-          }}
-        >
-          Snap the Routes
-        </Button>
-      )}
+      {editorMode &&
+        editorMode !== "close" &&
+        editorMode !== "save" &&
+        editorMode !== "route-planning" && (
+          <Button
+            variant="primary"
+            style={{
+              position: "absolute",
+              top: "7px",
+              right: isMenuOpen ? "320px" : "20px",
+              zIndex: 1000,
+              padding: "10px 20px",
+              fontSize: "14px",
+              fontWeight: "500",
+              borderRadius: "12px",
+              backgroundColor: "#007bff",
+              border: "none",
+              boxShadow: "0 3px 8px rgba(0, 0, 0, 0.15)",
+              transition:
+                "transform 0.2s ease, background-color 0.3s ease, right 0.3s ease",
+            }}
+            onClick={handleCalculateRoute}
+            onMouseEnter={(e) => {
+              e.target.style.transform = "scale(1.05)";
+              e.target.style.backgroundColor = "#0056b3";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = "scale(1)";
+              e.target.style.backgroundColor = "#007bff";
+            }}
+          >
+            Snap the Routes
+          </Button>
+        )}
     </div>
   );
 };
@@ -953,6 +1286,7 @@ MapView.propTypes = {
   openStopTimeAdd: PropTypes.func,
   setMapCenter: PropTypes.func.isRequired,
   setZoom: PropTypes.func.isRequired,
+  isSidebarOpen: PropTypes.bool.isRequired,
 };
 
 export default MapView;

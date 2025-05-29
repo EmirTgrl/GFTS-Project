@@ -1,77 +1,82 @@
 .floating-actions {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    z-index: 1000;
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1000;
 }
 
 .main-action {
-    order: 2;
-    margin-top: 10px;
+  order: 2;
+  margin-top: 10px;
 }
 
 .secondary-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    opacity: 0;
-    transform: translateY(2rem);
-    transition: all 0.3s ease;
-    pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(2rem);
+  transition: all 0.3s ease;
+  pointer-events: none;
 }
 
 .floating-actions:hover .secondary-actions {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: all;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
 }
 
 .fab-main {
-    padding: 0;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
-    background-color: #fff;
-    color: black;
-    border: none;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.3s;
+  padding: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background-color: #fff;
+  color: black;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.3s;
 }
 
 .fab-main:hover {
-    background-color: #fafafa;
-    transform: scale(1.2);
+  background-color: #fafafa;
+  transform: scale(1.2);
 }
 
 .fab-secondary {
-    padding: 0;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
-    background-color: white;
-    color: #333;
-    border: none;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.3s, background-color 0.2s;
+  padding: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background-color: white;
+  color: #333;
+  border: none;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.3s, background-color 0.2s;
 }
 
 .fab-secondary:hover {
-    transform: scale(1.1);
+  transform: scale(1.1);
 }
 
-.active{
-    background-color: #066aab;
-    color: white;
+.active {
+  background-color: #066aab;
+  color: white;
+}
+
+/* Yeni butonun var olan düzenle uyumlu olduğundan emin ol */
+.fab-secondary:last-child {
+  margin-bottom: 0; /* Son butonun altına boşluk bırakma */
 }

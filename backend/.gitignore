@@ -7,11 +7,19 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node modules and build outputs
 node_modules
 .env
 dist
 dist-ssr
 *.local
+
+# OTP data (manually added)
+otp-data/
+
+otp-shaded-2.7.0.jar
+
+gtfs-validator-7.0.0-cli.jar
 
 # Editor directories and files
 .vscode/*
