@@ -8,18 +8,20 @@ Bu proje, toplu taşıma sistemleri için **GTFS (General Transit Feed Specifica
 
 - Kullanıcı bazlı kimlik doğrulama (JWT)
 - GTFS veri seti içe aktarma (agency, routes, trips, stops, shapes, calendar, stoptimes)
+- GTFS veri seti dışa aktarma
 - GTFS-Fare V2 uyumlu ücret yapısı:
   - Fare Products (Ürünler)
   - Fare Media (Bilet/kart gibi ödeme yöntemleri)
   - Rider Categories (Öğrenci, tam, yaşlı vb.)
   - Fare Leg Rules (Sabit veya mesafeye dayalı ücretlendirme)
   - Fare Transfer Rules (Ücretsiz veya zaman sınırlı aktarma)
-- Rota/trip bazlı ücret hesaplama
+- Rota bazlı ücret hesaplama
 - MySQL ile güçlü veri yönetimi
 
 ### 🛠️ Kullanılan Teknolojiler
 
 - Node.js & Express.js
+- React
 - MySQL
 - JWT ile kimlik doğrulama
 - GTFS veri yapısı ve standartları
@@ -34,18 +36,20 @@ This project is an application that supports data management and fare structure 
 
 - User-based authentication (JWT)
 - GTFS data set import (agency, routes, trips, stops, shapes, calendar, stoptimes)
-- GTFS-Mouse V2 compatible fee structure:
-  - Mouse Products (Products)
-  - Mouse Media (Payment methods such as tickets/cards)
+- GTFS data set export
+- GTFS-Fare V2 compatible fare structure:
+  - Fare Products (Products)
+  - Fare Media (Payment methods such as tickets/cards)
   - Rider Categories (Student, full, senior, etc.)
   - Fare Leg Rules (Fixed or distance-based pricing)
   - Fare Transfer Rules (Free or time-limited transfer)
-- Route/trip based fare calculation
+- Route based fare calculation
 - Powerful data management with MySQL
 
 ### 🛠️ Technologies Used
 
 - Node.js & Express.js
+- React
 - MySQL
 - Authentication with JWT
 - GTFS data structure and standards
