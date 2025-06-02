@@ -1,6 +1,6 @@
 # 🚌 GTFS-Project
 
-## 📌 Proje Açıklaması (Türkçe)
+## 📌 Proje Açıklaması
 
 Bu proje, toplu taşıma sistemleri için **GTFS (General Transit Feed Specification)** standardına uygun olarak veri yönetimi ve ücretlendirme (Fare V2) yapısını destekleyen bir uygulamadır. Kullanıcılar, kendi GTFS veri setlerini sisteme yükleyebilir, yönetebilir ve rota bazlı ücret hesaplamaları yapabilir.
 
@@ -28,7 +28,7 @@ Bu proje, toplu taşıma sistemleri için **GTFS (General Transit Feed Specifica
 - OSRM & OTP
 
 
-## 📌 Project Description (English)
+## 📌 Project Description
 
 This project is an application that supports data management and fare structure (Fare V2) in accordance with **GTFS (General Transit Feed Specification)** standard for public transportation systems. Users can upload and manage their own GTFS data sets and perform route-based fare calculations.
 
