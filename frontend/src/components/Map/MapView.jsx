@@ -58,10 +58,16 @@ const endIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-const MapClickHandler = ({ onMapClick, isRoutePlanning }) => {
+const MapClickHandler = ({ onMapClick, editorMode }) => {
   useMapEvents({
     click(e) {
-      if (!isRoutePlanning) return; // Only enable clicking in route planning mode
+      if (
+        editorMode !== "add-stop" &&
+        editorMode !== "add-shape" &&
+        editorMode !== "route-planning"
+      ) {
+        return;
+      }
       const { lat, lng } = e.latlng;
       onMapClick({ lat, lng });
     },
@@ -71,7 +77,7 @@ const MapClickHandler = ({ onMapClick, isRoutePlanning }) => {
 
 MapClickHandler.propTypes = {
   onMapClick: PropTypes.func.isRequired,
-  isRoutePlanning: PropTypes.bool.isRequired,
+  editorMode: PropTypes.string.isRequired,
 };
 
 function PolylineWithDirectionalArrows({ positions, color, weight }) {
@@ -202,6 +208,7 @@ const MapView = ({
   areas,
   allStops,
   openStopTimeAdd,
+  isSidebarOpen,
 }) => {
   const [tempStopsAndTimes, setTempStopsAndTimes] = useState([]);
   const [tempShapes, setTempShapes] = useState([]);
@@ -436,12 +443,16 @@ const MapView = ({
         setSelectedCategory("stop");
         if (openStopTimeAdd) {
           openStopTimeAdd(clickedCoords.lat, clickedCoords.lng);
+          mapRef.current?.flyTo([clickedCoords.lat, clickedCoords.lng], 15, {
+            animate: true,
+          });
         } else {
           console.warn("openStopTimeAdd function is not defined!");
         }
       } else if (editorMode === "add-shape") {
         const newShape = {
-          shape_id: selectedEntities.trip?.shape_id,
+          shape_id:
+            selectedEntities.trip?.shape_id || `temp_shape_${Date.now()}`,
           shape_pt_lat: clickedCoords.lat,
           shape_pt_lon: clickedCoords.lng,
           shape_pt_sequence: tempShapes.length + 1,
@@ -449,7 +460,10 @@ const MapView = ({
         };
         setTempShapes((prev) => [...prev, newShape]);
         setVisibleShapes((prev) => [...prev, newShape]);
-        onMapClick(clickedCoords);
+        mapRef.current?.flyTo([clickedCoords.lat, clickedCoords.lng], 15, {
+          animate: true,
+        });
+        onMapClick(null);
       } else if (editorMode === "route-planning") {
         if (!startPoint) {
           setStartPoint(clickedCoords);
@@ -474,6 +488,13 @@ const MapView = ({
     openStopTimeAdd,
     startPoint,
     endPoint,
+  ]);
+
+  useEffect(() => {}, [
+    tempStopsAndTimes,
+    visibleStops,
+    tempShapes,
+    visibleShapes,
   ]);
 
   const handleBoundsChange = useCallback(({ bounds, zoom }) => {
@@ -511,7 +532,6 @@ const MapView = ({
             stop.stop_id,
             token
           );
-          console.log("Fetch routes response:", response);
           const routeNames = response.data?.route_names || [];
           setSelectedStop((prev) => ({
             ...prev,
@@ -807,10 +827,7 @@ const MapView = ({
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <MapUpdater center={mapCenter || [39.9255, 32.8663]} zoom={zoom || 6} />
-        <MapClickHandler
-          onMapClick={onMapClick}
-          isRoutePlanning={editorMode === "route-planning"}
-        />
+        <MapClickHandler onMapClick={onMapClick} editorMode={editorMode} />
         <BoundsTracker onBoundsChange={handleBoundsChange} />
 
         <MarkerClusterGroup
@@ -872,13 +889,12 @@ const MapView = ({
         )}
       </MapContainer>
 
-      {/* Route Planning Panel - Placed below "Snap the Routes" button */}
       {editorMode === "route-planning" && (
         <div
           style={{
             position: "absolute",
-            top: "70px", // Just below "Snap the Routes" button (top: 7px + padding + height adjustment)
-            right: isMenuOpen ? "320px" : "20px", // Aligns with "Snap the Routes" button position
+            top: "70px",
+            right: isMenuOpen ? "320px" : "20px",
             width: "300px",
             maxHeight: "calc(100vh - 100px)",
             background: "#fff",
@@ -990,7 +1006,7 @@ const MapView = ({
               style={{
                 width: "100%",
                 padding: "5px",
-                border: `1px solid ${date ? "#ddd" : "#ff0000"}`, // Highlight if empty
+                border: `1px solid ${date ? "#ddd" : "#ff0000"}`,
                 borderRadius: "4px",
                 fontSize: "0.9rem",
               }}
@@ -1014,7 +1030,7 @@ const MapView = ({
               style={{
                 width: "100%",
                 padding: "5px",
-                border: `1px solid ${time ? "#ddd" : "#ff0000"}`, // Highlight if empty
+                border: `1px solid ${time ? "#ddd" : "#ff0000"}`,
                 borderRadius: "4px",
                 fontSize: "0.9rem",
               }}
@@ -1284,8 +1300,6 @@ MapView.propTypes = {
   areas: PropTypes.array.isRequired,
   allStops: PropTypes.array.isRequired,
   openStopTimeAdd: PropTypes.func,
-  setMapCenter: PropTypes.func.isRequired,
-  setZoom: PropTypes.func.isRequired,
   isSidebarOpen: PropTypes.bool.isRequired,
 };
 

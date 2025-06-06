@@ -18,9 +18,11 @@ const CalendarEditPage = ({
   useEffect(() => {
     const loadCalendar = async () => {
       try {
-        const calendar = calendars.filter(
-          (cal) => cal.service_id === service_id
-        )[0];
+        let calendar = Array.isArray(calendars)
+          ? calendars.find((cal) => cal.service_id === service_id)
+          : calendars.data
+          ? calendars.data.find((cal) => cal.service_id === service_id)
+          : null;
         if (calendar) {
           setFormData({
             service_id: calendar.service_id || "",
@@ -38,14 +40,14 @@ const CalendarEditPage = ({
             project_id: calendar.project_id || project_id,
           });
         } else {
-          Swal.fire("Hata!", "Takvim bulunamadı.", "error");
+          Swal.fire("Error!", "Calendar not found.", "error");
           onClose();
         }
       } catch (error) {
-        console.error("Takvim yükleme hatası:", error);
+        console.error("Calendar loading Errors:", error);
         Swal.fire(
-          "Hata!",
-          `Takvim yüklenirken hata oluştu: ${error.message}`,
+          "Error!",
+          `Error loading the calendar: ${error.message}`,
           "error"
         );
         onClose();
@@ -67,37 +69,46 @@ const CalendarEditPage = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData?.start_date || !formData?.end_date) {
-      Swal.fire("Hata!", "Başlangıç ve bitiş tarihi zorunludur!", "error");
+      Swal.fire("Error!", "Start and end date is required!", "error");
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu takvimi güncellemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to update this calendar?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, güncelle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, update!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
       try {
         setLoading(true);
         const calendarData = { ...formData, service_id, project_id };
-        const response = await updateCalendar(calendarData, token);
-        setCalendars((prev) =>
-          prev.map((cal) =>
-            cal.service_id === service_id ? calendarData : cal
-          )
-        );
-        Swal.fire("Güncellendi!", "Takvim başarıyla güncellendi.", "success");
+        await updateCalendar(calendarData, token);
+        // Optimist güncelleme: Mevcut state'i güncelle
+        setCalendars((prev) => {
+          const updatedCalendars = Array.isArray(prev)
+            ? prev.map((cal) =>
+                cal.service_id === service_id ? calendarData : cal
+              )
+            : {
+                ...prev,
+                data: prev.data.map((cal) =>
+                  cal.service_id === service_id ? calendarData : cal
+                ),
+              };
+          return updatedCalendars;
+        });
+        Swal.fire("Updated!", "Calendar successfully updated.", "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Hata!",
-          `Takvim güncellenirken hata oluştu: ${error.message}`,
+          "Error!",
+          `Error updating the calendar: ${error.message}`,
           "error"
         );
       } finally {
@@ -106,11 +117,11 @@ const CalendarEditPage = ({
     }
   };
 
-  if (!formData) return <p>Yükleniyor...</p>;
+  if (!formData) return <p>Loading...</p>;
 
   return (
     <div className="form-container">
-      <h5>Takvim Düzenle</h5>
+      <h5>Update Calendar</h5>
       <form onSubmit={handleSubmit}>
         <div className="row mb-2">
           {[
@@ -139,7 +150,7 @@ const CalendarEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="start_date" className="form-label">
-            Başlangıç Tarihi
+            Start Date
           </label>
           <input
             type="date"
@@ -153,7 +164,7 @@ const CalendarEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="end_date" className="form-label">
-            Bitiş Tarihi
+            End Date
           </label>
           <input
             type="date"
@@ -167,10 +178,7 @@ const CalendarEditPage = ({
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Kaydediliyor..." : "Kaydet"}
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            {loading ? "Saving..." : "Save"}
           </button>
         </div>
       </form>
@@ -183,7 +191,10 @@ CalendarEditPage.propTypes = {
   service_id: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   setCalendars: PropTypes.func.isRequired,
-  calendars: PropTypes.array.isRequired,
+  calendars: PropTypes.oneOfType([
+    PropTypes.array,
+    PropTypes.shape({ data: PropTypes.array, total: PropTypes.number }),
+  ]).isRequired,
 };
 
 export default CalendarEditPage;

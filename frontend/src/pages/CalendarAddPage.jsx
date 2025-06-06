@@ -31,19 +31,19 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.start_date || !formData.end_date) {
-      Swal.fire("Hata!", "Başlangıç ve bitiş tarihi zorunludur!", "error");
+      Swal.fire("Error!", "Start and end date is required!", "error");
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu takvimi eklemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to add this calendar?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, ekle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, add!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
@@ -51,12 +51,12 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
         setLoading(true);
         const newCalendar = await saveCalendar(formData, token);
         setCalendars((prev) => [...prev, newCalendar]);
-        Swal.fire("Eklendi!", "Takvim başarıyla eklendi.", "success");
+        Swal.fire("Added!", "Calendar successfully added.", "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Hata!",
-          `Takvim eklenirken hata oluştu: ${error.message}`,
+          "Error!",
+          `Error adding a calendar: ${error.message}`,
           "error"
         );
       } finally {
@@ -67,7 +67,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
 
   return (
     <div className="form-container">
-      <h5>Yeni Takvim Ekle</h5>
+      <h5>Add New Calendar</h5>
       <form onSubmit={handleSubmit}>
         <div className="row mb-2">
           {[
@@ -96,7 +96,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="start_date" className="form-label">
-            Başlangıç Tarihi (*)
+            Start Date (*)
           </label>
           <input
             type="date"
@@ -110,7 +110,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="end_date" className="form-label">
-            Bitiş Tarihi (*)
+            End Date (*)
           </label>
           <input
             type="date"
@@ -124,10 +124,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Ekleniyor..." : "Ekle"}
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            {loading ? "Adding..." : "Add"}
           </button>
         </div>
       </form>

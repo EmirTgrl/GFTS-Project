@@ -18,12 +18,9 @@ const AgencyEditPage = ({
   useEffect(() => {
     const loadAgency = async () => {
       try {
-        console.log("Agencies prop:", agencies); // agencies’in yapısını logla
-        console.log("Agency ID:", agency_id);
-
         // agencies’in tanımlı olup olmadığını kontrol et
         if (!agencies || (!agencies.data && !Array.isArray(agencies))) {
-          throw new Error("Agencies prop’u geçersiz veya eksik");
+          throw new Error("Agencies prop is invalid or incomplete");
         }
 
         // agencies.data varsa onu kullan, yoksa direkt agencies’i kullan
@@ -40,13 +37,13 @@ const AgencyEditPage = ({
             agency_phone: agency.agency_phone || "",
           });
         } else {
-          Swal.fire("Hata!", "Ajans bulunamadı.", "error");
+          Swal.fire("Error!", "Agency not found.", "error");
           onClose();
         }
       } catch (error) {
         Swal.fire(
-          "Hata!",
-          `Ajans yüklenirken hata oluştu: ${error.message}`,
+          "Error!",
+          `Error loading the agency: ${error.message}`,
           "error"
         );
         onClose();
@@ -67,19 +64,23 @@ const AgencyEditPage = ({
       !formData?.agency_url ||
       !formData?.agency_timezone
     ) {
-      Swal.fire("Hata!", "Ajans adı, URL ve zaman dilimi zorunludur!", "error");
+      Swal.fire(
+        "Error!",
+        "Agency name, URL and time zone are required!",
+        "error"
+      );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu ajansı güncellemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to update this agency?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, güncelle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, update!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
@@ -98,12 +99,12 @@ const AgencyEditPage = ({
             ),
           };
         });
-        Swal.fire("Güncellendi!", "Ajans başarıyla güncellendi.", "success");
+        Swal.fire("Updated!", "Agency successfully updated.", "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Hata!",
-          `Ajans güncellenirken hata oluştu: ${error.message}`,
+          "Error!",
+          `Error updating the agency: ${error.message}`,
           "error"
         );
       } finally {
@@ -112,15 +113,15 @@ const AgencyEditPage = ({
     }
   };
 
-  if (!formData) return <p>Yükleniyor...</p>;
+  if (!formData) return <p>Loading...</p>;
 
   return (
     <div className="form-container">
-      <h5>Ajans Düzenle</h5>
+      <h5>Update Agency</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="agency_id" className="form-label">
-            Ajans ID (Değiştirilemez)
+            Agency ID (Unchangeable)
           </label>
           <input
             type="text"
@@ -133,7 +134,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_name" className="form-label">
-            Ajans Adı
+            Agency Name
           </label>
           <input
             type="text"
@@ -147,7 +148,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_url" className="form-label">
-            Ajans URL
+            Agency URL
           </label>
           <input
             type="url"
@@ -161,7 +162,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_timezone" className="form-label">
-            Zaman Dilimi
+            Timezone
           </label>
           <input
             type="text"
@@ -175,7 +176,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_lang" className="form-label">
-            Dil (Opsiyonel)
+            Language (Optional)
           </label>
           <input
             type="text"
@@ -188,7 +189,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_phone" className="form-label">
-            Telefon (Opsiyonel)
+            Phone (Optional)
           </label>
           <input
             type="text"
@@ -201,10 +202,7 @@ const AgencyEditPage = ({
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Kaydediliyor..." : "Kaydet"}
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            {loading ? "Saving..." : "Save"}
           </button>
         </div>
       </form>

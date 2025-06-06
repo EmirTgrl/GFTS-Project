@@ -141,19 +141,23 @@ const StopTimeEditPage = ({
     e.preventDefault();
 
     if (!stopTimeData.stop_name || !stopTimeData.stop_sequence) {
-      Swal.fire("Hata!", "Durak adı ve sıra numarası zorunludur!", "error");
+      Swal.fire(
+        "Error!",
+        "Stop name and sequence number are required!",
+        "error"
+      );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu durak zamanını ve durağı güncellemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to update this stop time and stop?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, güncelle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, update!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
@@ -187,7 +191,7 @@ const StopTimeEditPage = ({
         let updatedStopId = selectedStopId;
 
         if (isNewStop) {
-          stopData.stop_id = stopData.stop_id || `${trip_id}_${Date.now()}`; // Benzersiz stop_id
+          stopData.stop_id = stopData.stop_id || `${trip_id}_${Date.now()}`;
           const newStopResponse = await saveStop(stopData, token);
           updatedStopId = newStopResponse.stop_id;
         } else {
@@ -264,25 +268,25 @@ const StopTimeEditPage = ({
         }
 
         Swal.fire(
-          "Güncellendi!",
-          "Durak zamanı ve durak başarıyla güncellendi.",
+          "Updated!",
+          "Stop time and stop successfully updated.",
           "success"
         );
         onClose();
       } catch (error) {
         console.error("Error updating stop time and stop:", error);
         Swal.fire(
-          "Hata!",
-          `Durak zamanı ve durak güncellenirken hata oluştu: ${error.message}`,
+          "Error!",
+          `Error updating stop time and stop: ${error.message}`,
           "error"
         );
       }
     }
   };
 
-  if (loading) return <p>Yükleniyor...</p>;
-  if (error) return <p>Hata: {error}</p>;
-  if (!stopTimeData) return <p>Veri bulunamadı.</p>;
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
+  if (!stopTimeData) return <p>No data found.</p>;
 
   return (
     <div className="form-container">
@@ -290,7 +294,7 @@ const StopTimeEditPage = ({
         <h5 className="mb-3">Stop</h5>
         <div className="mb-2">
           <label htmlFor="stop_id" className="form-label">
-            Durak ID (Değiştirilemez)
+            Stop ID (Cannot be changed)
           </label>
           <input
             type="text"
@@ -303,7 +307,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_select" className="form-label">
-            Durak Seçimi
+            Stop Selection
           </label>
           <select
             id="stop_select"
@@ -312,19 +316,19 @@ const StopTimeEditPage = ({
             value={selectedStopId}
             onChange={handleStopSelectChange}
           >
-            <option value="">Mevcut Bir Durak Seçin</option>
+            <option value="">Choose an Available Stop</option>
             {allStops.map((stop) => (
               <option key={stop.stop_id} value={stop.stop_id}>
                 {stop.stop_name} ({stop.stop_code})
               </option>
             ))}
-            <option value="new">Yeni Durak Ekle</option>
+            <option value="new">Add New Stop</option>
           </select>
         </div>
         {isNewStop && (
           <div className="mb-2">
             <label htmlFor="new_stop_id" className="form-label">
-              Yeni Durak ID (*)
+              New Stop ID (*)
             </label>
             <input
               type="text"
@@ -339,7 +343,7 @@ const StopTimeEditPage = ({
         )}
         <div className="mb-2">
           <label htmlFor="stop_code" className="form-label">
-            Durak Kodu
+            Stop Code
           </label>
           <input
             type="text"
@@ -353,7 +357,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_name" className="form-label">
-            Durak Adı (*)
+            Stop Name (*)
           </label>
           <input
             type="text"
@@ -368,7 +372,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_desc" className="form-label">
-            Durak Açıklaması
+            Stop Description
           </label>
           <input
             type="text"
@@ -383,7 +387,7 @@ const StopTimeEditPage = ({
         <div className="row">
           <div className="col-6 mb-2">
             <label htmlFor="stop_lat" className="form-label">
-              Durak Enlemi
+              Stop Latitude
             </label>
             <input
               type="number"
@@ -398,7 +402,7 @@ const StopTimeEditPage = ({
           </div>
           <div className="col-6 mb-2">
             <label htmlFor="stop_lon" className="form-label">
-              Durak Boylamı
+              Stop Longitude
             </label>
             <input
               type="number"
@@ -414,7 +418,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_url" className="form-label">
-            Durak URL si
+            Stop URL
           </label>
           <input
             type="text"
@@ -428,7 +432,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="location_type" className="form-label">
-            Konum Türü
+            Location Type
           </label>
           <select
             id="location_type"
@@ -438,14 +442,14 @@ const StopTimeEditPage = ({
             onChange={handleChange}
             disabled={!isNewStop}
           >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Durak/Platform</option>
-            <option value="1">1 - İstasyon</option>
+            <option value="">Select</option>
+            <option value="0">0 - Stop</option>
+            <option value="1">1 - Station</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="stop_timezone" className="form-label">
-            Durak Saat Dilimi
+            Stop Time Zone
           </label>
           <input
             type="text"
@@ -459,7 +463,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="wheelchair_boarding" className="form-label">
-            Tekerlekli Sandalye Erişimi
+            Wheelchair Access
           </label>
           <select
             id="wheelchair_boarding"
@@ -469,10 +473,10 @@ const StopTimeEditPage = ({
             onChange={handleChange}
             disabled={!isNewStop}
           >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Bilgi Yok</option>
-            <option value="1">1 - Mümkün</option>
-            <option value="2">2 - Mümkün Değil</option>
+            <option value="">Select</option>
+            <option value="0">0 - No Information</option>
+            <option value="1">1 - Possible</option>
+            <option value="2">2 - Not Possible</option>
           </select>
         </div>
 
@@ -480,7 +484,7 @@ const StopTimeEditPage = ({
         <h5 className="my-3">Stop Time</h5>
         <div className="mb-2">
           <label htmlFor="arrival_time" className="form-label">
-            Varış Zamanı
+            Arrival Time
           </label>
           <input
             type="text"
@@ -494,7 +498,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="departure_time" className="form-label">
-            Kalkış Zamanı
+            Departure Time
           </label>
           <input
             type="text"
@@ -508,7 +512,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_sequence" className="form-label">
-            Durak Sırası (*)
+            Stop Sequence (*)
           </label>
           <input
             type="number"
@@ -522,7 +526,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_headsign" className="form-label">
-            Durak Başlığı
+            Stop Headsign
           </label>
           <input
             type="text"
@@ -535,7 +539,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="pickup_type" className="form-label">
-            Yolcu Alma Türü
+            Pickup Type
           </label>
           <select
             id="pickup_type"
@@ -544,16 +548,16 @@ const StopTimeEditPage = ({
             value={stopTimeData.pickup_type || ""}
             onChange={handleChange}
           >
-            <option value="">Seçiniz</option>
+            <option value="">Select</option>
             <option value="0">0 - Normal</option>
-            <option value="1">1 - Yok</option>
-            <option value="2">2 - Ajansla İletişim</option>
-            <option value="3">3 - Sürücüyle İletişim</option>
+            <option value="1">1 - None</option>
+            <option value="2">2 - Contact Agency</option>
+            <option value="3">3 - Contact Driver</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="drop_off_type" className="form-label">
-            Yolcu İndirme Türü
+            Drop Off Type
           </label>
           <select
             id="drop_off_type"
@@ -562,16 +566,16 @@ const StopTimeEditPage = ({
             value={stopTimeData.drop_off_type || ""}
             onChange={handleChange}
           >
-            <option value="">Seçiniz</option>
+            <option value="">Select</option>
             <option value="0">0 - Normal</option>
-            <option value="1">1 - Yok</option>
-            <option value="2">2 - Ajansla İletişim</option>
-            <option value="3">3 - Sürücüyle İletişim</option>
+            <option value="1">1 - None</option>
+            <option value="2">2 - Contact Agency</option>
+            <option value="3">3 - Contact Driver</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="shape_dist_traveled" className="form-label">
-            Şekil Mesafesi (Metre)
+            Shape Distance (Meter)
           </label>
           <input
             type="number"
@@ -585,7 +589,7 @@ const StopTimeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="timepoint" className="form-label">
-            Zaman Noktası
+            Time Point
           </label>
           <select
             id="timepoint"
@@ -594,18 +598,15 @@ const StopTimeEditPage = ({
             value={stopTimeData.timepoint || ""}
             onChange={handleChange}
           >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Yaklaşık</option>
-            <option value="1">1 - Kesin</option>
+            <option value="">Select</option>
+            <option value="1">1 - Full Time</option>
+            <option value="0">0 - Approximately</option>
           </select>
         </div>
 
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
-            Kaydet
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            Save
           </button>
         </div>
       </form>

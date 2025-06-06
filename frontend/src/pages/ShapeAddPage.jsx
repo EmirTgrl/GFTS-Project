@@ -44,14 +44,14 @@ const ShapeAddPage = ({
     setLoading(true);
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu şekli eklemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to add this shape?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, ekle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, add!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
@@ -74,7 +74,7 @@ const ShapeAddPage = ({
           { ...newShapeData, shape_id: response?.shape_id || shape_id },
         ]);
 
-        Swal.fire("Eklendi!", "Şekil başarıyla eklendi.", "success");
+        Swal.fire("Added!", "Shape successfully added.", "success");
 
         setShapeData({
           shape_pt_lat: "",
@@ -86,8 +86,8 @@ const ShapeAddPage = ({
         onClose();
       } catch (error) {
         Swal.fire(
-          "Hata!",
-          `Şekil eklenirken bir hata oluştu: ${error.message}`,
+          "Error!",
+          `An error occurred while adding the shape: ${error.message}`,
           "error"
         );
       } finally {
@@ -100,12 +100,12 @@ const ShapeAddPage = ({
 
   return (
     <div className="form-container">
-      <h5>Yeni Şekil Ekle</h5>
+      <h5>Add New Shape</h5>
       <form onSubmit={handleSubmit}>
         <div className="row">
           <div className="col-6 mb-2">
             <label htmlFor="shape_pt_lat" className="form-label">
-              Enlem (*)
+              Latitude (*)
             </label>
             <input
               type="number"
@@ -120,7 +120,7 @@ const ShapeAddPage = ({
           </div>
           <div className="col-6 mb-2">
             <label htmlFor="shape_pt_lon" className="form-label">
-              Boylam (*)
+              Longitude (*)
             </label>
             <input
               type="number"
@@ -136,7 +136,7 @@ const ShapeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="shape_pt_sequence" className="form-label">
-            Sıra Numarası (*)
+            Shape Sequence (*)
           </label>
           <input
             type="number"
@@ -150,7 +150,7 @@ const ShapeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="shape_dist_traveled" className="form-label">
-            Mesafe (Metre)
+            Distance (Meter)
           </label>
           <input
             type="number"
@@ -164,7 +164,7 @@ const ShapeAddPage = ({
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Ekleniyor..." : "Ekle"}
+            {loading ? "Adding..." : "Add"}
           </button>
           <button
             type="button"
@@ -172,7 +172,7 @@ const ShapeAddPage = ({
             onClick={onClose}
             disabled={loading}
           >
-            İptal
+            Cancel
           </button>
         </div>
       </form>

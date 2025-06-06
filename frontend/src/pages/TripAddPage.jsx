@@ -13,7 +13,7 @@ const TripAddPage = ({
 }) => {
   const { token } = useContext(AuthContext);
   const [tripData, setTripData] = useState({
-    trip_id: "", // trip_id ekledik, string olacak
+    trip_id: "",
     service_id: "",
     route_id: selectedRoute?.route_id || "",
     project_id,
@@ -35,20 +35,20 @@ const TripAddPage = ({
         name === "bikes_allowed"
           ? value === ""
             ? null
-            : parseInt(value, 10) || null // Sayısal alanlar için parseInt korundu
-          : value, // trip_id dahil diğer alanlar string
+            : parseInt(value, 10) || null
+          : value,
     }));
   };
 
   const getServiceName = (calendar) => {
     const days = [
-      { name: "Pzt", value: calendar.monday },
-      { name: "Sal", value: calendar.tuesday },
-      { name: "Çar", value: calendar.wednesday },
-      { name: "Per", value: calendar.thursday },
-      { name: "Cum", value: calendar.friday },
-      { name: "Cmt", value: calendar.saturday },
-      { name: "Paz", value: calendar.sunday },
+      { name: "Mon", value: calendar.monday },
+      { name: "Tue", value: calendar.tuesday },
+      { name: "Wed", value: calendar.wednesday },
+      { name: "Thu", value: calendar.thursday },
+      { name: "Fri", value: calendar.friday },
+      { name: "Sat", value: calendar.saturday },
+      { name: "Sun", value: calendar.sunday },
     ];
     const activeDays = days
       .filter((day) => day.value === 1)
@@ -63,22 +63,22 @@ const TripAddPage = ({
     e.preventDefault();
     if (!tripData.trip_id || !tripData.service_id || !tripData.trip_headsign) {
       Swal.fire(
-        "Hata!",
-        "Trip ID, servis ve trip başlığı zorunludur!",
+        "Error!",
+        "Trip ID, service and trip title are mandatory!",
         "error"
       );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu trip’i eklemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to add this trip?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, ekle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, add!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
@@ -94,21 +94,17 @@ const TripAddPage = ({
           ...prev,
           data: [...prev.data, { ...formData, trip_id }],
         }));
-        Swal.fire("Eklendi!", "Trip başarıyla eklendi.", "success");
+        Swal.fire("Added!", "Trip successfully added.", "success");
         onClose();
       } catch (error) {
-        Swal.fire(
-          "Hata!",
-          `Trip eklenirken hata oluştu: ${error.message}`,
-          "error"
-        );
+        Swal.fire("Error!", `Error adding Trip: ${error.message}`, "error");
       }
     }
   };
 
   return (
     <div className="form-container">
-      <h5>Yeni Trip Ekle</h5>
+      <h5>Add New Trip</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="trip_id" className="form-label">
@@ -126,7 +122,7 @@ const TripAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="service_id" className="form-label">
-            Servis (*)
+            Calendar (*)
           </label>
           <select
             id="service_id"
@@ -136,7 +132,7 @@ const TripAddPage = ({
             onChange={handleChange}
             required
           >
-            <option value="">Bir servis seçin</option>
+            <option value="">Select a Calendar</option>
             {calendars.map((calendar) => (
               <option key={calendar.service_id} value={calendar.service_id}>
                 {getServiceName(calendar)}
@@ -146,7 +142,7 @@ const TripAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_headsign" className="form-label">
-            Trip Başlığı (*)
+            Trip Headsign (*)
           </label>
           <input
             type="text"
@@ -160,7 +156,7 @@ const TripAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_short_name" className="form-label">
-            Kısa Ad
+            Trip Short Name
           </label>
           <input
             type="text"
@@ -173,7 +169,7 @@ const TripAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="direction_id" className="form-label">
-            Yön
+            Direction
           </label>
           <select
             id="direction_id"
@@ -182,17 +178,14 @@ const TripAddPage = ({
             value={tripData.direction_id ?? ""}
             onChange={handleChange}
           >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Gidiş</option>
-            <option value="1">1 - Dönüş</option>
+            <option value="">Select</option>
+            <option value="0">0 - Departure</option>
+            <option value="1">1 - Return</option>
           </select>
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
-            Ekle
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            Add
           </button>
         </div>
       </form>

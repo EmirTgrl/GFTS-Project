@@ -24,28 +24,28 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (
-      !formData.agency_id || 
+      !formData.agency_id ||
       !formData.agency_name ||
       !formData.agency_url ||
       !formData.agency_timezone
     ) {
       Swal.fire(
-        "Hata!",
-        "Ajans ID, ajans adı, URL ve zaman dilimi zorunludur!",
+        "Error!",
+        "Agency ID, agenc name, URL ve timezone is required!",
         "error"
       );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu ajansı eklemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to add this agency?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, ekle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, add!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
@@ -58,12 +58,12 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
           ...prev,
           data: [...prev.data, { ...agencyData, agency_id }],
         }));
-        Swal.fire("Eklendi!", "Ajans başarıyla eklendi.", "success");
+        Swal.fire("Added!", "Agency successfully added.", "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Hata!",
-          `Ajans eklenirken hata oluştu: ${error.message}`,
+          "Error!",
+          `Error adding an agency: ${error.message}`,
           "error"
         );
       } finally {
@@ -74,11 +74,11 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
 
   return (
     <div className="form-container">
-      <h5>Yeni Ajans Ekle</h5>
+      <h5>Add New Agency</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="agency_id" className="form-label">
-            Ajans ID (*)
+            Agency ID (*)
           </label>
           <input
             type="text"
@@ -92,7 +92,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="agency_name" className="form-label">
-            Ajans Adı (*)
+            Agency Name (*)
           </label>
           <input
             type="text"
@@ -106,7 +106,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="agency_url" className="form-label">
-            Ajans URL (*)
+            Agency URL (*)
           </label>
           <input
             type="url"
@@ -120,7 +120,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="agency_timezone" className="form-label">
-            Zaman Dilimi (*)
+            Timezone (*)
           </label>
           <input
             type="text"
@@ -134,7 +134,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="agency_lang" className="form-label">
-            Dil (Opsiyonel)
+            Language (Optional)
           </label>
           <input
             type="text"
@@ -147,7 +147,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="agency_phone" className="form-label">
-            Telefon (Opsiyonel)
+            Phone (Optional)
           </label>
           <input
             type="text"
@@ -160,10 +160,7 @@ const AgencyAddPage = ({ project_id, onClose, setAgencies }) => {
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Ekleniyor..." : "Ekle"}
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            {loading ? "Added..." : "Add"}
           </button>
         </div>
       </form>

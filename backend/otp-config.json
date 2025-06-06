@@ -1,0 +1,10 @@
+{
+  "server": {
+    "cors": {
+      "enabled": true,
+      "allowOrigins": ["http://localhost:5173"],
+      "allowMethods": ["GET", "POST", "OPTIONS"],
+      "allowHeaders": ["Authorization", "Content-Type"]
+    }
+  }
+}

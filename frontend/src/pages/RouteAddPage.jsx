@@ -7,7 +7,7 @@ import { AuthContext } from "../components/Auth/AuthContext";
 const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState({
-    route_id: "", 
+    route_id: "",
     agency_id: selectedAgency?.agency_id || "",
     project_id,
     route_short_name: "",
@@ -33,7 +33,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
           ? value === ""
             ? null
             : parseInt(value, 10) || null
-          : value, 
+          : value,
     }));
   };
 
@@ -44,36 +44,40 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
       !routeData.route_short_name ||
       !routeData.route_type
     ) {
-      Swal.fire("Hata!", "Rota ID, kısa ad ve rota türü zorunludur!", "error");
+      Swal.fire(
+        "Error!",
+        "Route ID, short name and route type are required!",
+        "error"
+      );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu rotayı eklemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to add this route?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, ekle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, add!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
       try {
         const newRoute = { ...routeData, agency_id: selectedAgency.agency_id };
         const response = await saveRoute(newRoute, token);
-        const route_id = response.route_id; 
+        const route_id = response.route_id;
         setRoutes((prev) => ({
           ...prev,
           data: [...prev.data, { ...newRoute, route_id }],
         }));
-        Swal.fire("Eklendi!", "Rota başarıyla eklendi.", "success");
+        Swal.fire("Added!", "Route successfully added.", "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Hata!",
-          `Rota eklenirken hata oluştu: ${error.message}`,
+          "Error!",
+          `Error while adding a route: ${error.message}`,
           "error"
         );
       }
@@ -82,11 +86,11 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
 
   return (
     <div className="form-container">
-      <h5>Yeni Rota Ekle</h5>
+      <h5>Add New Route</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="route_id" className="form-label">
-            Rota ID (*)
+            Route ID (*)
           </label>
           <input
             type="text"
@@ -100,7 +104,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_short_name" className="form-label">
-            Kısa Ad (*)
+            Route Short Name (*)
           </label>
           <input
             type="text"
@@ -114,7 +118,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_long_name" className="form-label">
-            Uzun Ad
+            Route Long Name (*)
           </label>
           <input
             type="text"
@@ -127,7 +131,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_type" className="form-label">
-            Rota Türü (*)
+            Route Type (*)
           </label>
           <select
             id="route_type"
@@ -137,17 +141,17 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
             onChange={handleChange}
             required
           >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Tramvay</option>
-            <option value="1">1 - Metro</option>
-            <option value="2">2 - Tren</option>
-            <option value="3">3 - Otobüs</option>
-            <option value="4">4 - Feribot</option>
+            <option value="">Select</option>
+            <option value="0">0 - Tram</option>
+            <option value="1">1 - Subway</option>
+            <option value="2">2 - Train</option>
+            <option value="3">3 - Bus</option>
+            <option value="4">4 - Ferry</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="route_desc" className="form-label">
-            Açıklama
+            Description
           </label>
           <input
             type="text"
@@ -173,7 +177,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_color" className="form-label">
-            Rota Rengi
+            Route Color
           </label>
           <input
             type="text"
@@ -187,7 +191,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_text_color" className="form-label">
-            Metin Rengi
+            Text Color
           </label>
           <input
             type="text"
@@ -201,10 +205,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
-            Ekle
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            Add
           </button>
         </div>
       </form>
@@ -218,7 +219,7 @@ RouteAddPage.propTypes = {
   setRoutes: PropTypes.func.isRequired,
   selectedAgency: PropTypes.shape({
     agency_id: PropTypes.string.isRequired,
-  }), 
+  }),
 };
 
 export default RouteAddPage;

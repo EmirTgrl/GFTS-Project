@@ -161,7 +161,9 @@ const Sidebar = ({
       const [hB, mB, sB] = timeB.split(":").map(Number);
       const secondsA = hA * 3600 + mA * 60 + sA;
       const secondsB = hB * 3600 + mB * 60 + sB;
-      return sortDirection === "asc" ? secondsA - secondsB : secondsB - secondsA;
+      return sortDirection === "asc"
+        ? secondsA - secondsB
+        : secondsB - secondsA;
     });
   };
 
@@ -202,8 +204,15 @@ const Sidebar = ({
         if (!token || !project_id) return;
 
         // Fetch All Stops
-        if (!selectedEntities.trip && !selectedEntities.agency && !selectedEntities.route) {
-          const allStopsData = await fetchAllStopsByProjectId(project_id, token);
+        if (
+          !selectedEntities.trip &&
+          !selectedEntities.agency &&
+          !selectedEntities.route
+        ) {
+          const allStopsData = await fetchAllStopsByProjectId(
+            project_id,
+            token
+          );
           setAllStops(allStopsData?.data || []);
           if (!selectedEntities.trip) {
             setStopsAndTimes({
@@ -253,7 +262,7 @@ const Sidebar = ({
           itemsPerPage,
           searchTerms.calendars
         );
-        setCalendars(calendarData);
+        setCalendars(calendarData || { data: [], total: 0 });
 
         // Skip fetching trips if filtered
         if (isFiltered) {
@@ -356,7 +365,7 @@ const Sidebar = ({
         console.error("An error occurred while loading the data:", error);
         setAgencies({ data: [], total: 0 });
         setRoutes({ data: [], total: 0 });
-        setCalendars([]);
+        setCalendars({ data: [], total: 0 });
         setFullTrips([]);
         setTrips({ data: [], total: 0 });
         setShapes([]);
@@ -1238,10 +1247,10 @@ const Sidebar = ({
                 firstArrival: "N/A",
                 lastDeparture: "N/A",
               };
-              const calendar = calendars.data.find(
+              const calendar = (calendars.data || []).find(
                 (cal) => cal.service_id === trip.service_id
               );
-              const activeDays = getActiveDays(calendar);
+              const activeDays = calendar ? getActiveDays(calendar) : "N/A";
               return (
                 <Card
                   key={trip.trip_id}
@@ -1608,7 +1617,9 @@ const Sidebar = ({
                   stop.stop_sequence || stop.stop_id
                 }`}
                 className={`mb-2 item-card ${
-                  selectedEntities.stop?.stop_id === stop.stop_id ? "active" : ""
+                  selectedEntities.stop?.stop_id === stop.stop_id
+                    ? "active"
+                    : ""
                 }`}
                 onClick={() => handleSelectionChange("stop", stop)}
               >

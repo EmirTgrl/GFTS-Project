@@ -21,7 +21,7 @@ const TripEditPage = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const tripList = trips.data || trips; // trips.data veya direkt trips
+        const tripList = trips.data || trips;
         const trip = tripList.find((t) => t.trip_id === trip_id);
 
         if (!trip) {
@@ -65,20 +65,20 @@ const TripEditPage = ({
         name === "bikes_allowed"
           ? value === ""
             ? null
-            : parseInt(value, 10) || null // Sayısal alanlar için parseInt korundu
-          : value, // trip_id dahil diğer alanlar string
+            : parseInt(value, 10) || null
+          : value,
     }));
   };
 
   const getServiceName = (calendar) => {
     const days = [
-      { name: "Pzt", value: calendar.monday },
-      { name: "Sal", value: calendar.tuesday },
-      { name: "Çar", value: calendar.wednesday },
-      { name: "Per", value: calendar.thursday },
-      { name: "Cum", value: calendar.friday },
-      { name: "Cmt", value: calendar.saturday },
-      { name: "Paz", value: calendar.sunday },
+      { name: "Mon", value: calendar.monday },
+      { name: "Tue", value: calendar.tuesday },
+      { name: "Wed", value: calendar.wednesday },
+      { name: "Thu", value: calendar.thursday },
+      { name: "Fri", value: calendar.friday },
+      { name: "Sat", value: calendar.saturday },
+      { name: "Sun", value: calendar.sunday },
     ];
     const activeDays = days
       .filter((day) => day.value === 1)
@@ -92,19 +92,23 @@ const TripEditPage = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!tripData.service_id || !tripData.trip_headsign || !tripData.route_id) {
-      Swal.fire("Hata!", "Servis, trip başlığı ve rota zorunludur!", "error");
+      Swal.fire(
+        "Error!",
+        "Service, trip title and route are required!",
+        "error"
+      );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu trip’i güncellemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to update this trip?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, güncelle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, update!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
@@ -120,29 +124,25 @@ const TripEditPage = ({
             ),
           };
         });
-        Swal.fire("Güncellendi!", "Trip başarıyla güncellendi.", "success");
+        Swal.fire("Updated!", "Trip successfully updated.", "success");
         onClose();
       } catch (error) {
-        Swal.fire(
-          "Hata!",
-          `Trip güncellenirken hata oluştu: ${error.message}`,
-          "error"
-        );
+        Swal.fire("Error!", `Error updating Trip: ${error.message}`, "error");
       }
     }
   };
 
-  if (loading) return <p>Yükleniyor...</p>;
-  if (error) return <p>Hata: {error}</p>;
-  if (!tripData) return <p>Bu trip için veri bulunamadı. Trip ID: {trip_id}</p>;
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
+  if (!tripData) return <p>No data found for this trip. Trip ID: {trip_id}</p>;
 
   return (
     <div className="form-container">
-      <h5>Trip Düzenle</h5>
+      <h5>Update Trip</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="trip_id" className="form-label">
-            Trip ID (Değiştirilemez)
+            Trip ID (Cannot be changed)
           </label>
           <input
             type="text"
@@ -155,7 +155,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="route_id" className="form-label">
-            Rota (*)
+            Route (*)
           </label>
           <select
             id="route_id"
@@ -165,7 +165,7 @@ const TripEditPage = ({
             onChange={handleChange}
             required
           >
-            <option value="">Bir rota seçin</option>
+            <option value="">Select a Route</option>
             {routes.map((route) => (
               <option key={route.route_id} value={route.route_id}>
                 {route.route_long_name ||
@@ -177,7 +177,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="service_id" className="form-label">
-            Servis (*)
+            Calendar (*)
           </label>
           <select
             id="service_id"
@@ -187,7 +187,7 @@ const TripEditPage = ({
             onChange={handleChange}
             required
           >
-            <option value="">Bir servis seçin</option>
+            <option value="">Select a Calendar</option>
             {calendars.map((calendar) => (
               <option key={calendar.service_id} value={calendar.service_id}>
                 {getServiceName(calendar)}
@@ -197,7 +197,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_headsign" className="form-label">
-            Trip Başlığı (*)
+            Trip Headsign (*)
           </label>
           <input
             type="text"
@@ -211,7 +211,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_short_name" className="form-label">
-            Kısa Ad
+            Trip Short Name
           </label>
           <input
             type="text"
@@ -224,7 +224,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="direction_id" className="form-label">
-            Yön
+            Direction
           </label>
           <select
             id="direction_id"
@@ -233,14 +233,14 @@ const TripEditPage = ({
             value={tripData.direction_id ?? ""}
             onChange={handleChange}
           >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Gidiş</option>
-            <option value="1">1 - Dönüş</option>
+            <option value="">Select</option>
+            <option value="0">0 - Departure</option>
+            <option value="1">1 - Return</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="block_id" className="form-label">
-            Blok ID
+            Block ID
           </label>
           <input
             type="text"
@@ -253,7 +253,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="wheelchair_accessible" className="form-label">
-            Tekerlekli Sandalye Erişimi
+            Wheelchair Access
           </label>
           <select
             id="wheelchair_accessible"
@@ -262,15 +262,15 @@ const TripEditPage = ({
             value={tripData.wheelchair_accessible ?? ""}
             onChange={handleChange}
           >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Bilgi Yok</option>
-            <option value="1">1 - Erişilebilir</option>
-            <option value="2">2 - Erişilemez</option>
+            <option value="">Select</option>
+            <option value="0">0 - No Information</option>
+            <option value="1">1 - Accessible</option>
+            <option value="2">2 - Inaccessible</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="bikes_allowed" className="form-label">
-            Bisiklet İzni
+            Bikes Allowed
           </label>
           <select
             id="bikes_allowed"
@@ -279,18 +279,15 @@ const TripEditPage = ({
             value={tripData.bikes_allowed ?? ""}
             onChange={handleChange}
           >
-            <option value="">Seçiniz</option>
-            <option value="0">0 - Bilgi Yok</option>
-            <option value="1">1 - İzin Var</option>
-            <option value="2">2 - İzin Yok</option>
+            <option value="">Select</option>
+            <option value="0">0 - No Information</option>
+            <option value="1">1 - Permission Available</option>
+            <option value="2">2 - No Permission</option>
           </select>
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
-            Kaydet
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            Save
           </button>
         </div>
       </form>

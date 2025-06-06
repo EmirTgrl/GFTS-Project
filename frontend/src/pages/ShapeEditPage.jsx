@@ -62,19 +62,19 @@ const ShapeEditPage = ({
     e.preventDefault();
 
     const result = await Swal.fire({
-      title: "Emin misiniz?",
-      text: "Bu şekli güncellemek istediğinize emin misiniz?",
+      title: "Are you sure?",
+      text: "Are you sure you want to update this shape?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Evet, güncelle!",
-      cancelButtonText: "Hayır",
+      confirmButtonText: "Yes, update!",
+      cancelButtonText: "No",
     });
 
     if (result.isConfirmed) {
       try {
-        const originalSequence = parseInt(shape_pt_sequence); 
+        const originalSequence = parseInt(shape_pt_sequence);
         const newSequence = parseInt(shapeData.shape_pt_sequence);
 
         const updatedShapeData = {
@@ -100,8 +100,7 @@ const ShapeEditPage = ({
               currentSeq !== originalSequence
             ) {
               return { ...shape, shape_pt_sequence: currentSeq + 1 };
-            }
-            else if (
+            } else if (
               currentSeq > originalSequence &&
               currentSeq <= newSequence
             ) {
@@ -139,12 +138,12 @@ const ShapeEditPage = ({
           );
         }
 
-        Swal.fire("Güncellendi!", "Şekil başarıyla güncellendi.", "success");
+        Swal.fire("Updated!", "Shape updated successfully.", "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Hata!",
-          `Şekil güncellenirken bir hata oluştu: ${error.message}`,
+          "Error!",
+          `An error occurred while updating the figure: ${error.message}`,
           "error"
         );
       }
@@ -153,12 +152,12 @@ const ShapeEditPage = ({
 
   return (
     <div className="form-container">
-      <h5>Şekli Düzenle</h5>
+      <h5>Update Shape</h5>
       <form onSubmit={handleSubmit}>
         <div className="row">
           <div className="col-6 mb-2">
             <label htmlFor="shape_pt_lat" className="form-label">
-              Enlem
+              Latitude (*)
             </label>
             <input
               type="number"
@@ -173,7 +172,7 @@ const ShapeEditPage = ({
           </div>
           <div className="col-6 mb-2">
             <label htmlFor="shape_pt_lon" className="form-label">
-              Boylam
+              Longtitude (*)
             </label>
             <input
               type="number"
@@ -189,7 +188,7 @@ const ShapeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="shape_pt_sequence" className="form-label">
-            Sıra Numarası
+            Shape Sequence
           </label>
           <input
             type="number"
@@ -204,7 +203,7 @@ const ShapeEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="shape_dist_traveled" className="form-label">
-            Mesafe (Metre)
+            Distance (Meter)
           </label>
           <input
             type="number"
@@ -218,10 +217,7 @@ const ShapeEditPage = ({
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
-            Güncelle
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            İptal
+            Update
           </button>
         </div>
       </form>
