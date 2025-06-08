@@ -1,4 +1,4 @@
-# 🚌 GTFS-Project
+# 🚌 GTFS-Editor
 
 ## 📌 Proje Açıklaması
 
