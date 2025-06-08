@@ -20,6 +20,8 @@ otp-shaded-2.7.0.jar
 
 gtfs-validator-7.0.0-cli.jar
 
+otp-config.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
