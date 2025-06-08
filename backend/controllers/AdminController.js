@@ -4,11 +4,17 @@ const router = express.Router();
 const userService = require("../services/UserService.js");
 const authService = require("../services/AuthService.js");
 
-router.use(authService.auth)
+// Use auth middleware for all routes
+router.use(authService.auth);
 
-router.post("/users/create", userService.createUser)
-router.put("/users/update", userService.updateUser)
-router.delete("/users/delete/:id", userService.deleteUserById)
-router.get("/users",userService.getAllUsers);
+// User operations
+router.post("/create", userService.createUser);
+router.put("/update", userService.updateUser);
+router.delete("/delete/:id", userService.deleteUserById);
+router.get("/users", userService.getAllUsers);
+
+// Project operations
+router.get("/projects", userService.getAllProjects);
+router.get("/projects/:id", userService.getUserProjects);
 
 module.exports = router;

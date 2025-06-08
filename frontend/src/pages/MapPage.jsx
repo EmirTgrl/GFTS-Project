@@ -51,7 +51,7 @@ const MapPage = () => {
   const [showUrlModal, setShowUrlModal] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState("");
   const [newStopCoords, setNewStopCoords] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar durumunu takip et
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     const fetchAreasData = async () => {

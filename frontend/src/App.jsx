@@ -8,18 +8,21 @@ import {
 import { useContext, useEffect } from "react";
 import { AuthProvider } from "./components/Auth/AuthProvider";
 import { AuthContext } from "./components/Auth/AuthContext";
-import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
+import {
+  ProtectedRoute,
+  AdminProtectedRoute,
+} from "./components/Auth/ProtectedRoute";
 import MapPage from "./pages/MapPage";
 import ImportPage from "./pages/ImportPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import AuthPage from "./pages/AuthPage";
 import Header from "./components/Header";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./styles/Layout.css";
-import { useNavigate } from "react-router-dom";
 import AdminPage from "./pages/admin/Index";
 import AdminUsersPage from "./pages/admin/Users";
 import AdminProjectsPage from "./pages/admin/Projects";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./styles/Layout.css";
+import { useNavigate } from "react-router-dom";
 
 function App() {
   return (
@@ -81,9 +84,9 @@ const AppContent = () => {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminPage />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }
           >
             <Route index element={<Navigate replace to="users" />} />

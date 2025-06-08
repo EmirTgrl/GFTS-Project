@@ -154,7 +154,7 @@ const createGTFSZip = async (project_id, token) => {
 };
 
 const Header = () => {
-  const { isAuthenticated, logout, username, token } = useContext(AuthContext);
+  const { isAuthenticated, logout, username, token, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [showValidationModal, setShowValidationModal] = useState(false);
@@ -326,7 +326,7 @@ const Header = () => {
                 <Nav.Link
                   className="nav-link-custom"
                   title="Statistics"
-                  onClick={() => setShowStatsModal(true)} // Modal aç
+                  onClick={() => setShowStatsModal(true)} 
                 >
                   <BarChart size={20} />
                 </Nav.Link>
@@ -337,7 +337,10 @@ const Header = () => {
                   className="nav-link-custom"
                 >
                   <NavDropdown.Header className="user-name">
-                    {username || "User"}
+                    <div>{user?.email || "User"}</div>
+                    <div className="text-muted" style={{ fontSize: "0.85em" }}>
+                      Version: {user?.version || "-"}
+                    </div>
                   </NavDropdown.Header>
                   <NavDropdown.Divider />
                   <NavDropdown.Item onClick={handleLogout}>

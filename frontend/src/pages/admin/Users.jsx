@@ -1,9 +1,20 @@
 import { useState, useEffect, useContext, useCallback, useRef } from "react";
+import { Navigate } from "react-router-dom";
 import { AuthContext } from "../../components/Auth/AuthContext";
-import { Container, Row, Col, Card, Table, Spinner, Button, Modal, Form } from "react-bootstrap";
-import { PencilSquare, Trash, XCircle } from "react-bootstrap-icons";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Table,
+  Spinner,
+  Button,
+  Modal,
+  Form,
+} from "react-bootstrap";
+import { PencilSquare, Trash } from "react-bootstrap-icons";
 
-const AdminPage = () => {
+const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,22 +25,24 @@ const AdminPage = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [userToEdit, setUserToEdit] = useState(null);
 
-
-  // Refs for Add User form
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
+  const roleRef = useRef(null);
+  const versionRef = useRef(null);
 
-  // Refs for Edit User form
   const editEmailRef = useRef(null);
   const editPasswordRef = useRef(null);
-  const editIsActiveRef = useRef(null);  // Added ref for is_active
+  const editIsActiveRef = useRef(null);
+  const editRoleRef = useRef(null);
+  const editVersionRef = useRef(null);
 
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("http://localhost:5000/api/admin/users", {
+      const response = await fetch(`${API_URL}/api/admin/users`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -46,7 +59,7 @@ const AdminPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, API_URL]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -55,11 +68,7 @@ const AdminPage = () => {
   }, [isAuthenticated, fetchUsers]);
 
   if (!isAuthenticated) {
-    return (
-      <Container className="mt-5">
-        <p>You must be logged in as an administrator to view this page.</p>
-      </Container>
-    );
+    return <Navigate to="/auth" replace />;
   }
 
   const handleDeleteClick = (user) => {
@@ -76,21 +85,26 @@ const AdminPage = () => {
     if (!userToDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/users/delete/${userToDelete.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${API_URL}/api/admin/users/delete/${userToDelete.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      setUsers(users.map((user) =>
-        user.id === userToDelete.id ? { ...user, is_active: false } : user
-      ));
+      setUsers(
+        users.map((user) =>
+          user.id === userToDelete.id ? { ...user, is_active: false } : user
+        )
+      );
       handleCloseDeleteModal();
     } catch (error) {
       setError(error.message || "Failed to delete user.");
@@ -104,12 +118,14 @@ const AdminPage = () => {
 
   const handleCloseAddModal = () => {
     setShowAddModal(false);
-    setError(""); // Clear any previous errors
+    setError("");
   };
 
   const handleAddUser = async () => {
     const email = emailRef.current.value;
     const password = passwordRef.current.value;
+    const role = roleRef.current.value;
+    const version = versionRef.current.value;
 
     if (!email || !password) {
       setError("Email and password are required.");
@@ -117,24 +133,24 @@ const AdminPage = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/admin/users/create", {
+      const response = await fetch(`${API_URL}/api/admin/users/create`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role, version }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json(); // Try to get error message from the server
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
-      const newUser = await response.json();
-      setUsers([...users, newUser]); //add new user to users array for instant access
       handleCloseAddModal();
-      fetchUsers()
+      fetchUsers();
     } catch (error) {
       setError(error.message || "Failed to add user.");
       console.error("Error adding user:", error);
@@ -148,32 +164,29 @@ const AdminPage = () => {
 
   useEffect(() => {
     if (showEditModal && userToEdit) {
-      // Set the initial values in the edit form
-
-      if (editEmailRef.current) {
-        editEmailRef.current.value = userToEdit.email;
-      }
-
-      if (editIsActiveRef.current) {
+      if (editEmailRef.current) editEmailRef.current.value = userToEdit.email;
+      if (editIsActiveRef.current)
         editIsActiveRef.current.checked = userToEdit.is_active;
-      }
+      if (editRoleRef.current) editRoleRef.current.value = userToEdit.role;
+      if (editVersionRef.current)
+        editVersionRef.current.value = userToEdit.version;
     }
   }, [showEditModal, userToEdit]);
-
 
   const handleCloseEditModal = () => {
     setShowEditModal(false);
     setUserToEdit(null);
-    setError(""); // Clear any previous errors
+    setError("");
   };
 
   const handleUpdateUser = async () => {
     if (!userToEdit) return;
 
     const email = editEmailRef.current.value;
-    const password = editPasswordRef.current.value; // Password is optional for updates
-    const is_active = editIsActiveRef.current.checked;  // Get is_active from checkbox
-
+    const password = editPasswordRef.current.value;
+    const is_active = editIsActiveRef.current.checked;
+    const role = editRoleRef.current.value;
+    const version = editVersionRef.current.value;
 
     if (!email) {
       setError("Email is required.");
@@ -182,17 +195,18 @@ const AdminPage = () => {
 
     try {
       const requestBody = {
-        id: userToEdit.id, // Include the user ID in the request body
-        email: email,
-        is_active: is_active, // Include is_active in request
+        id: userToEdit.id,
+        email,
+        is_active,
+        role,
+        version,
       };
 
-      // Only include password if it's provided
       if (password) {
         requestBody.password = password;
       }
 
-      const response = await fetch("http://localhost:5000/api/admin/users/update", {
+      const response = await fetch(`${API_URL}/api/admin/users/update`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -203,13 +217,16 @@ const AdminPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
-      // Update the user in the local state
       setUsers(
         users.map((user) =>
-          user.id === userToEdit.id ? { ...user, email: email, is_active: is_active } : user
+          user.id === userToEdit.id
+            ? { ...user, email, is_active, role, version }
+            : user
         )
       );
       handleCloseEditModal();
@@ -218,7 +235,6 @@ const AdminPage = () => {
       console.error("Error updating user:", error);
     }
   };
-
 
   return (
     <Container className="py-3 mt-5">
@@ -230,8 +246,12 @@ const AdminPage = () => {
                 <Card.Title className="h3 fs-1 text-primary my-4">
                   User Management
                 </Card.Title>
-                <Button variant="outline-success" className="align-self-center ms-auto me-2" onClick={handleShowAddModal}>
-                  Add user
+                <Button
+                  variant="outline-success"
+                  className="align-self-center ms-auto me-2"
+                  onClick={handleShowAddModal}
+                >
+                  Add User
                 </Button>
               </div>
 
@@ -247,6 +267,8 @@ const AdminPage = () => {
                     <tr>
                       <th>ID</th>
                       <th>Email</th>
+                      <th>Role</th>
+                      <th>Version</th>
                       <th>Is Active</th>
                       <th>Created At</th>
                       <th className="text-center">Actions</th>
@@ -257,10 +279,17 @@ const AdminPage = () => {
                       <tr key={user.id}>
                         <td>{user.id}</td>
                         <td>{user.email}</td>
-                        <td>{user.is_active ? "active" : "passive"}</td>
-                        <td>{user.created_at.split(".")[0].split("T").join(" ")}</td>
+                        <td>{user.role}</td>
+                        <td>{user.version}</td>
+                        <td>{user.is_active ? "Active" : "Inactive"}</td>
+                        <td>{new Date(user.created_at).toLocaleString()}</td>
                         <td className="text-center">
-                          <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleShowEditModal(user)}>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="me-2"
+                            onClick={() => handleShowEditModal(user)}
+                          >
                             <PencilSquare size={16} />
                           </Button>
                           <Button
@@ -309,12 +338,33 @@ const AdminPage = () => {
           <Form>
             <Form.Group className="mb-3">
               <Form.Label>Email address</Form.Label>
-              <Form.Control type="email" placeholder="Enter email" ref={emailRef} />
+              <Form.Control
+                type="email"
+                placeholder="Enter email"
+                ref={emailRef}
+              />
             </Form.Group>
-
             <Form.Group className="mb-3">
               <Form.Label>Password</Form.Label>
-              <Form.Control type="password" placeholder="Password" ref={passwordRef} />
+              <Form.Control
+                type="password"
+                placeholder="Password"
+                ref={passwordRef}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Role</Form.Label>
+              <Form.Select ref={roleRef}>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Version</Form.Label>
+              <Form.Select ref={versionRef}>
+                <option value="basic">Basic</option>
+                <option value="premium">Premium</option>
+              </Form.Select>
             </Form.Group>
           </Form>
         </Modal.Body>
@@ -337,24 +387,42 @@ const AdminPage = () => {
           <Form>
             <Form.Group className="mb-3">
               <Form.Label>Email address</Form.Label>
-              <Form.Control type="email" placeholder="Enter email" ref={editEmailRef} />
+              <Form.Control
+                type="email"
+                placeholder="Enter email"
+                ref={editEmailRef}
+              />
             </Form.Group>
-
             <Form.Group className="mb-3">
               <Form.Label>Password (leave blank to keep current)</Form.Label>
-              <Form.Control type="password" placeholder="Password" ref={editPasswordRef} />
+              <Form.Control
+                type="password"
+                placeholder="Password"
+                ref={editPasswordRef}
+              />
             </Form.Group>
-
             <Form.Group className="mb-3">
               <Form.Check
                 type="checkbox"
                 id="is_active"
                 label="Active"
                 ref={editIsActiveRef}
-                defaultChecked={false}
               />
             </Form.Group>
-
+            <Form.Group className="mb-3">
+              <Form.Label>Role</Form.Label>
+              <Form.Select ref={editRoleRef}>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Version</Form.Label>
+              <Form.Select ref={editVersionRef}>
+                <option value="basic">Basic</option>
+                <option value="premium">Premium</option>
+              </Form.Select>
+            </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
@@ -370,4 +438,4 @@ const AdminPage = () => {
   );
 };
 
-export default AdminPage;
+export default AdminUsers;

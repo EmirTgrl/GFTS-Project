@@ -3,10 +3,20 @@ import { Navigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import PropTypes from "prop-types";
 
-const ProtectedRoute = ({ children }) => {
+export const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useContext(AuthContext);
 
   if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return children;
+};
+
+export const AdminProtectedRoute = ({ children }) => {
+  const { isAuthenticated, user } = useContext(AuthContext);
+
+  if (!isAuthenticated || user?.role !== "admin") {
     return <Navigate to="/auth" replace />;
   }
 
@@ -17,4 +27,6 @@ ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-export default ProtectedRoute;
+AdminProtectedRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+};

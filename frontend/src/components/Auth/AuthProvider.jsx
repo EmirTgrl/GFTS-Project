@@ -8,15 +8,13 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem("token")
   );
-  const [userId, setUserId] = useState(null);
-  const [username, setUsername] = useState(null); 
+  const [user, setUser] = useState(null); // user objesi
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     setToken(null);
-    setUserId(null);
-    setUsername(null);
+    setUser(null);
     setIsAuthenticated(false);
     setIsLoggedOut(true);
   }, []);
@@ -30,8 +28,12 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem("token", newToken);
             setToken(newToken);
             setIsAuthenticated(true);
-            setUserId(decodedToken.id);
-            setUsername(decodedToken.email); 
+            setUser({
+              id: decodedToken.id,
+              email: decodedToken.email,
+              role: decodedToken.role,
+              version: decodedToken.version,
+            });
             setIsLoggedOut(false);
           } else {
             handleLogout();
@@ -47,9 +49,12 @@ export const AuthProvider = ({ children }) => {
     [handleLogout]
   );
 
-  const login = (newToken) => {
-    updateAuthState(newToken);
-  };
+  const login = useCallback(
+    (newToken) => {
+      updateAuthState(newToken);
+    },
+    [updateAuthState]
+  );
 
   useEffect(() => {
     const checkTokenExpiration = () => {
@@ -61,8 +66,12 @@ export const AuthProvider = ({ children }) => {
             handleLogout();
           } else {
             setIsAuthenticated(true);
-            setUserId(decodedToken.id);
-            setUsername(decodedToken.email);
+            setUser({
+              id: decodedToken.id,
+              email: decodedToken.email,
+              role: decodedToken.role,
+              version: decodedToken.version,
+            });
             setToken(storedToken);
             setIsLoggedOut(false);
           }
@@ -72,8 +81,7 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         setIsAuthenticated(false);
-        setUserId(null);
-        setUsername(null);
+        setUser(null);
         setToken(null);
       }
     };
@@ -100,8 +108,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         isAuthenticated,
         token,
-        userId,
-        username,
+        user,
         login,
         logout: handleLogout,
         isLoggedOut,

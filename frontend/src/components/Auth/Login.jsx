@@ -14,6 +14,8 @@ const Login = ({ switchToRegister }) => {
   const location = useLocation();
   const { login, isAuthenticated, isLoggedOut } = useContext(AuthContext);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     if (isAuthenticated && !isLoggingIn) {
       navigate("/projects", { replace: true });
@@ -39,7 +41,7 @@ const Login = ({ switchToRegister }) => {
     setError("");
     setIsLoggingIn(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -48,7 +50,7 @@ const Login = ({ switchToRegister }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        login(data.token); 
+        login(data.token);
       } else {
         setError("Invalid email or password!");
       }

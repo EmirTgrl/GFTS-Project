@@ -5,12 +5,12 @@ const jwt = require("jsonwebtoken");
 const authService = {
   register: async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, role = "user", version = "basic" } = req.body;
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
       const [result] = await pool.execute(
-        "INSERT INTO users (email, password) VALUES (?, ?)",
-        [email, hashedPassword]
+        "INSERT INTO users (email, password, role, version, created_at, is_active) VALUES (?, ?, ?, ?, NOW(), true)",
+        [email, hashedPassword, role, version]
       );
       res.status(201).json({
         message: "User created successfully",
@@ -18,7 +18,7 @@ const authService = {
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Server Error", error });
+      res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
 
@@ -26,27 +26,36 @@ const authService = {
     try {
       const { email, password } = req.body;
       const [users] = await pool.execute(
-        `SELECT * FROM users 
-        WHERE email = ? AND is_active = true`,
+        `SELECT id, email, password, role, version 
+         FROM users 
+         WHERE email = ? AND is_active = true`,
         [email]
       );
 
-      if (users.length === 0)
+      if (users.length === 0) {
         return res.status(400).json({ message: "Invalid credentials" });
+      }
 
       const user = users[0];
       const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch)
+      if (!isMatch) {
         return res.status(400).json({ message: "Invalid credentials" });
+      }
 
       const token = jwt.sign(
-        { id: user.id, email: user.email },
+        {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          version: user.version,
+        },
         process.env.JWT_SECRET,
         { expiresIn: "10h" }
       );
-      res.json({ token, id: user.id });
+      res.json({ token, id: user.id, role: user.role, version: user.version });
     } catch (error) {
-      res.status(500).json({ message: "Server Error", error });
+      console.error(error);
+      res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
 
@@ -65,7 +74,12 @@ const authService = {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = { id: decoded.id };
+      req.user = {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+        version: decoded.version,
+      };
       next();
     } catch (err) {
       console.error("JWT Error:", err);

@@ -426,7 +426,7 @@ const ProjectsPage = () => {
                                   {err.userFriendlyMessage ||
                                     err.message ||
                                     err.description ||
-                                    "Açıklama mevcut değil"}
+                                    "Description not available"}
                                 </p>
                                 <p className="mb-3">
                                   <strong>Recommendation:</strong>{" "}
@@ -511,7 +511,7 @@ const ProjectsPage = () => {
                                   {warn.userFriendlyMessage ||
                                     warn.message ||
                                     warn.description ||
-                                    "Açıklama mevcut değil"}
+                                    "Description not available"}
                                 </p>
                                 <p className="mb-3">
                                   <strong>Recommendation:</strong>{" "}
