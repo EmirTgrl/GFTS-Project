@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000/api/shapes";
+const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/shapes`;
 
 export const fetchShapesByTripId = async (projectId, shape_id, token) => {
   const response = await fetch(

@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000/api/agencies";
+const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/agencies`;
 
 export const fetchAgenciesByProjectId = async (
   projectId,

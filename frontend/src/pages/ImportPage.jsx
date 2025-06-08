@@ -85,7 +85,7 @@ const ImportPage = () => {
         xhr.onerror = () => reject(new Error("Server error!"));
       });
 
-      xhr.open("POST", "http://localhost:5000/api/io/import", true);
+      xhr.open("POST", `${import.meta.env.VITE_API_URL}/api/io/import`, true);
       xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       xhr.send(formData);
 

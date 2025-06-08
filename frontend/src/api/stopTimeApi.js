@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000/api/stop-times";
+const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/stop-times`;
 
 export const fetchStopsByRoute = async (route_id, token) => {
   const response = await fetch(`${API_BASE_URL}/route/${route_id}`, {

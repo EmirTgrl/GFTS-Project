@@ -18,7 +18,7 @@ import {
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import JSZip from "jszip";
-import StatsDashboard from "../pages/StatsDashboard.jsx"
+import StatsDashboard from "../pages/StatsDashboard.jsx";
 import { fetchAgenciesByProjectId } from "../api/agencyApi.js";
 import { fetchRoutesByProjectId } from "../api/routeApi.js";
 import { fetchTripsByProjectId } from "../api/tripApi.js";
@@ -154,11 +154,12 @@ const createGTFSZip = async (project_id, token) => {
 };
 
 const Header = () => {
-  const { isAuthenticated, logout, username, token, user } = useContext(AuthContext);
+  const { isAuthenticated, logout, token, user } =
+    useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [showValidationModal, setShowValidationModal] = useState(false);
-  const [showStatsModal, setShowStatsModal] = useState(false); 
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
 
   const handleLogout = () => {
@@ -193,7 +194,7 @@ const Header = () => {
       formData.append("file", zipBlob, `project_${project_id}_validate.zip`);
 
       const response = await fetch(
-        `http://localhost:5000/api/io/validate/${project_id}`,
+        `${import.meta.env.VITE_API_URL}/api/io/validate/${project_id}`,
         {
           method: "POST",
           headers: {
@@ -326,7 +327,7 @@ const Header = () => {
                 <Nav.Link
                   className="nav-link-custom"
                   title="Statistics"
-                  onClick={() => setShowStatsModal(true)} 
+                  onClick={() => setShowStatsModal(true)}
                 >
                   <BarChart size={20} />
                 </Nav.Link>

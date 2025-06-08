@@ -34,3 +34,5 @@ otp-config.json
 *.sw?
 
 .env
+
+Uploads
