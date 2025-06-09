@@ -1,0 +1,209 @@
+.admin-panel {
+  --primary-color: #2563eb;
+  --secondary-color: #1f2937;
+  --bg-color: #f3f4f6;
+  --card-bg: #ffffff;
+  --text-color: #111827;
+  --error-color: #dc2626;
+  --success-color: #059669;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: "Inter", sans-serif;
+}
+
+/* Navbar stilleri */
+.admin-panel .navbar {
+  background-color: var(--secondary-color) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.admin-panel .navbar-brand,
+.admin-panel .nav-link {
+  color: #ffffff !important;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.admin-panel .nav-link:hover {
+  color: var(--primary-color) !important;
+  transform: translateY(-2px);
+}
+
+.admin-panel .nav-link .me-1 {
+  transition: transform 0.2s ease;
+}
+
+.admin-panel .nav-link:hover .me-1 {
+  transform: scale(1.2);
+}
+
+/* Card stilleri */
+.admin-panel .card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+  background-color: var(--card-bg);
+  transition: transform 0.2s ease;
+}
+
+.admin-panel .card:hover {
+  transform: translateY(-4px);
+}
+
+.admin-panel .card-title {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Table stilleri */
+.admin-panel .table {
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--card-bg);
+}
+
+.admin-panel .table th {
+  background-color: var(--secondary-color);
+  color: #ffffff;
+  font-weight: 500;
+  padding: 1rem;
+}
+
+.admin-panel .table td {
+  padding: 1rem;
+  vertical-align: middle;
+  transition: background-color 0.2s ease;
+}
+
+.admin-panel .table tr:hover {
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+/* Buton stilleri */
+.admin-panel .btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-panel .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+.admin-panel .btn-danger {
+  background: linear-gradient(135deg, var(--error-color), #ef4444);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-panel .btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+}
+
+.admin-panel .btn-outline-success,
+.admin-panel .btn-outline-primary,
+.admin-panel .btn-outline-danger {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.admin-panel .btn-outline-success:hover {
+  background-color: var(--success-color);
+  color: #ffffff;
+}
+
+.admin-panel .btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.admin-panel .btn-outline-danger:hover {
+  background-color: var(--error-color);
+  color: #ffffff;
+}
+
+/* Modal stilleri */
+.admin-panel .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-panel .modal-header {
+  border-bottom: none;
+  background-color: var(--secondary-color);
+  color: #ffffff;
+  border-radius: 12px 12px 0 0;
+}
+
+.admin-panel .modal-title {
+  font-weight: 600;
+}
+
+.admin-panel .modal-footer {
+  border-top: none;
+  padding: 1rem 1.5rem;
+}
+
+/* Form stilleri */
+.admin-panel .form-control,
+.admin-panel .form-select {
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 0.75rem;
+  transition: border-color 0.2s ease;
+}
+
+.admin-panel .form-control:focus,
+.admin-panel .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Hata mesajı */
+.admin-panel .text-danger {
+  background-color: rgba(220, 38, 38, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+/* Spinner */
+.admin-panel .spinner-border {
+  color: var(--primary-color);
+}
+
+/* Responsive stiller */
+@media (max-width: 768px) {
+  .admin-panel .card-title {
+    font-size: 1.5rem;
+  }
+
+  .admin-panel .table th,
+  .admin-panel .table td {
+    padding: 0.5rem;
+  }
+
+  .admin-panel .btn {
+    padding: 0.5rem 1rem;
+  }
+}

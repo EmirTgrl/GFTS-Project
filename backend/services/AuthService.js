@@ -5,12 +5,30 @@ const jwt = require("jsonwebtoken");
 const authService = {
   register: async (req, res) => {
     try {
-      const { email, password, role = "user", version = "basic" } = req.body;
+      const { email, password, role_id = 1, version_id = 1 } = req.body; // Default to role_id=1 and version_id=1
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
+
+      // Verify role_id and version_id exist
+      const [roleExists] = await pool.execute(
+        "SELECT id FROM roles WHERE id = ?",
+        [role_id]
+      );
+      if (roleExists.length === 0) {
+        return res.status(400).json({ message: "Invalid role_id" });
+      }
+
+      const [versionExists] = await pool.execute(
+        "SELECT id FROM versions WHERE id = ?",
+        [version_id]
+      );
+      if (versionExists.length === 0) {
+        return res.status(400).json({ message: "Invalid version_id" });
+      }
+
       const [result] = await pool.execute(
-        "INSERT INTO users (email, password, role, version, created_at, is_active) VALUES (?, ?, ?, ?, NOW(), true)",
-        [email, hashedPassword, role, version]
+        "INSERT INTO users (email, password, role_id, version_id, created_at, is_active) VALUES (?, ?, ?, ?, NOW(), true)",
+        [email, hashedPassword, role_id, version_id]
       );
       res.status(201).json({
         message: "User created successfully",
@@ -26,9 +44,11 @@ const authService = {
     try {
       const { email, password } = req.body;
       const [users] = await pool.execute(
-        `SELECT id, email, password, role, version 
-         FROM users 
-         WHERE email = ? AND is_active = true`,
+        `SELECT u.id, u.email, u.password, r.name as role, v.name as version 
+         FROM users u
+         JOIN roles r ON u.role_id = r.id
+         JOIN versions v ON u.version_id = v.id
+         WHERE u.email = ? AND u.is_active = true`,
         [email]
       );
 

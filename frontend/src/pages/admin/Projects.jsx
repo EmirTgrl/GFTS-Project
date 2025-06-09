@@ -1,13 +1,22 @@
 import { useState, useEffect, useContext, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 import { AuthContext } from "../../components/Auth/AuthContext";
-import { Container, Row, Col, Card, Table, Spinner } from "react-bootstrap";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Table,
+  Spinner,
+  Alert,
+} from "react-bootstrap";
+import "../../styles/AdminPage.css";
 
 const AdminProjects = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { token, isAuthenticated } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -27,20 +36,20 @@ const AdminProjects = () => {
       const data = await response.json();
       setProjects(data);
     } catch (error) {
-      setError(error.message || "Failed to fetch projects.");
-      console.error("Error fetching projects:", error);
+      setError(error.message || "Projects failed to load.");
+      console.error("Error in loading projects:", error);
     } finally {
       setLoading(false);
     }
   }, [token, API_URL]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (user?.role === "admin") {
       fetchProjects();
     }
-  }, [isAuthenticated, fetchProjects]);
+  }, [fetchProjects]);
 
-  if (!isAuthenticated) {
+  if (user?.role !== "admin") {
     return <Navigate to="/auth" replace />;
   }
 
@@ -53,7 +62,7 @@ const AdminProjects = () => {
               <Card.Title className="h3 fs-1 text-primary my-4">
                 Project Management
               </Card.Title>
-              {error && <p className="text-danger">Error: {error}</p>}
+              {error && <Alert variant="danger">Error: {error}</Alert>}
               {loading ? (
                 <div className="text-center">
                   <Spinner animation="border" role="status" />
@@ -68,7 +77,7 @@ const AdminProjects = () => {
                       <th>User Role</th>
                       <th>User Version</th>
                       <th>File Name</th>
-                      <th>Import Date</th>
+                      <th>Imported Date</th>
                     </tr>
                   </thead>
                   <tbody>

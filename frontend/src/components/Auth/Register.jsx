@@ -20,12 +20,13 @@ const Register = ({ switchToLogin }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role_id: 1, version_id: 1 }),
       });
       if (response.ok) {
         navigate("/auth", { state: { isRegister: true, isLogin: true } });
       } else {
-        setError("Registration failed!");
+        const errorData = await response.json();
+        setError(errorData.message || "Registration failed!");
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -79,6 +80,7 @@ const Register = ({ switchToLogin }) => {
     </Container>
   );
 };
+
 Register.propTypes = {
   switchToLogin: PropTypes.func.isRequired,
 };

@@ -23,6 +23,8 @@ import AdminProjectsPage from "./pages/admin/Projects";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./styles/Layout.css";
 import { useNavigate } from "react-router-dom";
+import AdminRoles from "./pages/admin/Roles";
+import AdminVersions from "./pages/admin/Versions";
 
 function App() {
   return (
@@ -92,9 +94,10 @@ const AppContent = () => {
             <Route index element={<Navigate replace to="users" />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="projects" element={<AdminProjectsPage />} />
+            <Route path="roles" element={<AdminRoles />} />
+            <Route path="versions" element={<AdminVersions />} />
           </Route>
-          <Route path="/" element={<Navigate to="/projects" replace />} />
-          <Route path="*" element={<div>404 - Sayfa Bulunamadı</div>} />
+          <Route path="*" element={<div>404 - Page Not Found</div>} />
         </Routes>
       </main>
     </div>

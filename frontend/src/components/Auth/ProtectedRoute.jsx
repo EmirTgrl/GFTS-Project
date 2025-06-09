@@ -4,7 +4,10 @@ import { AuthContext } from "./AuthContext";
 import PropTypes from "prop-types";
 
 export const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
+
+  // Yüklenme aşamasında hiçbir şey gösterme
+  if (isAuthenticated === undefined || user === undefined) return null;
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
@@ -15,6 +18,9 @@ export const ProtectedRoute = ({ children }) => {
 
 export const AdminProtectedRoute = ({ children }) => {
   const { isAuthenticated, user } = useContext(AuthContext);
+
+  // Yüklenme aşamasında hiçbir şey gösterme
+  if (isAuthenticated === undefined || user === undefined) return null;
 
   if (!isAuthenticated || user?.role !== "admin") {
     return <Navigate to="/auth" replace />;

@@ -5,10 +5,8 @@ import { AuthContext } from "./AuthContext";
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem("token")
-  );
-  const [user, setUser] = useState(null); // user objesi
+  const [isAuthenticated, setIsAuthenticated] = useState(undefined);
+  const [user, setUser] = useState(undefined); // user objesi
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const handleLogout = useCallback(() => {

@@ -291,7 +291,7 @@ const Header = () => {
   return (
     <>
       <Navbar expand="lg" className="custom-navbar" fixed="top">
-        <Navbar.Brand as={Link} to="/" className="navbar-brand">
+        <Navbar.Brand as={Link} to="/projects" className="navbar-brand">
           <span className="fs-4">KentKart</span>
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -301,7 +301,7 @@ const Header = () => {
               <>
                 <Nav.Link
                   as={Link}
-                  to="/"
+                  to="/projects"
                   className="nav-link-custom"
                   title="Home"
                 >

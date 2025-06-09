@@ -11,30 +11,35 @@ import {
   Button,
   Modal,
   Form,
+  Alert,
 } from "react-bootstrap";
 import { PencilSquare, Trash } from "react-bootstrap-icons";
+import Swal from "sweetalert2";
+import "../../styles/AdminPage.css";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { token, isAuthenticated } = useContext(AuthContext);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [userToDelete, setUserToDelete] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [userToEdit, setUserToEdit] = useState(null);
+  const { token, user } = useContext(AuthContext);
 
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
-  const roleRef = useRef(null);
-  const versionRef = useRef(null);
+  const roleIdRef = useRef(null);
+  const versionIdRef = useRef(null);
 
   const editEmailRef = useRef(null);
   const editPasswordRef = useRef(null);
   const editIsActiveRef = useRef(null);
-  const editRoleRef = useRef(null);
-  const editVersionRef = useRef(null);
+  const editRoleIdRef = useRef(null);
+  const editVersionIdRef = useRef(null);
+
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [userToEdit, setUserToEdit] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -54,39 +59,71 @@ const AdminUsers = () => {
       const data = await response.json();
       setUsers(data);
     } catch (error) {
-      setError(error.message || "Failed to fetch users.");
-      console.error("Error fetching users:", error);
+      setError(error.message || "Failed to load users.");
+      console.error("Errors in loading users:", error);
     } finally {
       setLoading(false);
     }
   }, [token, API_URL]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchUsers();
-    }
-  }, [isAuthenticated, fetchUsers]);
+  const fetchRolesAndVersions = useCallback(async () => {
+    try {
+      const [rolesResponse, versionsResponse] = await Promise.all([
+        fetch(`${API_URL}/api/admin/roles`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/admin/versions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
-  if (!isAuthenticated) {
+      if (!rolesResponse.ok || !versionsResponse.ok) {
+        throw new Error("Failed to load roles or versions.");
+      }
+
+      const rolesData = await rolesResponse.json();
+      const versionsData = await versionsResponse.json();
+      setRoles(rolesData);
+      setVersions(versionsData);
+    } catch (error) {
+      setError(error.message || "Failed to load roles/versions.");
+      console.error("Error fetching roles/versions:", error);
+    }
+  }, [token, API_URL]);
+
+  useEffect(() => {
+    if (user?.role === "admin") {
+      fetchUsers();
+      fetchRolesAndVersions();
+    }
+  }, [fetchUsers, fetchRolesAndVersions]);
+
+  if (user?.role !== "admin") {
     return <Navigate to="/auth" replace />;
   }
 
   const handleDeleteClick = (user) => {
     setUserToDelete(user);
-    setShowDeleteModal(true);
+    handleConfirmDelete(user);
   };
 
-  const handleCloseDeleteModal = () => {
-    setShowDeleteModal(false);
-    setUserToDelete(null);
-  };
+  const handleConfirmDelete = async (user) => {
+    if (!user) return;
 
-  const handleConfirmDelete = async () => {
-    if (!userToDelete) return;
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `Do you really want to delete user "${user.email}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       const response = await fetch(
-        `${API_URL}/api/admin/users/delete/${userToDelete.id}`,
+        `${API_URL}/api/admin/users/delete/${user.id}`,
         {
           method: "DELETE",
           headers: {
@@ -101,14 +138,12 @@ const AdminUsers = () => {
       }
 
       setUsers(
-        users.map((user) =>
-          user.id === userToDelete.id ? { ...user, is_active: false } : user
-        )
+        users.map((u) => (u.id === user.id ? { ...u, is_active: false } : u))
       );
-      handleCloseDeleteModal();
+      Swal.fire("Deleted!", "User has been deleted.", "success");
     } catch (error) {
       setError(error.message || "Failed to delete user.");
-      console.error("Error deleting user:", error);
+      console.error("Error deleting a user:", error);
     }
   };
 
@@ -124,13 +159,23 @@ const AdminUsers = () => {
   const handleAddUser = async () => {
     const email = emailRef.current.value;
     const password = passwordRef.current.value;
-    const role = roleRef.current.value;
-    const version = versionRef.current.value;
+    const role_id = roleIdRef.current.value;
+    const version_id = versionIdRef.current.value;
 
     if (!email || !password) {
-      setError("Email and password are required.");
+      setError("Email and password required.");
       return;
     }
+
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to add this user?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Add",
+      cancelButtonText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
 
     try {
       const response = await fetch(`${API_URL}/api/admin/users/create`, {
@@ -139,7 +184,7 @@ const AdminUsers = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password, role, version }),
+        body: JSON.stringify({ email, password, role_id, version_id }),
       });
 
       if (!response.ok) {
@@ -153,7 +198,7 @@ const AdminUsers = () => {
       fetchUsers();
     } catch (error) {
       setError(error.message || "Failed to add user.");
-      console.error("Error adding user:", error);
+      console.error("Error adding a user:", error);
     }
   };
 
@@ -167,11 +212,14 @@ const AdminUsers = () => {
       if (editEmailRef.current) editEmailRef.current.value = userToEdit.email;
       if (editIsActiveRef.current)
         editIsActiveRef.current.checked = userToEdit.is_active;
-      if (editRoleRef.current) editRoleRef.current.value = userToEdit.role;
-      if (editVersionRef.current)
-        editVersionRef.current.value = userToEdit.version;
+      if (editRoleIdRef.current)
+        editRoleIdRef.current.value =
+          roles.find((r) => r.name === userToEdit.role)?.id || "";
+      if (editVersionIdRef.current)
+        editVersionIdRef.current.value =
+          versions.find((v) => v.name === userToEdit.version)?.id || "";
     }
-  }, [showEditModal, userToEdit]);
+  }, [showEditModal, userToEdit, roles, versions]);
 
   const handleCloseEditModal = () => {
     setShowEditModal(false);
@@ -185,21 +233,31 @@ const AdminUsers = () => {
     const email = editEmailRef.current.value;
     const password = editPasswordRef.current.value;
     const is_active = editIsActiveRef.current.checked;
-    const role = editRoleRef.current.value;
-    const version = editVersionRef.current.value;
+    const role_id = editRoleIdRef.current.value;
+    const version_id = editVersionIdRef.current.value;
 
     if (!email) {
-      setError("Email is required.");
+      setError("Email required.");
       return;
     }
+
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to update this user?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Update",
+      cancelButtonText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
 
     try {
       const requestBody = {
         id: userToEdit.id,
         email,
         is_active,
-        role,
-        version,
+        role_id,
+        version_id,
       };
 
       if (password) {
@@ -225,7 +283,17 @@ const AdminUsers = () => {
       setUsers(
         users.map((user) =>
           user.id === userToEdit.id
-            ? { ...user, email, is_active, role, version }
+            ? {
+                ...user,
+                email,
+                is_active,
+                role:
+                  roles.find((r) => r.id === parseInt(role_id))?.name ||
+                  user.role,
+                version:
+                  versions.find((v) => v.id === parseInt(version_id))?.name ||
+                  user.version,
+              }
             : user
         )
       );
@@ -233,6 +301,45 @@ const AdminUsers = () => {
     } catch (error) {
       setError(error.message || "Failed to update user.");
       console.error("Error updating user:", error);
+    }
+  };
+
+  const handleActivateUser = async (user) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `Do you want to activate user "${user.email}"?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Activate",
+      cancelButtonText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/admin/users/update`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: user.id,
+          email: user.email,
+          is_active: true,
+          role_id: roles.find((r) => r.name === user.role)?.id,
+          version_id: versions.find((v) => v.name === user.version)?.id,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      setUsers(
+        users.map((u) => (u.id === user.id ? { ...u, is_active: true } : u))
+      );
+      Swal.fire("Activated!", "User has been activated.", "success");
+    } catch (error) {
+      setError(error.message || "Failed to activate user.");
+      console.error("Error activating user:", error);
     }
   };
 
@@ -251,11 +358,11 @@ const AdminUsers = () => {
                   className="align-self-center ms-auto me-2"
                   onClick={handleShowAddModal}
                 >
-                  Add User
+                  Add New User
                 </Button>
               </div>
 
-              {error && <p className="text-danger">Error: {error}</p>}
+              {error && <Alert variant="danger">Hata: {error}</Alert>}
               {loading ? (
                 <div className="text-center">
                   <Spinner animation="border" role="status" />
@@ -270,7 +377,7 @@ const AdminUsers = () => {
                       <th>Role</th>
                       <th>Version</th>
                       <th>Is Active</th>
-                      <th>Created At</th>
+                      <th>Created Date</th>
                       <th className="text-center">Actions</th>
                     </tr>
                   </thead>
@@ -281,7 +388,7 @@ const AdminUsers = () => {
                         <td>{user.email}</td>
                         <td>{user.role}</td>
                         <td>{user.version}</td>
-                        <td>{user.is_active ? "Active" : "Inactive"}</td>
+                        <td>{user.is_active ? "Active" : "Passive"}</td>
                         <td>{new Date(user.created_at).toLocaleString()}</td>
                         <td className="text-center">
                           <Button
@@ -292,13 +399,23 @@ const AdminUsers = () => {
                           >
                             <PencilSquare size={16} />
                           </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDeleteClick(user)}
-                          >
-                            <Trash size={16} />
-                          </Button>
+                          {user.is_active ? (
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => handleDeleteClick(user)}
+                            >
+                              <Trash size={16} />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline-success"
+                              size="sm"
+                              onClick={() => handleActivateUser(user)}
+                            >
+                              Activate
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -310,25 +427,6 @@ const AdminUsers = () => {
         </Col>
       </Row>
 
-      {/* Delete User Modal */}
-      <Modal show={showDeleteModal} onHide={handleCloseDeleteModal} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to delete user:{" "}
-          <strong className="text-danger">{userToDelete?.email}</strong>?
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseDeleteModal}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleConfirmDelete}>
-            <Trash size={16} className="me-1" /> Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
       {/* Add User Modal */}
       <Modal show={showAddModal} onHide={handleCloseAddModal} centered>
         <Modal.Header closeButton>
@@ -337,7 +435,7 @@ const AdminUsers = () => {
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Email address</Form.Label>
+              <Form.Label>Email</Form.Label>
               <Form.Control
                 type="email"
                 placeholder="Enter email"
@@ -348,30 +446,34 @@ const AdminUsers = () => {
               <Form.Label>Password</Form.Label>
               <Form.Control
                 type="password"
-                placeholder="Password"
+                placeholder="Enter Password"
                 ref={passwordRef}
               />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Role</Form.Label>
-              <Form.Select ref={roleRef}>
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
+              <Form.Select ref={roleIdRef}>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Version</Form.Label>
-              <Form.Select ref={versionRef}>
-                <option value="basic">Basic</option>
-                <option value="premium">Premium</option>
+              <Form.Select ref={versionIdRef}>
+                {versions.map((version) => (
+                  <option key={version.id} value={version.id}>
+                    {version.name}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
           </Form>
+          {error && <Alert variant="danger">{error}</Alert>}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseAddModal}>
-            Cancel
-          </Button>
           <Button variant="primary" onClick={handleAddUser}>
             Add User
           </Button>
@@ -386,7 +488,7 @@ const AdminUsers = () => {
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Email address</Form.Label>
+              <Form.Label>Email</Form.Label>
               <Form.Control
                 type="email"
                 placeholder="Enter email"
@@ -394,10 +496,10 @@ const AdminUsers = () => {
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Password (leave blank to keep current)</Form.Label>
+              <Form.Label>Password (fill in to change)</Form.Label>
               <Form.Control
                 type="password"
-                placeholder="Password"
+                placeholder="Enter Password"
                 ref={editPasswordRef}
               />
             </Form.Group>
@@ -405,32 +507,36 @@ const AdminUsers = () => {
               <Form.Check
                 type="checkbox"
                 id="is_active"
-                label="Active"
+                label="Is Active"
                 ref={editIsActiveRef}
               />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Role</Form.Label>
-              <Form.Select ref={editRoleRef}>
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
+              <Form.Select ref={editRoleIdRef}>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Version</Form.Label>
-              <Form.Select ref={editVersionRef}>
-                <option value="basic">Basic</option>
-                <option value="premium">Premium</option>
+              <Form.Select ref={editVersionIdRef}>
+                {versions.map((version) => (
+                  <option key={version.id} value={version.id}>
+                    {version.name}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
           </Form>
+          {error && <Alert variant="danger">{error}</Alert>}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseEditModal}>
-            Cancel
-          </Button>
           <Button variant="primary" onClick={handleUpdateUser}>
-            Update User
+            Edit User
           </Button>
         </Modal.Footer>
       </Modal>
