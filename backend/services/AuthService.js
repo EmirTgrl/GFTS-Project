@@ -108,6 +108,15 @@ const authService = {
         .json({ message: "Invalid token!", details: err.message });
     }
   },
+
+  versionCheck: (req, res, next) => {
+    if (req.user?.version !== "premium") {
+      return res
+        .status(403)
+        .json({ message: "Only premium users can perform this action." });
+    }
+    next();
+  },
 };
 
 module.exports = authService;

@@ -15,7 +15,7 @@
   padding: 0.4rem 0 !important;
   letter-spacing: 1px;
   display: flex;
-  align-items: center; 
+  align-items: center;
 }
 
 .home-icon {
@@ -25,14 +25,13 @@
 }
 
 .home-icon:hover {
-  color: #ffd700; 
-  transform: scale(1.1); 
+  color: #ffd700;
+  transform: scale(1.1);
 }
 
 .nav-link-custom {
   color: #fff !important;
   font-size: 0.9rem !important;
-  /* padding: 0.4rem 0.8rem !important; */
   font-weight: 500;
   position: relative;
   transition: all 0.3s ease;
@@ -99,4 +98,95 @@
 .dropdown-item:hover {
   background-color: #ffd700;
   color: #005bb5;
+}
+
+.version-modal .modal-content {
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: none;
+  max-width: 95vw;
+  width: 100%;
+  height: auto;
+}
+
+.version-modal .modal-header {
+  background: linear-gradient(135deg, #f7f9fc, #e9ecef);
+  padding: 1.5rem;
+  border-bottom: none;
+}
+
+.version-modal .modal-title {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.version-modal .modal-body {
+  background: #ffffff;
+  padding: 1rem;
+  height: auto;
+  overflow-y: visible;
+}
+
+.version-cards-flex {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 2rem;
+  width: 100%;
+}
+
+.version-card {
+  flex: 1 1 320px;
+  max-width: 400px;
+  min-width: 260px;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.version-card .card-body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.version-modal .btn-success {
+  background-color: #28a745;
+  border: none;
+  transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.version-modal .btn-success:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+}
+
+.version-modal .list-group-item {
+  background: transparent;
+  font-size: 0.95rem;
+  color: #495057;
+}
+
+.version-modal .text-secondary {
+  color: #6c757d !important;
+}
+
+.version-modal .text-warning {
+  color: #f1c40f !important;
+}
+
+@media (max-width: 900px) {
+  .version-cards-flex {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+  .version-card {
+    max-width: 95vw;
+    min-width: 200px;
+    margin-bottom: 1rem;
+  }
 }

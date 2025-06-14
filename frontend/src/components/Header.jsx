@@ -19,6 +19,7 @@ import {
 import Swal from "sweetalert2";
 import JSZip from "jszip";
 import StatsDashboard from "../pages/StatsDashboard.jsx";
+import VersionPage from "../pages/VersionPage.jsx";
 import { fetchAgenciesByProjectId } from "../api/agencyApi.js";
 import { fetchRoutesByProjectId } from "../api/routeApi.js";
 import { fetchTripsByProjectId } from "../api/tripApi.js";
@@ -154,12 +155,12 @@ const createGTFSZip = async (project_id, token) => {
 };
 
 const Header = () => {
-  const { isAuthenticated, logout, token, user } =
-    useContext(AuthContext);
+  const { isAuthenticated, logout, token, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
 
   const handleLogout = () => {
@@ -344,6 +345,16 @@ const Header = () => {
                     </div>
                   </NavDropdown.Header>
                   <NavDropdown.Divider />
+                  {user?.version === "basic" && (
+                    <NavDropdown.Item
+                      onClick={() => setShowVersionModal(true)}
+                      className="text-center"
+                    >
+                      <Button variant="warning" size="sm" className="w-100">
+                        Buy Premium
+                      </Button>
+                    </NavDropdown.Item>
+                  )}
                   <NavDropdown.Item onClick={handleLogout}>
                     Logout
                   </NavDropdown.Item>
@@ -410,6 +421,7 @@ const Header = () => {
         </Modal>
       )}
 
+      {/* Stats Modal */}
       {showStatsModal && (
         <Modal
           show={showStatsModal}
@@ -428,6 +440,26 @@ const Header = () => {
               Close
             </Button>
           </Modal.Footer>
+        </Modal>
+      )}
+
+      {/* Version Modal */}
+      {showVersionModal && (
+        <Modal
+          show={showVersionModal}
+          onHide={() => setShowVersionModal(false)}
+          size="xl"
+          centered
+          className="version-modal"
+        >
+          <Modal.Header closeButton className="border-0 bg-light">
+            <Modal.Title className="w-100 text-center fs-3 fw-bold text-primary">
+              Choose Your Membership Plan
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="p-4">
+            <VersionPage />
+          </Modal.Body>
         </Modal>
       )}
     </>

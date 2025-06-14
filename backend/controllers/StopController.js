@@ -9,8 +9,16 @@ router.use(authService.auth);
 router.get("", stopService.getStopsByQuery);
 router.get("/all", stopService.getAllStopsByProjectId);
 router.get("/:project_id/:stop_id/routes", stopService.getRoutesByStopId);
-router.delete("/delete/:stop_id", stopService.deleteStopByStopId);
-router.put("/update/:stop_id", stopService.updateStop);
-router.post("/create", stopService.saveStop);
+router.delete(
+  "/delete/:stop_id",
+  authService.versionCheck,
+  stopService.deleteStopByStopId
+);
+router.put(
+  "/update/:stop_id",
+  authService.versionCheck,
+  stopService.updateStop
+);
+router.post("/create", authService.versionCheck, stopService.saveStop);
 
 module.exports = router;

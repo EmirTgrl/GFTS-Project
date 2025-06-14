@@ -109,6 +109,7 @@ export const AuthProvider = ({ children }) => {
         user,
         login,
         logout: handleLogout,
+        setUser,
         isLoggedOut,
       }}
     >

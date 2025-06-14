@@ -7,9 +7,21 @@ const authService = require("../services/AuthService.js");
 router.use(authService.auth);
 
 router.get("", shapeService.getShapeByQuery);
-router.delete("/delete/:shape_id/:shape_pt_sequence", shapeService.deleteShapeById);
-router.put("/update/:shape_id/:shape_pt_sequence", shapeService.updateShape);
-router.post("/create", shapeService.saveShape);
-router.post("/create-multiple/:trip_id", shapeService.saveMultipleShape)
+router.delete(
+  "/delete/:shape_id/:shape_pt_sequence",
+  authService.versionCheck,
+  shapeService.deleteShapeById
+);
+router.put(
+  "/update/:shape_id/:shape_pt_sequence",
+  authService.versionCheck,
+  shapeService.updateShape
+);
+router.post("/create", authService.versionCheck, shapeService.saveShape);
+router.post(
+  "/create-multiple/:trip_id",
+  authService.versionCheck,
+  shapeService.saveMultipleShape
+);
 
 module.exports = router;

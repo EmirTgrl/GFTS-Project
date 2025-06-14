@@ -1,3 +1,5 @@
+import { useContext } from "react";
+import { AuthContext } from "../Auth/AuthContext";
 import {
   List,
   Map,
@@ -20,6 +22,9 @@ const FloatingActions = ({
   selectedEntities,
   createLink,
 }) => {
+  const { user } = useContext(AuthContext);
+  const isPremium = user?.version === "premium";
+
   const renderTooltip = (text) => (
     <Tooltip id={`tooltip-${text.toLowerCase()}`}>{text}</Tooltip>
   );
@@ -29,6 +34,26 @@ const FloatingActions = ({
     setEditorMode(editorMode === "route-planning" ? "close" : "route-planning");
     setAction(editorMode === "route-planning" ? "" : "route-planning");
   };
+
+  // Sadece premium kullanıcılar tüm butonlara erişebilsin
+  if (!isPremium) {
+    // Sadece ana menü butonunu göster
+    return (
+      <div className="floating-actions">
+        <div className="main-action">
+          <OverlayTrigger
+            placement="left"
+            overlay={<Tooltip id="tooltip-menu">Menu</Tooltip>}
+            trigger={["hover", "focus"]}
+          >
+            <button className="fab-main">
+              <List size={24} />
+            </button>
+          </OverlayTrigger>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="floating-actions">

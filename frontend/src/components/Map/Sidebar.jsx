@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import PropTypes from "prop-types";
 import {
   Modal,
@@ -79,6 +79,7 @@ import TripFilterPanel from "./TripFilterPanel";
 import "../../styles/Sidebar.css";
 import { fetchShapesByTripId } from "../../api/shapeApi";
 import { debounce } from "lodash";
+import { AuthContext } from "../Auth/AuthContext";
 
 const Sidebar = ({
   token,
@@ -1102,7 +1103,13 @@ const Sidebar = ({
     setTrips({ data: sortedTrips, total: sortedTrips.length });
   };
 
+  // Kullanıcının versiyonunu al
+  const { user } = useContext(AuthContext);
+  const isPremium = user?.version === "premium";
+
+  // Action butonlarını sadece premium kullanıcıya göster
   const renderActionButtons = (category) => {
+    if (!isPremium) return null; // Sadece premium ise göster
     const isSelected = selectedEntities[category] != null;
     return (
       <div className="action-buttons-container">

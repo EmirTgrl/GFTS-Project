@@ -23,7 +23,7 @@ const AdminUsers = () => {
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { token, user } = useContext(AuthContext);
+  const { token, user, setUser } = useContext(AuthContext); // setUser'u ekle
 
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
@@ -297,6 +297,23 @@ const AdminUsers = () => {
             : user
         )
       );
+
+      // Eğer güncellenen kullanıcı oturum açmış kullanıcıysa AuthContext'i güncelle
+      if (userToEdit.id === user.id) {
+        const updatedRole =
+          roles.find((r) => r.id === parseInt(role_id))?.name || user.role;
+        const updatedVersion =
+          versions.find((v) => v.id === parseInt(version_id))?.name ||
+          user.version;
+        setUser({
+          ...user,
+          email,
+          is_active,
+          role: updatedRole,
+          version: updatedVersion,
+        });
+      }
+
       handleCloseEditModal();
     } catch (error) {
       setError(error.message || "Failed to update user.");
