@@ -28,6 +28,8 @@ router.get("/plan", async (req, res) => {
       mode,
     });
 
+    console.log("OTP tripData:", tripData);
+
     res.status(200).json({
       status: "success",
       data: tripData,

@@ -15,6 +15,7 @@ const adminController = require("./AdminController.js");
 const shapeController = require("./ShapeController.js");
 const statsController = require("./StatsController.js");
 const fareController = require("./FareController.js");
+const otpController = require("./OTPController.js");
 
 // routes
 router.use("/auth", authController);
@@ -30,5 +31,6 @@ router.use("/shapes", shapeController);
 router.use("/admin", adminController);
 router.use("/stats", statsController);
 router.use("/fares", fareController);
+router.use("/otp", otpController);
 
 module.exports = router;

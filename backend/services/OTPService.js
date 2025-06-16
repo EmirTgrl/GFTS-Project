@@ -1,5 +1,3 @@
-const fetch = require("node-fetch");
-
 const planTrip = async ({
   fromLat,
   fromLon,
@@ -10,12 +8,10 @@ const planTrip = async ({
   mode = "TRANSIT,WALK",
 }) => {
   try {
-    // Varsayılan tarih ve saat kontrolü
     const defaultDate = date || new Date().toISOString().split("T")[0];
     const defaultTime =
       time || new Date().toTimeString().split(" ")[0].slice(0, 5);
 
-    // GraphQL sorgusu
     const query = `
       query {
         plan(
@@ -59,6 +55,7 @@ const planTrip = async ({
       }
     `;
 
+    // OTP_API_URL ortam değişkeni .env dosyanda tanımlı olmalı!
     const response = await fetch(`${process.env.OTP_API_URL}/index/graphql`, {
       method: "POST",
       headers: {
@@ -82,7 +79,6 @@ const planTrip = async ({
       throw new Error("No valid itineraries found");
     }
 
-    // Yanıtı sadeleştir
     return result.data.plan.itineraries.map((itinerary) => ({
       duration: itinerary.duration,
       startTime: itinerary.startTime,
@@ -97,7 +93,7 @@ const planTrip = async ({
         route: leg.route
           ? `${leg.route.shortName} - ${leg.route.longName}`
           : null,
-        geometry: leg.legGeometry.points, // Harita için kullanılabilir
+        geometry: leg.legGeometry.points,
       })),
     }));
   } catch (error) {

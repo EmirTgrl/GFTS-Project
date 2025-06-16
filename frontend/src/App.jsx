@@ -98,6 +98,7 @@ const AppContent = () => {
             <Route path="versions" element={<AdminVersions />} />
           </Route>
           <Route path="*" element={<div>404 - Page Not Found</div>} />
+          <Route path="/" element={<Navigate to="/auth" replace />} />
         </Routes>
       </main>
     </div>

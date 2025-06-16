@@ -15,6 +15,7 @@ const OtpPage = () => {
   });
   const [itineraries, setItineraries] = useState([]);
   const [error, setError] = useState(null);
+  const [showTripPanel, setShowTripPanel] = useState(true);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,7 +36,7 @@ const OtpPage = () => {
       <h2>Trip Planning</h2>
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
       <MapView
-        mapCenter={[39.9255, 32.8663]} 
+        mapCenter={[39.9255, 32.8663]}
         zoom={6}
         stopsAndTimes={{ data: [], total: 0 }}
         setStopsAndTimes={() => {}}
@@ -60,6 +61,8 @@ const OtpPage = () => {
         allStops={[]}
         openStopTimeAdd={() => {}}
         onRoutePlan={handleRoutePlan}
+        showTripPanel={showTripPanel}
+        setShowTripPanel={setShowTripPanel}
       />
       <form onSubmit={handleSubmit}>
         <div className="mb-2">

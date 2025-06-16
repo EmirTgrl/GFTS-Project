@@ -20,7 +20,15 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet-polylinedecorator";
 import { debounce } from "lodash";
 import { renderToString } from "react-dom/server";
-import { Button } from "react-bootstrap";
+import { Button, ListGroup, Badge } from "react-bootstrap";
+import {
+  BusFrontFill,
+  GeoAltFill,
+  PersonFill,
+  TrainLightrailFront,
+  TruckFrontFill,
+  QuestionCircleFill,
+} from "react-bootstrap-icons";
 import { snapShapesToRoads, saveMultipleShapes } from "../../api/shapeApi.js";
 import {
   saveMultipleStopsAndTimes,
@@ -28,6 +36,7 @@ import {
 } from "../../api/stopTimeApi.js";
 import { fetchRoutesByStopId } from "../../api/stopApi.js";
 import { planTrip } from "../../api/otpApi.js";
+import polyline from "polyline";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -188,6 +197,17 @@ MapUpdater.propTypes = {
   center: PropTypes.arrayOf(PropTypes.number),
   zoom: PropTypes.number,
 };
+
+const modeIcons = {
+  WALK: <PersonFill className="me-1 text-primary" />,
+  BUS: <BusFrontFill className="me-1 text-success" />,
+  RAIL: <TrainLightrailFront className="me-1 text-secondary" />,
+  SUBWAY: <TrainLightrailFront className="me-1 text-danger" />,
+  TRAM: <TruckFrontFill className="me-1 text-warning" />,
+  FERRY: <GeoAltFill className="me-1 text-info" />,
+};
+
+const getModeIcon = (mode) => modeIcons[mode] || <QuestionCircleFill className="me-1 text-muted" />;
 
 const MapView = ({
   mapCenter,
@@ -605,6 +625,7 @@ const MapView = ({
         time: time,
       };
       const response = await planTrip(tripData, token);
+      console.log("OTP route response:", response.data);
       setRoute(response.data);
       setIsMenuOpen(true);
       Swal.fire({
@@ -864,7 +885,7 @@ const MapView = ({
         {route && route.length > 0 && (
           <PolylineWithDirectionalArrows
             positions={route[0].legs.flatMap((leg) =>
-              leg.geometry.map((point) => [point[1], point[0]])
+              leg.geometry ? polyline.decode(leg.geometry) : []
             )}
             color="#00ff00"
             weight={5}
@@ -1071,24 +1092,25 @@ const MapView = ({
         </div>
       )}
 
-      <div
-        style={{
-          position: "fixed",
-          top: "56px",
-          right: isMenuOpen ? "0" : "-300px",
-          width: "300px",
-          height: "calc(100vh - 56px)",
-          background: "linear-gradient(135deg, #ffffff, #f0f4f8)",
-          boxShadow: "-2px 0 10px rgba(0, 0, 0, 0.2)",
-          padding: "20px",
-          transition: "right 0.3s ease-in-out",
-          zIndex: 1000,
-          borderLeft: "1px solid #e0e0e0",
-          borderRadius: "10px 0 0 10px",
-          overflowY: "auto",
-        }}
-      >
-        {selectedStop && (
+      {/* Sağ panel sadece selectedStop için */}
+      {selectedStop && (
+        <div
+          style={{
+            position: "fixed",
+            top: "56px",
+            right: isMenuOpen ? "0" : "-300px",
+            width: "300px",
+            height: "calc(100vh - 56px)",
+            background: "linear-gradient(135deg, #ffffff, #f0f4f8)",
+            boxShadow: "-2px 0 10px rgba(0, 0, 0, 0.2)",
+            padding: "20px",
+            transition: "right 0.3s ease-in-out",
+            zIndex: 1000,
+            borderLeft: "1px solid #e0e0e0",
+            borderRadius: "10px 0 0 10px",
+            overflowY: "auto",
+          }}
+        >
           <div>
             <div
               style={{
@@ -1210,29 +1232,102 @@ const MapView = ({
               )}
             </div>
           </div>
-        )}
-        {route && (
-          <div style={{ marginTop: "20px" }}>
-            <h5>Route Details</h5>
-            {route.map((itinerary, index) => (
-              <div key={index} style={{ marginBottom: "15px" }}>
-                <p>
-                  <strong>Option {index + 1}:</strong>{" "}
-                  {Math.round(itinerary.duration / 60)} minutes
-                </p>
-                <ul>
-                  {itinerary.legs.map((leg, legIndex) => (
-                    <li key={legIndex}>
-                      {leg.mode}: {leg.from} → {leg.to} (
-                      {Math.round(leg.distance)} m)
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+        </div>
+      )}
+
+      {/* Route detayları ortada modal gibi */}
+      {route && (
+        <div
+          style={{
+            position: "fixed",
+            top: "60px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "min(95vw, 600px)",
+            maxHeight: "80vh",
+            background: "linear-gradient(135deg, #ffffff, #f0f4f8)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            padding: "24px 20px",
+            borderRadius: "18px",
+            zIndex: 2000,
+            overflowY: "auto",
+            border: "1px solid #e0e0e0",
+            transition: "all 0.3s",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h5 className="mb-0">Route Details</h5>
+            <button
+              onClick={() => setRoute(null)}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: "1.5rem",
+                color: "#888",
+                cursor: "pointer",
+                lineHeight: 1,
+              }}
+              title="Close"
+            >
+              ×
+            </button>
           </div>
-        )}
-      </div>
+          <ListGroup variant="flush">
+            {route.map((itinerary, index) => (
+              <ListGroup.Item
+                key={index}
+                className="mb-3 rounded shadow-sm border-0"
+                style={{ background: "#f8fafc" }}
+              >
+                <div className="d-flex align-items-center mb-2">
+                  <Badge bg="primary" className="me-2">
+                    {index + 1}
+                  </Badge>
+                  <span className="fw-bold text-dark">Option {index + 1}</span>
+                  <span className="ms-auto text-muted">
+                    {Math.round(itinerary.duration / 60)} min
+                  </span>
+                </div>
+                <ListGroup variant="flush">
+                  {itinerary.legs.map((leg, legIndex) => (
+                    <ListGroup.Item
+                      key={legIndex}
+                      className="py-2 px-0 border-0"
+                      style={{ background: "inherit" }}
+                    >
+                      <div className="d-flex align-items-center flex-wrap">
+                        {getModeIcon(leg.mode)}
+                        <span className="fw-semibold">{leg.mode}</span>
+                        <span className="mx-2 text-secondary">|</span>
+                        <span>
+                          <GeoAltFill className="text-success me-1" />
+                          <span className="fw-semibold">{leg.from}</span>
+                        </span>
+                        <span className="mx-1">→</span>
+                        <span>
+                          <GeoAltFill className="text-danger me-1" />
+                          <span className="fw-semibold">{leg.to}</span>
+                        </span>
+                        <span
+                          className="ms-auto text-muted"
+                          style={{ fontSize: "0.95em" }}
+                        >
+                          {Math.round(leg.distance)} m
+                          {leg.route && (
+                            <span className="ms-2 badge bg-info text-dark">
+                              {leg.route}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </ListGroup.Item>
+                  ))}
+                </ListGroup>
+              </ListGroup.Item>
+            ))}
+          </ListGroup>
+        </div>
+      )}
 
       {editorMode &&
         editorMode !== "close" &&
