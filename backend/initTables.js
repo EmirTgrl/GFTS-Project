@@ -27,7 +27,7 @@ async function initializeTables() {
         agency_email VARCHAR(255) DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (agency_id),
+        PRIMARY KEY (agency_id, project_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
       )
@@ -50,7 +50,7 @@ async function initializeTables() {
         platform_code VARCHAR(50) DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (stop_id),
+        PRIMARY KEY (stop_id, project_id),
         FOREIGN KEY (parent_station) REFERENCES stops(stop_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
@@ -73,7 +73,7 @@ async function initializeTables() {
         network_id VARCHAR(100) DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (route_id),
+        PRIMARY KEY (route_id, project_id),
         FOREIGN KEY (agency_id) REFERENCES agency(agency_id),
         FOREIGN KEY (network_id) REFERENCES route_networks(network_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
@@ -94,7 +94,7 @@ async function initializeTables() {
         end_date DATE NOT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (service_id),
+        PRIMARY KEY (service_id, project_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
       )
@@ -108,7 +108,7 @@ async function initializeTables() {
         shape_dist_traveled FLOAT DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (shape_id, shape_pt_sequence),
+        PRIMARY KEY (shape_id, shape_pt_sequence, project_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
       )
@@ -124,7 +124,7 @@ async function initializeTables() {
         transfer_duration INT DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (fare_id),
+        PRIMARY KEY (fare_id, project_id),
         FOREIGN KEY (agency_id) REFERENCES agency(agency_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
@@ -137,7 +137,7 @@ async function initializeTables() {
         fare_media_type TINYINT NOT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (fare_media_id),
+        PRIMARY KEY (fare_media_id, project_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
       )
@@ -152,7 +152,7 @@ async function initializeTables() {
         currency VARCHAR(3) NOT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (fare_product_id),
+        PRIMARY KEY (fare_product_id, project_id),
         FOREIGN KEY (fare_media_id) REFERENCES fare_media(fare_media_id),
         FOREIGN KEY (rider_category_id) REFERENCES rider_categories(rider_category_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
@@ -167,7 +167,7 @@ async function initializeTables() {
         eligibility_url VARCHAR(255) DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (rider_category_id),
+        PRIMARY KEY (rider_category_id, project_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
       )
@@ -180,7 +180,7 @@ async function initializeTables() {
         service_id VARCHAR(255) DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (timeframe_group_id),
+        PRIMARY KEY (timeframe_group_id, project_id),
         FOREIGN KEY (service_id) REFERENCES calendar(service_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
@@ -192,7 +192,7 @@ async function initializeTables() {
         network_name VARCHAR(255) DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (network_id),
+        PRIMARY KEY (network_id, project_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
       )
@@ -203,7 +203,7 @@ async function initializeTables() {
         area_name VARCHAR(255) DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (area_id),
+        PRIMARY KEY (area_id, project_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
       )
@@ -222,7 +222,7 @@ async function initializeTables() {
         bikes_allowed TINYINT DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (trip_id),
+        PRIMARY KEY (trip_id, project_id),
         FOREIGN KEY (route_id) REFERENCES routes(route_id),
         FOREIGN KEY (service_id) REFERENCES calendar(service_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
@@ -245,7 +245,7 @@ async function initializeTables() {
         continuous_drop_off TINYINT DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (trip_id, stop_sequence),
+        PRIMARY KEY (trip_id, stop_sequence, project_id),
         FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
         FOREIGN KEY (stop_id) REFERENCES stops(stop_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
@@ -261,7 +261,7 @@ async function initializeTables() {
         contains_id VARCHAR(255) DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (fare_id),
+        PRIMARY KEY (fare_id, project_id),
         FOREIGN KEY (fare_id) REFERENCES fare_attributes(fare_id),
         FOREIGN KEY (route_id) REFERENCES routes(route_id),
         FOREIGN KEY (origin_id) REFERENCES stops(stop_id),
@@ -298,7 +298,7 @@ async function initializeTables() {
         fare_product_id VARCHAR(100) NOT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (leg_group_id),
+        PRIMARY KEY (leg_group_id, project_id),
         FOREIGN KEY (network_id) REFERENCES networks(network_id),
         FOREIGN KEY (from_area_id) REFERENCES areas(area_id),
         FOREIGN KEY (to_area_id) REFERENCES areas(area_id),
@@ -320,7 +320,7 @@ async function initializeTables() {
         fare_product_id VARCHAR(100) DEFAULT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (from_leg_group_id, to_leg_group_id),
+        PRIMARY KEY (from_leg_group_id, to_leg_group_id, project_id),
         FOREIGN KEY (from_leg_group_id) REFERENCES fare_leg_rules(leg_group_id),
         FOREIGN KEY (to_leg_group_id) REFERENCES fare_leg_rules(leg_group_id),
         FOREIGN KEY (fare_product_id) REFERENCES fare_products(fare_product_id),
@@ -334,7 +334,7 @@ async function initializeTables() {
         network_id VARCHAR(255) NOT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (route_id, network_id),
+        PRIMARY KEY (route_id, network_id, project_id),
         FOREIGN KEY (route_id) REFERENCES routes(route_id),
         FOREIGN KEY (network_id) REFERENCES networks(network_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
@@ -347,7 +347,7 @@ async function initializeTables() {
         stop_id VARCHAR(255) NOT NULL,
         user_id INT NOT NULL,
         project_id INT NOT NULL,
-        PRIMARY KEY (stop_id, area_id),
+        PRIMARY KEY (stop_id, area_id, project_id),
         FOREIGN KEY (stop_id) REFERENCES stops(stop_id),
         FOREIGN KEY (area_id) REFERENCES areas(area_id),
         FOREIGN KEY (user_id) REFERENCES users(id),

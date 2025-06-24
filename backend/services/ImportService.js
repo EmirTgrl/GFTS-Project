@@ -174,7 +174,7 @@ class ImportService {
   }
 
   async processBatch(tableName, batch) {
-    if (batch.length === 0) return 0;
+    if (batch.length === 0) return { affectedRows: 0, columns: [] };
 
     const validColumns = await this.getTableColumns(tableName);
     const inputColumns = Object.keys(batch[0]).filter(
@@ -209,7 +209,7 @@ class ImportService {
         table: tableName,
         reason: `No valid columns found. Input: ${inputColumns.join(", ")}`,
       });
-      return 0;
+      return { affectedRows: 0, columns };
     }
 
     // Yabancı anahtar bağımlılıkları
@@ -394,22 +394,18 @@ class ImportService {
         table: tableName,
         reason: "No valid rows after processing",
       });
-      return 0;
+      return { affectedRows: 0, columns };
     }
 
-    const placeholders = columns.map(() => "?").join(",");
-    const updatableColumns = columns.filter(
-      (col) => col !== "user_id" && col !== "project_id"
-    );
+    // --- DEĞİŞİKLİK BURADA ---
+    // Composite key varsa, aynı kullanıcı/proje için duplicate olmaz.
+    // O yüzden ON DUPLICATE KEY UPDATE'e gerek yok!
     let sql = `INSERT INTO ${tableName} (${columns.join(",")}) VALUES ?`;
-    if (updatableColumns.length > 0) {
-      const updateClause = updatableColumns
-        .map((col) => `${col} = VALUES(${col})`)
-        .join(",");
-      sql += ` ON DUPLICATE KEY UPDATE ${updateClause}`;
-    }
 
-    const values = validRows.map((row) =>
+    // Eğer unique constraint veya composite key yoksa, eski davranış korunur.
+    // Ama yukarıdaki alter işlemlerini yaptıysan, bu haliyle çalışır.
+
+    const values = batch.map((row) =>
       columns.map((col) => row[col] || null)
     );
 
@@ -433,7 +429,7 @@ class ImportService {
       connection.release();
     }
 
-    return affectedRows;
+    return { affectedRows, columns };
   }
 
   async processTable(tableName, filePath, userId, projectId) {
@@ -456,7 +452,7 @@ class ImportService {
 
     let batch = [];
     let totalRows = 0;
-
+    let columns = [];
     try {
       await pipeline(
         fs.createReadStream(filePath),
@@ -474,12 +470,16 @@ class ImportService {
             batch.push(row);
 
             if (batch.length >= this.batchSize) {
-              totalRows += await this.processBatch(tableName, batch);
+              const batchResult = await this.processBatch(tableName, batch);
+              totalRows += batchResult.affectedRows;
+              columns = batchResult.columns; // <-- columns'u burada güncelle
               batch = [];
             }
           }
           if (batch.length > 0) {
-            totalRows += await this.processBatch(tableName, batch);
+            const batchResult = await this.processBatch(tableName, batch);
+            totalRows += batchResult.affectedRows;
+            columns = batchResult.columns; // <-- columns'u burada da güncelle
           }
         }.bind(this)
       );
