@@ -248,7 +248,7 @@ const MapView = ({
   const prevStopsAndTimesRef = useRef(null);
   const hasLoggedAreaWarnings = useRef(new Set());
 
-  const MIN_STOP_ZOOM = 15;
+  const MIN_STOP_ZOOM = 11;
 
   const isValidLatLng = useCallback((lat, lng) => {
     return (
@@ -852,8 +852,8 @@ const MapView = ({
         <BoundsTracker onBoundsChange={handleBoundsChange} />
 
         <MarkerClusterGroup
-          maxClusterRadius={120}
-          disableClusteringAtZoom={18}
+          maxClusterRadius={40}
+          disableClusteringAtZoom={10}
           showCoverageOnHover={false}
           spiderfyOnMaxZoom={true}
           chunkedLoading
