@@ -1,56 +1,70 @@
 # 🚌 GTFS-Editor
 
-## 📌 Proje Açıklaması
+> **GTFS (General Transit Feed Specification)** standardına uygun, gelişmiş bir veri yönetimi ve ücret hesaplama uygulaması.
 
-Bu proje, toplu taşıma sistemleri için **GTFS (General Transit Feed Specification)** standardına uygun olarak veri yönetimi ve ücretlendirme (Fare V2) yapısını destekleyen bir uygulamadır. Kullanıcılar, kendi GTFS veri setlerini sisteme yükleyebilir, yönetebilir ve rota bazlı ücret hesaplamaları yapabilir.
+GTFS-Editor, toplu taşıma sistemlerine ait veri setlerinin yönetilmesini ve GTFS-Fare V2 standardı kapsamında rota bazlı ücretlendirme yapılmasını sağlayan tam özellikli bir platformdur. Kullanıcılar kendi GTFS veri setlerini içe/dışa aktarabilir, düzenleyebilir ve farklı kullanıcı kategorileri için esnek ücret kuralları tanımlayabilir.
 
-### 🚀 Özellikler
+---
 
-- Kullanıcı bazlı kimlik doğrulama (JWT)
-- GTFS veri seti içe aktarma (agency, routes, trips, stops, shapes, calendar, stoptimes)
-- GTFS veri seti dışa aktarma
-- GTFS-Fare V2 uyumlu ücret yapısı:
-  - Fare Products (Ürünler)
-  - Fare Media (Bilet/kart gibi ödeme yöntemleri)
+## 🚀 Özellikler
+
+- ✅ Kullanıcı tabanlı kimlik doğrulama (JWT)
+- 📥 GTFS veri seti içe aktarma (agency, routes, trips, stops, shapes, calendar, stoptimes)
+- 📤 GTFS veri seti dışa aktarma
+- 💳 GTFS-Fare V2 uyumlu ücret yapısı:
+  - Fare Products (Ücret ürünleri)
+  - Fare Media (Bilet/kart türleri)
   - Rider Categories (Öğrenci, tam, yaşlı vb.)
-  - Fare Leg Rules (Sabit veya mesafeye dayalı ücretlendirme)
-  - Fare Transfer Rules (Ücretsiz veya zaman sınırlı aktarma)
-- Rota bazlı ücret hesaplama
-- MySQL ile güçlü veri yönetimi
+  - Fare Leg Rules (Sabit ve mesafeye dayalı ücretlendirme)
+  - Fare Transfer Rules (Aktarma kuralları)
+- 📊 Rota bazlı ücret hesaplama
+- 🗂️ MySQL ile güçlü veri yönetimi
+- 🧭 OSRM & OTP ile yön ve mesafe hesaplama desteği
 
-### 🛠️ Kullanılan Teknolojiler
+---
 
-- Node.js & Express.js
-- React
-- MySQL
-- JWT ile kimlik doğrulama
-- GTFS veri yapısı ve standartları
-- OSRM & OTP
+## 🛠️ Kullanılan Teknolojiler
 
+- **Backend:** Node.js, Express.js
+- **Frontend:** React.js
+- **Veritabanı:** MySQL
+- **Kimlik Doğrulama:** JWT
+- **Harita & Rotalama:** OSRM (Open Source Routing Machine), OTP (OpenTripPlanner)
+- **Veri Standardı:** GTFS & GTFS-Fare V2
 
-## 📌 Project Description
+---
 
-This project is an application that supports data management and fare structure (Fare V2) in accordance with **GTFS (General Transit Feed Specification)** standard for public transportation systems. Users can upload and manage their own GTFS data sets and perform route-based fare calculations.
+## 🌍 English Version
+
+### 📌 Project Description
+
+GTFS-Editor is a feature-rich platform that supports managing public transit data and applying route-based fare calculations in compliance with the **GTFS (General Transit Feed Specification)** and **GTFS-Fare V2** standards.
+
+---
 
 ### 🚀 Features
 
-- User-based authentication (JWT)
-- GTFS data set import (agency, routes, trips, stops, shapes, calendar, stoptimes)
-- GTFS data set export
-- GTFS-Fare V2 compatible fare structure:
+- ✅ User authentication (JWT)
+- 📥 GTFS data import (agency, routes, trips, stops, shapes, calendar, stoptimes)
+- 📤 GTFS data export
+- 💳 GTFS-Fare V2 compatible fare structure:
   - Fare Products (Products)
-  - Fare Media (Payment methods such as tickets/cards)
-  - Rider Categories (Student, full, senior, etc.)
+  - Fare Media (Tickets/cards)
+  - Rider Categories (Student, full fare, senior, etc.)
   - Fare Leg Rules (Fixed or distance-based pricing)
-  - Fare Transfer Rules (Free or time-limited transfer)
-- Route based fare calculation
-- Powerful data management with MySQL
+  - Fare Transfer Rules (Free or time-limited transfers)
+- 📊 Route-based fare calculation
+- 🗂️ Robust data management with MySQL
+- 🧭 Routing integration using OSRM & OTP
 
-### 🛠️ Technologies Used
+---
 
-- Node.js & Express.js
-- React
-- MySQL
-- Authentication with JWT
-- GTFS data structure and standards
-- OSRM & OTP
+## 📸 Ekran Görüntüsü / Screenshots
+![Map](screenshots/map.png)
+![Map2](screenshots/map2.png)
+![Agency](screenshots/agency.png)
+![Route](screenshots/route.png)
+![Trip](screenshots/trip.png)
+![Stop](screenshots/stop.png)
+![Data](screenshots/datas.png)
+![Import](screenshots/import.png)
