@@ -397,13 +397,7 @@ class ImportService {
       return { affectedRows: 0, columns };
     }
 
-    // --- DEĞİŞİKLİK BURADA ---
-    // Composite key varsa, aynı kullanıcı/proje için duplicate olmaz.
-    // O yüzden ON DUPLICATE KEY UPDATE'e gerek yok!
     let sql = `INSERT INTO ${tableName} (${columns.join(",")}) VALUES ?`;
-
-    // Eğer unique constraint veya composite key yoksa, eski davranış korunur.
-    // Ama yukarıdaki alter işlemlerini yaptıysan, bu haliyle çalışır.
 
     const values = batch.map((row) =>
       columns.map((col) => row[col] || null)

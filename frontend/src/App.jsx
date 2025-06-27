@@ -1,4 +1,6 @@
 import { useState } from "react";
+import "./i18n";
+import "flag-icons/css/flag-icons.min.css";
 import {
   BrowserRouter as Router,
   Routes,

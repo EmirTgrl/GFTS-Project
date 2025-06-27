@@ -36,3 +36,5 @@ otp-config.json
 .env
 
 Uploads
+
+gtfs_output

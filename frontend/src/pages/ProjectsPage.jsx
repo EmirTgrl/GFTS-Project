@@ -29,8 +29,10 @@ import Swal from "sweetalert2";
 import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "../styles/ProjectsPage.css";
+import { useTranslation } from "react-i18next";
 
 const ProjectsPage = () => {
+  const { t } = useTranslation();
   const [projects, setProjects] = useState([]);
   const [projectName, setProjectName] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -218,9 +220,11 @@ const ProjectsPage = () => {
             <Card className="projects-card shadow-lg">
               <Card.Body className="p-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h2 className="card-title h3 fw-bold">Your GTFS Files</h2>
+                  <h2 className="card-title h3 fw-bold">
+                    {t("Your GTFS Files")}
+                  </h2>
                   <Button variant="success" size="sm" onClick={handleOpenModal}>
-                    + New Project
+                    + {t("New Project")}
                   </Button>
                 </div>
                 <hr className="mb-4" />
@@ -229,9 +233,9 @@ const ProjectsPage = () => {
                     <Table striped bordered hover responsive>
                       <thead>
                         <tr>
-                          <th>GTFS File Name</th>
-                          <th>Import Date</th>
-                          <th style={{ width: "200px" }}>Actions</th>
+                          <th>{t("GTFS File Name")}</th>
+                          <th>{t("Import Date")}</th>
+                          <th style={{ width: "200px" }}>{t("Actions")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -258,7 +262,7 @@ const ProjectsPage = () => {
                                 onClick={() =>
                                   navigate(`/map/${project.project_id}`)
                                 }
-                                title="View"
+                                title={t("View")}
                               >
                                 <Eye size={16} />
                               </Button>
@@ -270,7 +274,7 @@ const ProjectsPage = () => {
                                   handleExportProject(project.project_id)
                                 }
                                 disabled={exportLoading}
-                                title="Export"
+                                title={t("Export")}
                               >
                                 {exportLoading ? (
                                   <span className="spinner-border spinner-border-sm me-1" />
@@ -283,7 +287,7 @@ const ProjectsPage = () => {
                                 size="sm"
                                 className="validation-btn"
                                 onClick={() => handleShowValidation(project)}
-                                title="Validation Report"
+                                title={t("Validation Report")}
                               >
                                 <ExclamationTriangle size={16} />
                               </Button>
@@ -298,7 +302,7 @@ const ProjectsPage = () => {
                                   )
                                 }
                                 disabled={deleteLoading[project.project_id]}
-                                title="Delete"
+                                title={t("Delete")}
                               >
                                 {deleteLoading[project.project_id] ? (
                                   <span className="spinner-border spinner-border-sm me-1" />
@@ -341,17 +345,19 @@ const ProjectsPage = () => {
                           />
                         </Pagination>
                         <small className="text-muted">
-                          Sayfa {currentPage} / {totalPages} (
+                          {t("Page")} {currentPage} / {totalPages} (
                           {indexOfFirstProject + 1}-
                           {Math.min(indexOfLastProject, projects.length)} /{" "}
-                          {projects.length} proje)
+                          {projects.length} {t("projects")})
                         </small>
                       </div>
                     )}
                   </>
                 ) : (
                   <p className="text-muted text-center py-3 fw-medium">
-                    No project yet. Create a project or import a GTFS file!
+                    {t(
+                      "No project yet. Create a project or import a GTFS file!"
+                    )}
                   </p>
                 )}
               </Card.Body>
@@ -367,16 +373,16 @@ const ProjectsPage = () => {
                 className="close-icon"
                 onClick={handleCloseModal}
               />
-              <h2 className="h5 mb-3">Create New Project</h2>
+              <h2 className="h5 mb-3">{t("Create New Project")}</h2>
               <input
                 type="text"
-                placeholder="Proje Adı"
+                placeholder={t("Project Name")}
                 value={projectName}
                 onChange={handleInputChange}
                 className="form-control mb-3"
               />
               <Button variant="primary" onClick={handleCreateProject}>
-                Oluştur
+                {t("Create")}
               </Button>
             </div>
           </div>
@@ -390,7 +396,7 @@ const ProjectsPage = () => {
         >
           <Modal.Header closeButton>
             <Modal.Title>
-              Validation Report for {selectedProject?.file_name}
+              {t("Validation Report for", { file: selectedProject?.file_name })}
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
@@ -401,7 +407,8 @@ const ProjectsPage = () => {
                   <Accordion.Item eventKey="errors">
                     <Accordion.Header>
                       <span className="text-danger me-2">
-                        Errors ({selectedProject.validation_data.errors.length})
+                        {t("Errors")} (
+                        {selectedProject.validation_data.errors.length})
                       </span>
                     </Accordion.Header>
                     <Accordion.Body>
@@ -414,25 +421,25 @@ const ProjectsPage = () => {
                             >
                               <Accordion.Header className="inner-accordion-header">
                                 <span className="me-2">
-                                  {err.code} (Total: {err.total || 0})
+                                  {err.code} ({t("Total")}: {err.total || 0})
                                 </span>
                               </Accordion.Header>
                               <Accordion.Body>
                                 <p className="mb-2">
-                                  <strong>Error Code:</strong> {err.code}
+                                  <strong>{t("Error Code")}:</strong> {err.code}
                                 </p>
                                 <p className="mb-2">
-                                  <strong>Description:</strong>{" "}
+                                  <strong>{t("Description")}:</strong>{" "}
                                   {err.userFriendlyMessage ||
                                     err.message ||
                                     err.description ||
-                                    "Description not available"}
+                                    t("Description not available")}
                                 </p>
                                 <p className="mb-3">
-                                  <strong>Recommendation:</strong>{" "}
+                                  <strong>{t("Recommendation")}:</strong>{" "}
                                   {err.suggestion ||
                                     err.recommendation ||
-                                    "Suggestion not available"}
+                                    t("Suggestion not available")}
                                 </p>
                                 {err.samples?.length > 0 ? (
                                   <div className="table-container">
@@ -445,19 +452,20 @@ const ProjectsPage = () => {
                                     >
                                       <thead>
                                         <tr>
-                                          <th>Location</th>
-                                          <th>Details</th>
+                                          <th>{t("Location")}</th>
+                                          <th>{t("Details")}</th>
                                         </tr>
                                       </thead>
                                       <tbody>
                                         {err.samples.map((sample, i) => (
                                           <tr key={`${index}-${i}`}>
                                             <td>
-                                              {sample.location || "Unknown"}
+                                              {sample.location || t("Unknown")}
                                             </td>
                                             <td>
                                               <pre>
-                                                {sample.details || "No details"}
+                                                {sample.details ||
+                                                  t("No details")}
                                               </pre>
                                             </td>
                                           </tr>
@@ -467,8 +475,9 @@ const ProjectsPage = () => {
                                   </div>
                                 ) : (
                                   <p className="text-warning">
-                                    Sample data is not available for this error.
-                                    Check the validator output or database.
+                                    {t(
+                                      "Sample data is not available for this error. Check the validator output or database."
+                                    )}
                                   </p>
                                 )}
                               </Accordion.Body>
@@ -485,7 +494,7 @@ const ProjectsPage = () => {
                   <Accordion.Item eventKey="warnings">
                     <Accordion.Header>
                       <span className="text-warning me-2">
-                        Warnings (
+                        {t("Warnings")} (
                         {selectedProject.validation_data.warnings.length})
                       </span>
                     </Accordion.Header>
@@ -499,25 +508,26 @@ const ProjectsPage = () => {
                             >
                               <Accordion.Header className="inner-accordion-header">
                                 <span className="me-2">
-                                  {warn.code} (Total: {warn.total || 0})
+                                  {warn.code} ({t("Total")}: {warn.total || 0})
                                 </span>
                               </Accordion.Header>
                               <Accordion.Body>
                                 <p className="mb-2">
-                                  <strong>Error Code:</strong> {warn.code}
+                                  <strong>{t("Error Code")}:</strong>{" "}
+                                  {warn.code}
                                 </p>
                                 <p className="mb-2">
-                                  <strong>Description:</strong>{" "}
+                                  <strong>{t("Description")}:</strong>{" "}
                                   {warn.userFriendlyMessage ||
                                     warn.message ||
                                     warn.description ||
-                                    "Description not available"}
+                                    t("Description not available")}
                                 </p>
                                 <p className="mb-3">
-                                  <strong>Recommendation:</strong>{" "}
+                                  <strong>{t("Recommendation")}:</strong>{" "}
                                   {warn.suggestion ||
                                     warn.recommendation ||
-                                    "Recommendation not available"}
+                                    t("Recommendation not available")}
                                 </p>
                                 {warn.samples?.length > 0 ? (
                                   <div className="table-container">
@@ -530,19 +540,20 @@ const ProjectsPage = () => {
                                     >
                                       <thead>
                                         <tr>
-                                          <th>Location</th>
-                                          <th>Details</th>
+                                          <th>{t("Location")}</th>
+                                          <th>{t("Details")}</th>
                                         </tr>
                                       </thead>
                                       <tbody>
                                         {warn.samples.map((sample, i) => (
                                           <tr key={`${index}-${i}`}>
                                             <td>
-                                              {sample.location || "Unknown"}
+                                              {sample.location || t("Unknown")}
                                             </td>
                                             <td>
                                               <pre>
-                                                {sample.details || "No details"}
+                                                {sample.details ||
+                                                  t("No details")}
                                               </pre>
                                             </td>
                                           </tr>
@@ -552,8 +563,9 @@ const ProjectsPage = () => {
                                   </div>
                                 ) : (
                                   <p className="text-warning">
-                                    Sample data is not available for this error.
-                                    Check the validator output or database.
+                                    {t(
+                                      "Sample data is not available for this error. Check the validator output or database."
+                                    )}
                                   </p>
                                 )}
                               </Accordion.Body>
@@ -567,12 +579,14 @@ const ProjectsPage = () => {
 
                 {!selectedProject.validation_data.errors?.length &&
                   !selectedProject.validation_data.warnings?.length && (
-                    <p className="text-muted">Error or warning not found.</p>
+                    <p className="text-muted">
+                      {t("Error or warning not found.")}
+                    </p>
                   )}
               </Accordion>
             ) : (
               <p className="text-muted">
-                Validation data is not available for this project.
+                {t("Validation data is not available for this project.")}
               </p>
             )}
           </Modal.Body>

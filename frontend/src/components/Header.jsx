@@ -28,6 +28,12 @@ import { fetchCalendarsByProjectId } from "../api/calendarApi.js";
 import { fetchShapesByTripId } from "../api/shapeApi.js";
 import { fetchStopsAndStopTimesByTripId } from "../api/stopTimeApi.js";
 import "../styles/Header.css";
+import { useTranslation } from "react-i18next";
+
+const LANGUAGES = [
+  { code: "en", flag: "gb", name: "EN" },
+  { code: "tr", flag: "tr", name: "TR" },
+];
 
 const GTFS_TABLES = [
   {
@@ -162,6 +168,7 @@ const Header = () => {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
+  const { t, i18n } = useTranslation();
 
   const handleLogout = () => {
     logout();
@@ -220,7 +227,7 @@ const Header = () => {
   };
 
   const getDynamicHeaders = (samples) => {
-    const headers = new Set(["Code", "Total"]);
+    const headers = new Set([t("Code"), t("Total")]);
     samples.forEach((sample) => {
       Object.keys(sample).forEach((key) => {
         if (key !== "code" && key !== "totalNotices") {
@@ -228,7 +235,7 @@ const Header = () => {
             .replace(/([A-Z])/g, " $1")
             .trim()
             .replace(/^./, (str) => str.toUpperCase());
-          headers.add(formattedKey);
+          headers.add(t(formattedKey));
         }
       });
     });
@@ -243,7 +250,7 @@ const Header = () => {
       return (
         <div key={index} className="mb-4">
           <h6 className={type === "errors" ? "text-danger" : "text-warning"}>
-            {item.code} ({item.total} occurrences)
+            {item.code} ({item.total} {t("occurrences")})
           </h6>
           <Table striped bordered hover size="sm">
             <thead>
@@ -261,9 +268,9 @@ const Header = () => {
                       const key = header.toLowerCase().replace(/\s/g, "");
                       return (
                         <td key={j}>
-                          {header === "Code"
+                          {header === t("Code")
                             ? item.code
-                            : header === "Total"
+                            : header === t("Total")
                             ? item.total
                             : sample[key] !== undefined && sample[key] !== null
                             ? sample[key]
@@ -276,7 +283,7 @@ const Header = () => {
               ) : (
                 <tr>
                   <td colSpan={headers.length} className="text-center">
-                    No sample data available
+                    {t("No sample data available")}
                   </td>
                 </tr>
               )}
@@ -304,7 +311,7 @@ const Header = () => {
                   as={Link}
                   to="/projects"
                   className="nav-link-custom"
-                  title="Home"
+                  title={t("Home")}
                 >
                   <HouseDoor size={20} />
                 </Nav.Link>
@@ -312,14 +319,14 @@ const Header = () => {
                   as={Link}
                   to="/import"
                   className="nav-link-custom"
-                  title="Import"
+                  title={t("Import")}
                 >
                   <Upload size={20} />
                 </Nav.Link>
                 {showValidateButton && (
                   <Nav.Link
                     className="nav-link-custom"
-                    title="Validate"
+                    title={t("Validate")}
                     onClick={handleValidate}
                   >
                     <CheckCircle size={20} />
@@ -327,11 +334,33 @@ const Header = () => {
                 )}
                 <Nav.Link
                   className="nav-link-custom"
-                  title="Statistics"
+                  title={t("Statistics")}
                   onClick={() => setShowStatsModal(true)}
                 >
                   <BarChart size={20} />
                 </Nav.Link>
+                <NavDropdown
+                  title={
+                    <span className="d-flex align-items-center gap-2">
+                      <span className={`fi fi-${LANGUAGES.find((l) => l.code === i18n.language)?.flag || "xx"} fis`}></span>
+                      <span>{LANGUAGES.find((l) => l.code === i18n.language)?.name ? t(LANGUAGES.find((l) => l.code === i18n.language).name) : t("Language")}</span>
+                    </span>
+                  }
+                  id="language-dropdown"
+                  className="nav-link-custom"
+                  align="end"
+                >
+                  {LANGUAGES.map((lang) => (
+                    <NavDropdown.Item
+                      key={lang.code}
+                      onClick={() => i18n.changeLanguage(lang.code)}
+                      className={`d-flex align-items-center gap-2 ${i18n.language === lang.code ? "active" : ""}`}
+                    >
+                      <span className={`fi fi-${lang.flag} fis`}></span>
+                      <span>{t(lang.name)}</span>
+                    </NavDropdown.Item>
+                  ))}
+                </NavDropdown>
                 <NavDropdown
                   title={<PersonCircle size={20} color="#fff" />}
                   id="user-dropdown"
@@ -339,9 +368,9 @@ const Header = () => {
                   className="nav-link-custom"
                 >
                   <NavDropdown.Header className="user-name">
-                    <div>{user?.email || "User"}</div>
+                    <div>{user?.email || t("User")}</div>
                     <div className="text-muted" style={{ fontSize: "0.85em" }}>
-                      Version: {user?.version || "-"}
+                      {t("Version")}: {user?.version || "-"}
                     </div>
                   </NavDropdown.Header>
                   <NavDropdown.Divider />
@@ -351,12 +380,12 @@ const Header = () => {
                       className="text-center"
                     >
                       <Button variant="warning" size="sm" className="w-100">
-                        Buy Premium
+                        {t("Buy Premium")}
                       </Button>
                     </NavDropdown.Item>
                   )}
                   <NavDropdown.Item onClick={handleLogout}>
-                    Logout
+                    {t("Logout")}
                   </NavDropdown.Item>
                 </NavDropdown>
               </>
@@ -365,7 +394,6 @@ const Header = () => {
         </Navbar.Collapse>
       </Navbar>
 
-      {/* Validation Modal */}
       {showValidationModal && (
         <Modal
           show={showValidationModal}
@@ -374,20 +402,20 @@ const Header = () => {
           centered
         >
           <Modal.Header closeButton>
-            <Modal.Title>GTFS Validation Report</Modal.Title>
+            <Modal.Title>{t("Validation Report")}</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             {validationResult ? (
               <>
                 {validationResult.success ? (
                   <p className="text-success">
-                    No errors found in the GTFS data!
+                    {t("No errors found in the GTFS data!")}
                   </p>
                 ) : (
                   <>
                     {validationResult.errors?.length > 0 && (
                       <>
-                        <h5 className="text-danger">Errors</h5>
+                        <h5 className="text-danger">{t("Errors")}</h5>
                         {renderValidationTable(
                           validationResult.errors,
                           "errors"
@@ -396,7 +424,7 @@ const Header = () => {
                     )}
                     {validationResult.warnings?.length > 0 && (
                       <>
-                        <h5 className="text-warning">Warnings</h5>
+                        <h5 className="text-warning">{t("Warnings")}</h5>
                         {renderValidationTable(
                           validationResult.warnings,
                           "warnings"
@@ -407,7 +435,7 @@ const Header = () => {
                 )}
               </>
             ) : (
-              <p className="text-muted">Validation data is not available.</p>
+              <p className="text-muted">{t("Validation data is not available.")}</p>
             )}
           </Modal.Body>
           <Modal.Footer>
@@ -415,13 +443,12 @@ const Header = () => {
               variant="secondary"
               onClick={() => setShowValidationModal(false)}
             >
-              Close
+              {t("Close")}
             </Button>
           </Modal.Footer>
         </Modal>
       )}
 
-      {/* Stats Modal */}
       {showStatsModal && (
         <Modal
           show={showStatsModal}
@@ -437,13 +464,12 @@ const Header = () => {
               variant="secondary"
               onClick={() => setShowStatsModal(false)}
             >
-              Close
+              {t("Close")}
             </Button>
           </Modal.Footer>
         </Modal>
       )}
 
-      {/* Version Modal */}
       {showVersionModal && (
         <Modal
           show={showVersionModal}
@@ -454,7 +480,7 @@ const Header = () => {
         >
           <Modal.Header closeButton className="border-0 bg-light">
             <Modal.Title className="w-100 text-center fs-3 fw-bold text-primary">
-              Choose Your Membership Plan
+              {t("Choose Your Membership Plan")}
             </Modal.Title>
           </Modal.Header>
           <Modal.Body className="p-4">

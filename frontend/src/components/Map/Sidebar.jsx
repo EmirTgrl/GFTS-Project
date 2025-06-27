@@ -1594,7 +1594,9 @@ const Sidebar = ({
 
   const renderStopsAccordion = () => {
     const filteredStops = filterStops(
-      selectedEntities.trip ? stopsAndTimes.data : allStops,
+      selectedEntities.trip
+        ? (stopsAndTimes.data || [])
+        : (allStops || []),
       searchTerms.stops
     );
     const paginatedStops = filteredStops.slice(

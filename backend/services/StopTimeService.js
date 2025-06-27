@@ -4,18 +4,23 @@ const stopTimeService = {
   getStopsAndStopTimesByRouteId: async (req, res) => {
     const user_id = req.user.id;
     const { route_id } = req.params;
+    const { project_id } = req.query; // <-- project_id'yi queryden al
+
+    if (!project_id) {
+      return res.status(400).json({ error: "project_id is required" });
+    }
 
     let query = `
-    SELECT s.*
+    SELECT DISTINCT s.*
       FROM routes AS r
-      JOIN trips AS t ON r.route_id = t.route_id
-      JOIN stop_times AS st ON t.trip_id = st.trip_id
-      JOIN stops AS s ON st.stop_id = s.stop_id
-      WHERE r.route_id = ? AND r.user_id = ?
-      GROUP BY s.stop_id;`;
+      JOIN trips AS t ON r.route_id = t.route_id AND r.project_id = t.project_id AND r.user_id = t.user_id
+      JOIN stop_times AS st ON t.trip_id = st.trip_id AND t.project_id = st.project_id AND t.user_id = st.user_id
+      JOIN stops AS s ON st.stop_id = s.stop_id AND st.project_id = s.project_id AND st.user_id = s.user_id
+      WHERE r.route_id = ? AND r.user_id = ? AND r.project_id = ?
+`;
 
     try {
-      const [rows] = await pool.execute(query, [route_id, user_id]);
+      const [rows] = await pool.execute(query, [route_id, user_id, project_id]);
       res.json(rows.length > 0 ? rows : []);
     } catch (error) {
       console.error(error);
@@ -76,7 +81,7 @@ const stopTimeService = {
     let query = `
       SELECT *
       FROM stop_times
-      JOIN stops ON stop_times.stop_id = stops.stop_id
+      JOIN stops ON stop_times.stop_id = stops.stop_id AND stop_times.project_id = stops.project_id AND stop_times.user_id = stops.user_id
       WHERE ${fields.join(" AND ")}
       ORDER BY stop_times.stop_sequence
     `;

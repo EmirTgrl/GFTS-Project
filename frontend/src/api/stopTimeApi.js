@@ -1,7 +1,10 @@
 const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/stop-times`;
 
-export const fetchStopsByRoute = async (route_id, token) => {
-  const response = await fetch(`${API_BASE_URL}/route/${route_id}`, {
+export const fetchStopsByRoute = async (route_id, project_id, token) => {
+  const url = new URL(`${API_BASE_URL}/route/${route_id}`);
+  url.searchParams.append("project_id", project_id);
+
+  const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) throw new Error("Failed to fetch stops and stop times");

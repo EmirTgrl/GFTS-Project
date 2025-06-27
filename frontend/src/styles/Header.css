@@ -1,3 +1,5 @@
+@import "flag-icons/css/flag-icons.min.css";
+
 .custom-navbar {
   background: linear-gradient(135deg, #0078d7, #005bb5);
   min-height: 50px !important;
@@ -63,6 +65,70 @@
   border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
+/* Dil dropdown başlığı */
+.nav-link-custom .dropdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff !important;
+  font-size: 1rem;
+  padding: 8px 12px;
+  border-radius: 5px;
+  transition: background-color 0.2s;
+}
+
+.nav-link-custom .dropdown-toggle:hover {
+  background-color: #495057;
+}
+
+/* Bayrak ikonları için stil */
+.fi {
+  width: 24px;
+  height: 18px;
+  background-size: cover;
+}
+
+/* Dil dropdown menüsü */
+#language-dropdown .dropdown-menu {
+  min-width: 160px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: none;
+  background-color: #fff;
+}
+
+/* Dil dropdown öğeleri */
+#language-dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  color: #333;
+  transition: background-color 0.2s;
+}
+
+#language-dropdown .dropdown-item:hover {
+  background-color: #f1f3f5;
+}
+
+#language-dropdown .dropdown-item.active {
+  background-color: #e9ecef;
+  font-weight: bold;
+  color: #007bff;
+}
+
+/* Bayrak ve dil adı hizalaması */
+#language-dropdown .dropdown-item .fi {
+  width: 24px;
+  height: 18px;
+}
+
+#language-dropdown .dropdown-item span:last-child {
+  flex-grow: 1;
+}
+
+/* Kullanıcı dropdown menüsü */
 #user-dropdown .dropdown-menu {
   min-width: 120px;
   padding: 0.2rem 0;
@@ -100,6 +166,7 @@
   color: #005bb5;
 }
 
+/* Versiyon modal stilleri */
 .version-modal .modal-content {
   border-radius: 15px;
   overflow: hidden;
@@ -178,12 +245,28 @@
   color: #f1c40f !important;
 }
 
-@media (max-width: 900px) {
+/* Mobil uyumluluk */
+@media (max-width: 768px) {
+  .nav-link-custom .dropdown-toggle {
+    font-size: 0.9rem;
+    padding: 6px 10px;
+  }
+
+  #language-dropdown .dropdown-menu {
+    min-width: 140px;
+  }
+
+  #language-dropdown .dropdown-item {
+    font-size: 0.9rem;
+    padding: 6px 10px;
+  }
+
   .version-cards-flex {
     flex-direction: column;
     gap: 1rem;
     align-items: center;
   }
+
   .version-card {
     max-width: 95vw;
     min-width: 200px;

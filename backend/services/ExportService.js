@@ -4,6 +4,7 @@ const { pool } = require("../db");
 const archiver = require("archiver");
 const csv = require("csv-stringify");
 const path = require("path");
+const { exec } = require("child_process");
 
 // Format dates to GTFS standard (YYYYMMDD) from string input
 const formatDateForGTFS = (dateString) => {
@@ -109,16 +110,12 @@ const exportService = {
         FROM information_schema.tables
         WHERE table_schema = DATABASE()
       `);
-      console.log("All tables in database:", allTables);
 
       const existingTables = allTables
         .map((t) => t.table_name || t.TABLE_NAME)
         .filter((t) => gtfsTables.includes(t));
 
-      console.log("Existing GTFS tables:", existingTables);
-
       if (!existingTables.length) {
-        console.log("⚠️ No GTFS tables found in the database.");
         return res
           .status(400)
           .json({ message: "No GTFS tables available for export." });
@@ -128,8 +125,6 @@ const exportService = {
       let requiredTablesMissing = [];
 
       for (const tableName of existingTables) {
-        console.log(`🗄️ Exporting table: ${tableName}`);
-
         // Fetch column names, excluding user_id and project_id
         const [columns] = await pool.query(
           `
@@ -142,14 +137,9 @@ const exportService = {
           [tableName]
         );
 
-        console.log(`Columns (${tableName}):`, columns);
-
         const columnNames = columns.map((col) => col.COLUMN_NAME);
 
         if (columnNames.length === 0) {
-          console.log(
-            `⚠️ Skipping table (${tableName}): No valid columns found.`
-          );
           continue;
         }
 
@@ -162,8 +152,6 @@ const exportService = {
         );
 
         if (rows.length === 0) {
-          console.log(`⚠️ Skipping table (${tableName}): No data found.`);
-          // Check if this is a required table
           if (
             [
               "agency",
@@ -186,7 +174,7 @@ const exportService = {
               row.start_date = formatDateForGTFS(row.start_date.toString());
             if (row.end_date)
               row.end_date = formatDateForGTFS(row.end_date.toString());
-            if (row.date) row.date = formatDateForGTFS(row.date.toString()); // For calendar_dates
+            if (row.date) row.date = formatDateForGTFS(row.date.toString());
           });
         }
 
@@ -209,23 +197,19 @@ const exportService = {
           header: true,
           columns: columnNames,
           cast: {
-            date: (value) => formatDateForGTFS(value.toString()), // Ensure dates are formatted as strings
-            string: (value) => value, // Keep strings as is
-            number: (value) => value.toString(), // Convert numbers to strings
-            boolean: (value) => (value ? "1" : "0"), // Convert booleans to 1/0 for GTFS
+            date: (value) => formatDateForGTFS(value.toString()),
+            string: (value) => value,
+            number: (value) => value.toString(),
+            boolean: (value) => (value ? "1" : "0"),
           },
         });
 
         archive.append(csvStream, { name: `${tableName}.txt` });
-        console.log(`✅ Added ${tableName}.txt to archive`);
         exportedTables++;
       }
 
       // Check for missing required tables
       if (requiredTablesMissing.length > 0) {
-        console.error(
-          `❌ Missing required GTFS tables: ${requiredTablesMissing.join(", ")}`
-        );
         archive.finalize();
         return res.status(400).json({
           message: `Missing required GTFS tables: ${requiredTablesMissing.join(
@@ -235,7 +219,6 @@ const exportService = {
       }
 
       if (archive.pointer() === 0) {
-        console.log("⚠️ No files were added to the archive.");
         return res
           .status(400)
           .json({ message: "No data available for export." });
@@ -248,11 +231,33 @@ const exportService = {
         archive.finalize();
       });
 
-      // Update router-config.json
-      const routerConfigPath = path.resolve(
-        __dirname,
-        "../otp-data/router-config.json"
-      );
+      // --- OTP DATA & CONFIG DOSYALARINI OLUŞTUR ---
+      // Her proje için ayrı klasör
+      const otpDataDir = path.resolve(__dirname, `../otp-data/project_${projectId}`);
+      await fsPromises.mkdir(otpDataDir, { recursive: true });
+
+      // GTFS zip dosyasını otp-data klasörüne kopyala
+      const otpGtfsPath = path.join(otpDataDir, "gtfs.zip");
+      await fsPromises.copyFile(zipPath, otpGtfsPath);
+
+      // build-config.json oluştur
+      const buildConfigPath = path.join(otpDataDir, "build-config.json");
+      const buildConfig = {
+        transitServiceStart: "2025-01-01",
+        transitServiceEnd: "2026-01-01",
+        maxDataImportIssuesPerFile: 1000,
+        transitFeeds: [
+          {
+            type: "gtfs",
+            source: `file://${otpGtfsPath.replace(/\\/g, "/")}`,
+          },
+        ],
+        writeGraph: true,
+      };
+      await fsPromises.writeFile(buildConfigPath, JSON.stringify(buildConfig, null, 2));
+
+      // router-config.json oluştur/güncelle
+      const routerConfigPath = path.join(otpDataDir, "router-config.json");
       let routerConfig = {
         updaters: [],
         routingDefaults: {
@@ -261,41 +266,43 @@ const exportService = {
           numItineraries: 3,
         },
       };
-
       try {
-        const existingConfig = await fsPromises.readFile(
-          routerConfigPath,
-          "utf8"
-        );
+        const existingConfig = await fsPromises.readFile(routerConfigPath, "utf8");
         const parsedConfig = JSON.parse(existingConfig);
         routerConfig = { ...routerConfig, ...parsedConfig };
       } catch (error) {
-        console.log(
-          "router-config.json not found or invalid, using defaults:",
-          error.message
-        );
+        // yoksa default ile devam
       }
+      await fsPromises.writeFile(routerConfigPath, JSON.stringify(routerConfig, null, 2));
 
-      const gtfsUpdater = {
-        type: "gtfs-file",
-        sourceType: "file",
-        frequencySec: 60,
-        file: zipPath,
+      // otp-config.json oluştur/güncelle (isteğe bağlı)
+      const otpConfigPath = path.join(otpDataDir, "otp-config.json");
+      const otpConfig = {
+        server: {
+          cors: {
+            enabled: true,
+            allowOrigins: ["http://localhost:5173"],
+            allowMethods: ["GET", "POST", "OPTIONS"],
+            allowHeaders: ["Authorization", "Content-Type"],
+          },
+        },
       };
+      await fsPromises.writeFile(otpConfigPath, JSON.stringify(otpConfig, null, 2));
 
-      routerConfig.updaters = [
-        ...(routerConfig.updaters || []).filter(
-          (up) => up.type !== "gtfs-file"
-        ),
-        gtfsUpdater,
-      ];
+      // --- OTP GRAPH BUILD KOMUTU OTOMATİK ---
+      const javaPath = `"C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.7.6-hotspot\\bin\\java.exe"`;
+      const otpJarPath = path.resolve(__dirname, "../otp-shaded-2.7.0.jar");
+      const buildServeCmd = `${javaPath} -Xms4G -Xmx12G -jar "${otpJarPath}" --build "${otpDataDir}" --serve`;
 
-      await fsPromises.writeFile(
-        routerConfigPath,
-        JSON.stringify(routerConfig, null, 2)
-      );
-      console.log("✅ Updated router-config.json");
+      exec(buildServeCmd, (err, stdout, stderr) => {
+        if (err) {
+          console.error("OTP build/serve error:", err);
+        } else {
+          console.log("OTP build/serve output:", stdout);
+        }
+      });
 
+      // --- DOSYA İNDİRME ---
       res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
       res.setHeader(
         "Content-Disposition",

@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { updateStopTime, fetchStopsByRoute } from "../api/stopTimeApi";
+import { updateStopTime, fetchStopsByRoute, fetchStopsAndStopTimesByTripId } from "../api/stopTimeApi";
 import { updateStop, saveStop } from "../api/stopApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
@@ -25,10 +25,10 @@ const StopTimeEditPage = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const stopsResponse = await fetchStopsByRoute(route_id, token);
+        const stopsResponse = await fetchStopsByRoute(route_id, project_id, token);
         setAllStops(stopsResponse);
 
-        const stopTimeResponse = stopsAndTimes.find(
+        const stopTimeResponse = (stopsAndTimes || []).find(
           (st) => st.stop_id === stop_id && st.trip_id === trip_id
         );
 
@@ -267,6 +267,17 @@ const StopTimeEditPage = ({
           ]);
         }
 
+        // GÜNCELLEME SONRASI stopsAndTimes'i backend'den tekrar çek
+        const updatedStops = await fetchStopsAndStopTimesByTripId(
+          trip_id,
+          project_id,
+          token
+        );
+        setStopsAndTimes({
+          data: updatedStops || [],
+          total: updatedStops?.length || 0,
+        });
+
         Swal.fire(
           "Updated!",
           "Stop time and stop successfully updated.",
@@ -367,7 +378,7 @@ const StopTimeEditPage = ({
             value={stopTimeData.stop_name || ""}
             onChange={handleChange}
             required
-            disabled={!isNewStop}
+            // disabled={!isNewStop}
           />
         </div>
         <div className="mb-2">
