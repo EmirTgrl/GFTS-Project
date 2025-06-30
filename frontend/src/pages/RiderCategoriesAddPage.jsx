@@ -3,8 +3,10 @@ import { AuthContext } from "../components/Auth/AuthContext";
 import { addRiderCategory } from "../api/fareApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
 
 const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     rider_category_id: "",
@@ -22,19 +24,19 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.rider_category_id || !formData.rider_category_name) {
-      Swal.fire("Error!", "Rider category ID and name are required!", "error");
+      Swal.fire(t("Error!"), t("Rider category ID and name are required!"), "error");
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are You Sure?",
-      text: "Are you sure you want to add this rider category?",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to add this rider category?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, add!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, add!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -49,7 +51,7 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
 
         const response = await addRiderCategory(project_id, token, payload);
 
-        Swal.fire("Success!", "Rider category added successfully.", "success");
+        Swal.fire(t("Success!"), t("Rider category added successfully."), "success");
 
         if (onAdd) {
           onAdd(response);
@@ -65,8 +67,8 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
       } catch (error) {
         console.error("Error:", error);
         Swal.fire(
-          "Error!",
-          `Error occurred while adding rider category: ${error.message}`,
+          t("Error!"),
+          t("Error occurred while adding rider category:") + " " + error.message,
           "error"
         );
       } finally {
@@ -80,7 +82,7 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="rider_category_id" className="form-label">
-            Rider Category ID (*)
+            {t("Rider Category ID")} (*)
           </label>
           <input
             type="text"
@@ -94,7 +96,7 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="rider_category_name" className="form-label">
-            Passenger Type Name (*)
+            {t("Passenger Type Name")} (*)
           </label>
           <input
             type="text"
@@ -108,7 +110,7 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="is_default_fare_category" className="form-label">
-            Default Category
+            {t("Default Category")}
           </label>
           <select
             className="form-control"
@@ -117,13 +119,13 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
             value={formData.is_default_fare_category}
             onChange={handleChange}
           >
-            <option value="0">No</option>
-            <option value="1">Yes</option>
+            <option value="0">{t("No")}</option>
+            <option value="1">{t("Yes")}</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="eligibility_url" className="form-label">
-            Eligibility URL
+            {t("Eligibility URL")}
           </label>
           <input
             type="text"
@@ -136,7 +138,7 @@ const RiderCategoriesAddPage = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Adding..." : "Add"}
+            {loading ? t("Adding...") : t("Add")}
           </button>
         </div>
       </form>

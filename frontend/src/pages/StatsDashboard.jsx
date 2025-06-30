@@ -13,8 +13,10 @@ import {
 } from "react-bootstrap-icons";
 import "../styles/StatsDashboard.css";
 import { fetchGlobalStats } from "../api/statsApi";
+import { useTranslation } from "react-i18next";
 
 const StatsDashboard = ({ token }) => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,55 +29,55 @@ const StatsDashboard = ({ token }) => {
         const statsData = await fetchGlobalStats(token);
         setStats(statsData);
       } catch (error) {
-        setError(`Failed to load statistics: ${error.message}`);
+        setError(t("Failed to load statistics") + ": " + error.message);
       } finally {
         setLoading(false);
       }
     };
 
     loadStats();
-  }, [token]);
+  }, [token, t]);
 
   const cards = [
     {
       icon: <Database size={30} />,
-      label: "GTFS Registered",
+      label: t("GTFS Registered"),
       value: stats?.gtfsRegistered,
       color: "primary",
     },
     {
       icon: <Building size={30} />,
-      label: "Agencies Registered",
+      label: t("Agencies Registered"),
       value: stats?.agencyRegistered,
       color: "danger",
     },
     {
       icon: <GeoAlt size={30} />,
-      label: "Stops Registered",
+      label: t("Stops Registered"),
       value: stats?.stopsRegistered,
       color: "success",
     },
     {
       icon: <Signpost size={30} />,
-      label: "Routes Registered",
+      label: t("Routes Registered"),
       value: stats?.routesRegistered,
       color: "info",
     },
     {
       icon: <Clock size={30} />,
-      label: "Stop Times Registered",
+      label: t("Stop Times Registered"),
       value: stats?.stopTimesRegistered,
       color: "warning",
     },
     {
       icon: <BusFront size={30} />,
-      label: "Trips Registered",
+      label: t("Trips Registered"),
       value: stats?.tripsRegistered,
       color: "purple",
     },
     {
       icon: <Map size={30} />,
-      label: "Shapes Registered",
+      label: t("Shapes Registered"),
       value: stats?.shapesRegistered,
       color: "teal",
     },
@@ -84,7 +86,7 @@ const StatsDashboard = ({ token }) => {
   return (
     <div className="stats-dashboard">
       <h4 className="text-center mb-4">
-        <BarChart className="me-2" /> Statistics Dashboard
+        <BarChart className="me-2" /> {t("Statistics Dashboard")}
       </h4>
 
       {error && (
@@ -96,7 +98,7 @@ const StatsDashboard = ({ token }) => {
       {loading ? (
         <div className="loading-spinner text-center">
           <div className="spinner"></div>
-          <p>Loading statistics...</p>
+          <p>{t("Loading statistics...")}</p>
         </div>
       ) : (
         <Row className="g-4 justify-content-center">

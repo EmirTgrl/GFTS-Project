@@ -14,6 +14,7 @@ import {
 import PropTypes from "prop-types";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import "../../styles/FloatingActions.css";
+import { useTranslation } from "react-i18next";
 
 const FloatingActions = ({
   setAction,
@@ -23,27 +24,25 @@ const FloatingActions = ({
   createLink,
 }) => {
   const { user } = useContext(AuthContext);
+  const { t } = useTranslation();
   const isPremium = user?.version === "premium";
 
   const renderTooltip = (text) => (
-    <Tooltip id={`tooltip-${text.toLowerCase()}`}>{text}</Tooltip>
+    <Tooltip id={`tooltip-${text.toLowerCase()}`}>{t(text)}</Tooltip>
   );
 
   const handleRoutePlanningToggle = () => {
-    // Eğer route-planning modundaysa, close moduna geç; değilse route-planning'e geç
     setEditorMode(editorMode === "route-planning" ? "close" : "route-planning");
     setAction(editorMode === "route-planning" ? "" : "route-planning");
   };
 
-  // Sadece premium kullanıcılar tüm butonlara erişebilsin
   if (!isPremium) {
-    // Sadece ana menü butonunu göster
     return (
       <div className="floating-actions">
         <div className="main-action">
           <OverlayTrigger
             placement="left"
-            overlay={<Tooltip id="tooltip-menu">Menu</Tooltip>}
+            overlay={<Tooltip id="tooltip-menu">{t("Menu")}</Tooltip>}
             trigger={["hover", "focus"]}
           >
             <button className="fab-main">

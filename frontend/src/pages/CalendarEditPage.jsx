@@ -3,6 +3,7 @@ import { updateCalendar } from "../api/calendarApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const CalendarEditPage = ({
   project_id,
@@ -11,6 +12,7 @@ const CalendarEditPage = ({
   setCalendars,
   calendars,
 }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -40,14 +42,14 @@ const CalendarEditPage = ({
             project_id: calendar.project_id || project_id,
           });
         } else {
-          Swal.fire("Error!", "Calendar not found.", "error");
+          Swal.fire(t("Error!"), t("Calendar not found."), "error");
           onClose();
         }
       } catch (error) {
         console.error("Calendar loading Errors:", error);
         Swal.fire(
-          "Error!",
-          `Error loading the calendar: ${error.message}`,
+          t("Error!"),
+          t("Error loading the calendar:") + " " + error.message,
           "error"
         );
         onClose();
@@ -56,7 +58,7 @@ const CalendarEditPage = ({
     if (token && service_id) {
       loadCalendar();
     }
-  }, [token, service_id, onClose, project_id, calendars]);
+  }, [token, service_id, onClose, project_id, calendars, t]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -69,46 +71,50 @@ const CalendarEditPage = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData?.start_date || !formData?.end_date) {
-      Swal.fire("Error!", "Start and end date is required!", "error");
+      Swal.fire(t("Error!"), t("Start and end date is required!"), "error");
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to update this calendar?",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to update this calendar?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, update!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, update!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
       try {
         setLoading(true);
         const calendarData = { ...formData, service_id, project_id };
-        await updateCalendar(calendarData, token);
-        // Optimist güncelleme: Mevcut state'i güncelle
         setCalendars((prev) => {
-          const updatedCalendars = Array.isArray(prev)
-            ? prev.map((cal) =>
+          let updated;
+          if (Array.isArray(prev)) {
+            updated = prev.map((cal) =>
+              cal.service_id === service_id ? calendarData : cal
+            );
+          } else if (prev && Array.isArray(prev.data)) {
+            updated = {
+              ...prev,
+              data: prev.data.map((cal) =>
                 cal.service_id === service_id ? calendarData : cal
-              )
-            : {
-                ...prev,
-                data: prev.data.map((cal) =>
-                  cal.service_id === service_id ? calendarData : cal
-                ),
-              };
-          return updatedCalendars;
+              ),
+            };
+          } else {
+            updated = prev;
+          }
+          return updated;
         });
-        Swal.fire("Updated!", "Calendar successfully updated.", "success");
+        await updateCalendar(calendarData, token);
+        Swal.fire(t("Updated!"), t("Calendar successfully updated."), "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Error!",
-          `Error updating the calendar: ${error.message}`,
+          t("Error!"),
+          t("Error updating the calendar:") + " " + error.message,
           "error"
         );
       } finally {
@@ -117,22 +123,14 @@ const CalendarEditPage = ({
     }
   };
 
-  if (!formData) return <p>Loading...</p>;
+  if (!formData) return <p>{t("Loading...")}</p>;
 
   return (
     <div className="form-container">
-      <h5>Update Calendar</h5>
+      {/* <h5>{t("Update Calendar")}</h5> */}
       <form onSubmit={handleSubmit}>
         <div className="row mb-2">
-          {[
-            "monday",
-            "tuesday",
-            "wednesday",
-            "thursday",
-            "friday",
-            "saturday",
-            "sunday",
-          ].map((day) => (
+          {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => (
             <div key={day} className="col-4 form-check">
               <input
                 type="checkbox"
@@ -143,14 +141,14 @@ const CalendarEditPage = ({
                 onChange={handleChange}
               />
               <label htmlFor={day} className="form-check-label">
-                {day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                {t(day.charAt(0).toUpperCase() + day.slice(1, 3))}
               </label>
             </div>
           ))}
         </div>
         <div className="mb-2">
           <label htmlFor="start_date" className="form-label">
-            Start Date
+            {t("Start Date")}
           </label>
           <input
             type="date"
@@ -164,7 +162,7 @@ const CalendarEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="end_date" className="form-label">
-            End Date
+            {t("End Date")}
           </label>
           <input
             type="date"
@@ -178,7 +176,7 @@ const CalendarEditPage = ({
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Saving..." : "Save"}
+            {loading ? t("Saving...") : t("Save")}
           </button>
         </div>
       </form>

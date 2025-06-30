@@ -3,6 +3,7 @@ import { saveTrip } from "../api/tripApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const TripAddPage = ({
   project_id,
@@ -11,6 +12,7 @@ const TripAddPage = ({
   calendars,
   selectedRoute,
 }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [tripData, setTripData] = useState({
     trip_id: "",
@@ -42,13 +44,13 @@ const TripAddPage = ({
 
   const getServiceName = (calendar) => {
     const days = [
-      { name: "Mon", value: calendar.monday },
-      { name: "Tue", value: calendar.tuesday },
-      { name: "Wed", value: calendar.wednesday },
-      { name: "Thu", value: calendar.thursday },
-      { name: "Fri", value: calendar.friday },
-      { name: "Sat", value: calendar.saturday },
-      { name: "Sun", value: calendar.sunday },
+      { name: t("Mon"), value: calendar.monday },
+      { name: t("Tue"), value: calendar.tuesday },
+      { name: t("Wed"), value: calendar.wednesday },
+      { name: t("Thu"), value: calendar.thursday },
+      { name: t("Fri"), value: calendar.friday },
+      { name: t("Sat"), value: calendar.saturday },
+      { name: t("Sun"), value: calendar.sunday },
     ];
     const activeDays = days
       .filter((day) => day.value === 1)
@@ -63,22 +65,22 @@ const TripAddPage = ({
     e.preventDefault();
     if (!tripData.trip_id || !tripData.service_id || !tripData.trip_headsign) {
       Swal.fire(
-        "Error!",
-        "Trip ID, service and trip title are mandatory!",
+        t("Error!"),
+        t("Trip ID, service and trip title are mandatory!"),
         "error"
       );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to add this trip?",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to add this trip?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, add!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, add!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -94,21 +96,25 @@ const TripAddPage = ({
           ...prev,
           data: [...prev.data, { ...formData, trip_id }],
         }));
-        Swal.fire("Added!", "Trip successfully added.", "success");
+        Swal.fire(t("Added!"), t("Trip successfully added."), "success");
         onClose();
       } catch (error) {
-        Swal.fire("Error!", `Error adding Trip: ${error.message}`, "error");
+        Swal.fire(
+          t("Error!"),
+          t("Error adding Trip:") + " " + error.message,
+          "error"
+        );
       }
     }
   };
 
   return (
     <div className="form-container">
-      <h5>Add New Trip</h5>
+      {/* <h5>{t("Add New Trip")}</h5> */}
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="trip_id" className="form-label">
-            Trip ID (*)
+            {t("Trip ID")} (*)
           </label>
           <input
             type="text"
@@ -122,7 +128,7 @@ const TripAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="service_id" className="form-label">
-            Calendar (*)
+            {t("Calendar")} (*)
           </label>
           <select
             id="service_id"
@@ -132,7 +138,7 @@ const TripAddPage = ({
             onChange={handleChange}
             required
           >
-            <option value="">Select a Calendar</option>
+            <option value="">{t("Select a Calendar")}</option>
             {calendars.map((calendar) => (
               <option key={calendar.service_id} value={calendar.service_id}>
                 {getServiceName(calendar)}
@@ -142,7 +148,7 @@ const TripAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_headsign" className="form-label">
-            Trip Headsign (*)
+            {t("Trip Headsign")} (*)
           </label>
           <input
             type="text"
@@ -156,7 +162,7 @@ const TripAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_short_name" className="form-label">
-            Trip Short Name
+            {t("Trip Short Name")}
           </label>
           <input
             type="text"
@@ -169,7 +175,7 @@ const TripAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="direction_id" className="form-label">
-            Direction
+            {t("Direction")}
           </label>
           <select
             id="direction_id"
@@ -178,14 +184,14 @@ const TripAddPage = ({
             value={tripData.direction_id ?? ""}
             onChange={handleChange}
           >
-            <option value="">Select</option>
-            <option value="0">0 - Departure</option>
-            <option value="1">1 - Return</option>
+            <option value="">{t("Select")}</option>
+            <option value="0">{t("0 - Departure")}</option>
+            <option value="1">{t("1 - Return")}</option>
           </select>
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
-            Add
+            {t("Add")}
           </button>
         </div>
       </form>
@@ -211,7 +217,7 @@ TripAddPage.propTypes = {
   ).isRequired,
   selectedRoute: PropTypes.shape({
     route_id: PropTypes.string.isRequired,
-  }), // selectedRoute opsiyonel ama route_id string
+  }),
 };
 
 export default TripAddPage;

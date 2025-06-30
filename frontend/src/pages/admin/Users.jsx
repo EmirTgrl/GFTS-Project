@@ -15,6 +15,7 @@ import {
 } from "react-bootstrap";
 import { PencilSquare, Trash } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
+import { useTranslation } from "react-i18next";
 import "../../styles/AdminPage.css";
 
 const AdminUsers = () => {
@@ -23,7 +24,8 @@ const AdminUsers = () => {
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { token, user, setUser } = useContext(AuthContext); // setUser'u ekle
+  const { token, user, setUser } = useContext(AuthContext);
+  const { t } = useTranslation();
 
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
@@ -59,12 +61,12 @@ const AdminUsers = () => {
       const data = await response.json();
       setUsers(data);
     } catch (error) {
-      setError(error.message || "Failed to load users.");
+      setError(error.message || t("Failed to load users."));
       console.error("Errors in loading users:", error);
     } finally {
       setLoading(false);
     }
-  }, [token, API_URL]);
+  }, [token, API_URL, t]);
 
   const fetchRolesAndVersions = useCallback(async () => {
     try {
@@ -78,7 +80,7 @@ const AdminUsers = () => {
       ]);
 
       if (!rolesResponse.ok || !versionsResponse.ok) {
-        throw new Error("Failed to load roles or versions.");
+        throw new Error(t("Failed to load roles or versions."));
       }
 
       const rolesData = await rolesResponse.json();
@@ -86,17 +88,17 @@ const AdminUsers = () => {
       setRoles(rolesData);
       setVersions(versionsData);
     } catch (error) {
-      setError(error.message || "Failed to load roles/versions.");
+      setError(error.message || t("Failed to load roles/versions."));
       console.error("Error fetching roles/versions:", error);
     }
-  }, [token, API_URL]);
+  }, [token, API_URL, t]);
 
   useEffect(() => {
     if (user?.role === "admin") {
       fetchUsers();
       fetchRolesAndVersions();
     }
-  }, [fetchUsers, fetchRolesAndVersions]);
+  }, [fetchUsers, fetchRolesAndVersions, user?.role]);
 
   if (user?.role !== "admin") {
     return <Navigate to="/auth" replace />;
@@ -111,12 +113,12 @@ const AdminUsers = () => {
     if (!user) return;
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: `Do you really want to delete user "${user.email}"?`,
+      title: t("Are you sure?"),
+      text: t('Do you really want to delete user "{{email}}"?', { email: user.email }),
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, delete!",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Yes, delete!"),
+      cancelButtonText: t("Cancel"),
     });
 
     if (!result.isConfirmed) return;
@@ -140,9 +142,9 @@ const AdminUsers = () => {
       setUsers(
         users.map((u) => (u.id === user.id ? { ...u, is_active: false } : u))
       );
-      Swal.fire("Deleted!", "User has been deleted.", "success");
+      Swal.fire(t("Deleted!"), t("User has been deleted."), "success");
     } catch (error) {
-      setError(error.message || "Failed to delete user.");
+      setError(error.message || t("Failed to delete user."));
       console.error("Error deleting a user:", error);
     }
   };
@@ -163,17 +165,17 @@ const AdminUsers = () => {
     const version_id = versionIdRef.current.value;
 
     if (!email || !password) {
-      setError("Email and password required.");
+      setError(t("Email and password required."));
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to add this user?",
+      title: t("Are you sure?"),
+      text: t("Do you want to add this user?"),
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Add",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Add"),
+      cancelButtonText: t("Cancel"),
     });
     if (!result.isConfirmed) return;
 
@@ -197,7 +199,7 @@ const AdminUsers = () => {
       handleCloseAddModal();
       fetchUsers();
     } catch (error) {
-      setError(error.message || "Failed to add user.");
+      setError(error.message || t("Failed to add user."));
       console.error("Error adding a user:", error);
     }
   };
@@ -237,17 +239,17 @@ const AdminUsers = () => {
     const version_id = editVersionIdRef.current.value;
 
     if (!email) {
-      setError("Email required.");
+      setError(t("Email required."));
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to update this user?",
+      title: t("Are you sure?"),
+      text: t("Do you want to update this user?"),
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Update",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Update"),
+      cancelButtonText: t("Cancel"),
     });
     if (!result.isConfirmed) return;
 
@@ -316,19 +318,19 @@ const AdminUsers = () => {
 
       handleCloseEditModal();
     } catch (error) {
-      setError(error.message || "Failed to update user.");
+      setError(error.message || t("Failed to update user."));
       console.error("Error updating user:", error);
     }
   };
 
   const handleActivateUser = async (user) => {
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: `Do you want to activate user "${user.email}"?`,
+      title: t("Are you sure?"),
+      text: t('Do you want to activate user "{{email}}"?', { email: user.email }),
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Activate",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Activate"),
+      cancelButtonText: t("Cancel"),
     });
     if (!result.isConfirmed) return;
 
@@ -353,9 +355,9 @@ const AdminUsers = () => {
       setUsers(
         users.map((u) => (u.id === user.id ? { ...u, is_active: true } : u))
       );
-      Swal.fire("Activated!", "User has been activated.", "success");
+      Swal.fire(t("Activated!"), t("User has been activated."), "success");
     } catch (error) {
-      setError(error.message || "Failed to activate user.");
+      setError(error.message || t("Failed to activate user."));
       console.error("Error activating user:", error);
     }
   };
@@ -368,34 +370,34 @@ const AdminUsers = () => {
             <Card.Body>
               <div className="d-flex">
                 <Card.Title className="h3 fs-1 text-primary my-4">
-                  User Management
+                  {t("User Management")}
                 </Card.Title>
                 <Button
                   variant="outline-success"
                   className="align-self-center ms-auto me-2"
                   onClick={handleShowAddModal}
                 >
-                  Add New User
+                  {t("Add New User")}
                 </Button>
               </div>
 
-              {error && <Alert variant="danger">Hata: {error}</Alert>}
+              {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
               {loading ? (
                 <div className="text-center">
                   <Spinner animation="border" role="status" />
-                  <span className="visually-hidden">Loading...</span>
+                  <span className="visually-hidden">{t("Loading...")}</span>
                 </div>
               ) : (
                 <Table striped bordered hover responsive>
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Email</th>
-                      <th>Role</th>
-                      <th>Version</th>
-                      <th>Is Active</th>
-                      <th>Created Date</th>
-                      <th className="text-center">Actions</th>
+                      <th>{t("ID")}</th>
+                      <th>{t("Email")}</th>
+                      <th>{t("Role")}</th>
+                      <th>{t("Version")}</th>
+                      <th>{t("Is Active")}</th>
+                      <th>{t("Created Date")}</th>
+                      <th className="text-center">{t("Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -405,7 +407,7 @@ const AdminUsers = () => {
                         <td>{user.email}</td>
                         <td>{user.role}</td>
                         <td>{user.version}</td>
-                        <td>{user.is_active ? "Active" : "Passive"}</td>
+                        <td>{user.is_active ? t("Active") : t("Passive")}</td>
                         <td>{new Date(user.created_at).toLocaleString()}</td>
                         <td className="text-center">
                           <Button
@@ -430,7 +432,7 @@ const AdminUsers = () => {
                               size="sm"
                               onClick={() => handleActivateUser(user)}
                             >
-                              Activate
+                              {t("Activate")}
                             </Button>
                           )}
                         </td>
@@ -447,28 +449,28 @@ const AdminUsers = () => {
       {/* Add User Modal */}
       <Modal show={showAddModal} onHide={handleCloseAddModal} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Add New User</Modal.Title>
+          <Modal.Title>{t("Add New User")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
+              <Form.Label>{t("Email")}</Form.Label>
               <Form.Control
                 type="email"
-                placeholder="Enter email"
+                placeholder={t("Enter email")}
                 ref={emailRef}
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Password</Form.Label>
+              <Form.Label>{t("Password")}</Form.Label>
               <Form.Control
                 type="password"
-                placeholder="Enter Password"
+                placeholder={t("Enter Password")}
                 ref={passwordRef}
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Role</Form.Label>
+              <Form.Label>{t("Role")}</Form.Label>
               <Form.Select ref={roleIdRef}>
                 {roles.map((role) => (
                   <option key={role.id} value={role.id}>
@@ -478,7 +480,7 @@ const AdminUsers = () => {
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Version</Form.Label>
+              <Form.Label>{t("Version")}</Form.Label>
               <Form.Select ref={versionIdRef}>
                 {versions.map((version) => (
                   <option key={version.id} value={version.id}>
@@ -488,11 +490,11 @@ const AdminUsers = () => {
               </Form.Select>
             </Form.Group>
           </Form>
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={handleAddUser}>
-            Add User
+            {t("Add User")}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -500,23 +502,23 @@ const AdminUsers = () => {
       {/* Edit User Modal */}
       <Modal show={showEditModal} onHide={handleCloseEditModal} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Edit User</Modal.Title>
+          <Modal.Title>{t("Edit User")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
+              <Form.Label>{t("Email")}</Form.Label>
               <Form.Control
                 type="email"
-                placeholder="Enter email"
+                placeholder={t("Enter email")}
                 ref={editEmailRef}
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Password (fill in to change)</Form.Label>
+              <Form.Label>{t("Password (fill in to change)")}</Form.Label>
               <Form.Control
                 type="password"
-                placeholder="Enter Password"
+                placeholder={t("Enter Password")}
                 ref={editPasswordRef}
               />
             </Form.Group>
@@ -524,12 +526,12 @@ const AdminUsers = () => {
               <Form.Check
                 type="checkbox"
                 id="is_active"
-                label="Is Active"
+                label={t("Is Active")}
                 ref={editIsActiveRef}
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Role</Form.Label>
+              <Form.Label>{t("Role")}</Form.Label>
               <Form.Select ref={editRoleIdRef}>
                 {roles.map((role) => (
                   <option key={role.id} value={role.id}>
@@ -539,7 +541,7 @@ const AdminUsers = () => {
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Version</Form.Label>
+              <Form.Label>{t("Version")}</Form.Label>
               <Form.Select ref={editVersionIdRef}>
                 {versions.map((version) => (
                   <option key={version.id} value={version.id}>
@@ -549,11 +551,11 @@ const AdminUsers = () => {
               </Form.Select>
             </Form.Group>
           </Form>
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={handleUpdateUser}>
-            Edit User
+            {t("Edit User")}
           </Button>
         </Modal.Footer>
       </Modal>

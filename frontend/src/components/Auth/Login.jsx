@@ -4,8 +4,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "./AuthContext.js";
 import { Container, Form, Button, Alert } from "react-bootstrap";
 import "../../styles/Login.css";
+import { useTranslation } from "react-i18next";
 
 const Login = ({ switchToRegister }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,15 +26,15 @@ const Login = ({ switchToRegister }) => {
 
   useEffect(() => {
     if (isLoggedOut && !location.state?.isRegister) {
-      setError("You have been logged out.");
+      setError(t("You have been logged out."));
     } else if (location.state?.isRegister) {
-      setError("Registration successful! You can login.");
+      setError(t("Registration successful! You can login."));
     } else if (location.state?.isLogout) {
-      setError("You have been logged out.");
+      setError(t("You have been logged out."));
     } else {
       setError("");
     }
-  }, [isLoggedOut, location.state]);
+  }, [isLoggedOut, location.state, t]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -52,11 +54,11 @@ const Login = ({ switchToRegister }) => {
         const data = await response.json();
         login(data.token);
       } else {
-        setError("Invalid email or password!");
+        setError(t("Invalid email or password!"));
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError("An error occurred!");
+      setError(t("An error occurred!"));
     } finally {
       setIsLoggingIn(false);
     }
@@ -66,7 +68,7 @@ const Login = ({ switchToRegister }) => {
     <Container className="auth-container">
       <div className="form-wrapper">
         <Form onSubmit={handleLogin}>
-          <h2 className="title text-center">Login</h2>
+          <h2 className="title text-center">{t("Login")}</h2>
           {error && (
             <Alert variant={location.state?.isRegister ? "success" : "danger"}>
               {error}
@@ -74,11 +76,11 @@ const Login = ({ switchToRegister }) => {
           )}
 
           <Form.Group className="mb-3">
-            <Form.Label>Email Address</Form.Label>
+            <Form.Label>{t("Email Address")}</Form.Label>
             <Form.Control
               className="input-field"
               type="email"
-              placeholder="Enter your email"
+              placeholder={t("Enter your email")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -86,11 +88,11 @@ const Login = ({ switchToRegister }) => {
           </Form.Group>
 
           <Form.Group className="mb-4">
-            <Form.Label>Password</Form.Label>
+            <Form.Label>{t("Password")}</Form.Label>
             <Form.Control
               className="input-field"
               type="password"
-              placeholder="Enter your password"
+              placeholder={t("Enter your password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -103,13 +105,13 @@ const Login = ({ switchToRegister }) => {
             type="submit"
             disabled={isLoggingIn}
           >
-            Login
+            {t("Login")}
           </Button>
 
           <p className="switch-link text-center mt-3">
-            Don’t have an account?{" "}
+            {t("Don’t have an account?")}{" "}
             <span className="link" onClick={switchToRegister}>
-              Register here
+              {t("Register here")}
             </span>
           </p>
         </Form>

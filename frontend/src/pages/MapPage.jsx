@@ -14,8 +14,10 @@ import { fetchStopsAndStopTimesByTripId } from "../api/stopTimeApi";
 import { fetchAllAreas } from "../api/fareApi";
 import { fetchAllStopsByProjectId } from "../api/stopApi";
 import StopTimeAddPage from "../pages/StopTimeAddPage.jsx";
+import { useTranslation } from "react-i18next";
 
 const MapPage = () => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [routes, setRoutes] = useState([]);
   const [filteredRoutes, setFilteredRoutes] = useState([]);
@@ -197,7 +199,7 @@ const MapPage = () => {
               setMapCenter(center);
               setZoom(12);
             } catch (error) {
-              console.error("Trip verileri yüklenirken hata:", error);
+              console.error("Error loading trip data:", error);
             }
           }
         }
@@ -259,7 +261,7 @@ const MapPage = () => {
 
   const createLink = () => {
     if (!selectedEntities.agency) {
-      Swal.fire("Hata", "Lütfen en az bir agency seçin!", "error");
+      Swal.fire(t("Error!"), t("Please select at least one agency!"), "error");
       return;
     }
 
@@ -296,7 +298,7 @@ const MapPage = () => {
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedUrl).then(() => {
-      Swal.fire("Kopyalandı!", "URL panoya kopyalandı.", "success");
+      Swal.fire(t("Copied!"), t("URL copied to clipboard."), "success");
     });
   };
 
@@ -342,7 +344,7 @@ const MapPage = () => {
         setSelectedCategory={setSelectedCategory}
         activeKey={activeKey}
         setActiveKey={setActiveKey}
-        setIsSidebarOpen={setIsSidebarOpen} // Sidebar durumunu güncellemek için prop
+        setIsSidebarOpen={setIsSidebarOpen}
       />
 
       <BreadcrumbBar
@@ -374,7 +376,7 @@ const MapPage = () => {
         areas={areas}
         allStops={allStops}
         openStopTimeAdd={openStopTimeAdd}
-        isSidebarOpen={isSidebarOpen} // Sidebar durumunu MapView'e geçir
+        isSidebarOpen={isSidebarOpen}
       />
 
       <FloatingActions
@@ -388,10 +390,10 @@ const MapPage = () => {
 
       <Modal show={showUrlModal} onHide={() => setShowUrlModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Link Created</Modal.Title>
+          <Modal.Title>{t("Link Created")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>You can return to your selection using this URL:</p>
+          <p>{t("You can return to your selection using this URL:")}</p>
           <input
             type="text"
             value={generatedUrl}
@@ -399,14 +401,14 @@ const MapPage = () => {
             className="form-control mb-3"
           />
           <Button variant="primary" onClick={copyToClipboard}>
-            Copy URL
+            {t("Copy URL")}
           </Button>
         </Modal.Body>
       </Modal>
 
       <Modal show={isStopTimeAddOpen} onHide={closeStopTimeAdd}>
         <Modal.Header closeButton>
-          <Modal.Title>Add Stop Time</Modal.Title>
+          <Modal.Title>{t("Add Stop Time")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <StopTimeAddPage

@@ -4,6 +4,7 @@ import { Pencil, Trash, PlusLg } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import Select from "react-select";
+import { useTranslation } from "react-i18next";
 import {
   fetchAllRiderCategories,
   updateRiderCategory,
@@ -40,6 +41,7 @@ const FareSettingsPanel = ({
   onAddRiderCategory,
   onAddFareMedia,
 }) => {
+  const { t } = useTranslation();
   const [riderCategories, setRiderCategories] = useState([]);
   const [fareMedia, setFareMedia] = useState([]);
   const [fareTransferRules, setFareTransferRules] = useState([]);
@@ -477,45 +479,45 @@ const FareSettingsPanel = ({
   const getFareMediaTypeLabel = (type) => {
     switch (parseInt(type)) {
       case 0:
-        return "Cash Payment";
+        return t("Cash Payment");
       case 1:
-        return "Physical Paper Ticket";
+        return t("Physical Paper Ticket");
       case 2:
-        return "Physical Transit Card";
+        return t("Physical Transit Card");
       case 3:
-        return "cEMV (contactless Europay, Mastercard and Visa)";
+        return t("cEMV (contactless Europay, Mastercard and Visa)");
       case 4:
-        return "Mobile App";
+        return t("Mobile App");
       default:
-        return "Unknown Type";
+        return t("Unknown Type");
     }
   };
 
   const getTransferTypeLabel = (type) => {
     switch (parseInt(type)) {
       case 0:
-        return "One-Way";
+        return t("One-Way");
       case 1:
-        return "Two-Way";
+        return t("Two-Way");
       case 2:
-        return "Circular";
+        return t("Circular");
       default:
-        return "Unknown Type";
+        return t("Unknown Type");
     }
   };
 
   const getDurationLimitTypeLabel = (type) => {
     switch (parseInt(type)) {
       case 0:
-        return "Departure-to-Departure";
+        return t("Departure-to-Departure");
       case 1:
-        return "Departure-to-Arrival";
+        return t("Departure-to-Arrival");
       case 2:
-        return "Arrival-to-Departure";
+        return t("Arrival-to-Departure");
       case 3:
-        return "Arrival-to-Arrival";
+        return t("Arrival-to-Arrival");
       default:
-        return "Undefined";
+        return t("Undefined");
     }
   };
 
@@ -554,7 +556,7 @@ const FareSettingsPanel = ({
       className="fare-settings-panel"
     >
       <Modal.Header closeButton>
-        <Modal.Title>Fare Settings</Modal.Title>
+        <Modal.Title>{t("Fare Settings")}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Tabs
@@ -562,22 +564,23 @@ const FareSettingsPanel = ({
           onSelect={(k) => setActiveTab(k)}
           className="mb-3"
         >
-          <Tab eventKey="rider_categories" title="Passenger Types">
+          <Tab eventKey="rider_categories" title={t("Passenger Types")}>
             <div className="d-flex justify-content-end mb-3">
               <Button
                 onClick={() => setShowRiderForm(true)}
                 className="add-button"
               >
-                <PlusLg size={16} className="me-1" /> Add New Rider Category
+                <PlusLg size={16} className="me-1" />{" "}
+                {t("Add New Rider Category")}
               </Button>
             </div>
             <Table striped bordered hover className="mt-3">
               <thead>
                 <tr>
-                  <th>Passenger Type Name</th>
-                  <th>Eligibility URL</th>
-                  <th>Default</th>
-                  <th>Actions</th>
+                  <th>{t("Passenger Type Name")}</th>
+                  <th>{t("Eligibility URL")}</th>
+                  <th>{t("Default")}</th>
+                  <th>{t("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -592,26 +595,26 @@ const FareSettingsPanel = ({
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            Link
+                            {t("Link")}
                           </a>
                         ) : (
                           "-"
                         )}
                       </td>
                       <td>
-                        {category.is_default_fare_category ? "Yes" : "No"}
+                        {category.is_default_fare_category ? t("Yes") : t("No")}
                       </td>
                       <td>
                         <Button
                           variant="link"
-                          title="Edit"
+                          title={t("Edit")}
                           onClick={() => handleEditRiderCategory(category)}
                         >
                           <Pencil size={16} />
                         </Button>
                         <Button
                           variant="link"
-                          title="Delete"
+                          title={t("Delete")}
                           onClick={() =>
                             handleDeleteRiderCategory(
                               category.rider_category_id
@@ -626,7 +629,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={4} className="text-center">
-                      No rider categories found.
+                      {t("No rider categories found.")}
                     </td>
                   </tr>
                 )}
@@ -638,7 +641,7 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Add New Passenger Type</Modal.Title>
+                <Modal.Title>{t("Add New Passenger Type")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 <RiderCategoriesAddPage
@@ -655,13 +658,13 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Edit Rider Category</Modal.Title>
+                <Modal.Title>{t("Edit Rider Category")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 {selectedRiderCategory && (
                   <Form onSubmit={handleUpdateRiderCategory}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Passenger Type Name</Form.Label>
+                      <Form.Label>{t("Passenger Type Name")}</Form.Label>
                       <Form.Control
                         type="text"
                         name="rider_category_name"
@@ -670,7 +673,7 @@ const FareSettingsPanel = ({
                       />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label>Eligibility URL</Form.Label>
+                      <Form.Label>{t("Eligibility URL")}</Form.Label>
                       <Form.Control
                         type="url"
                         name="eligibility_url"
@@ -681,35 +684,35 @@ const FareSettingsPanel = ({
                       <Form.Check
                         type="checkbox"
                         name="is_default_fare_category"
-                        label="Default Fare Category"
+                        label={t("Default Fare Category")}
                         defaultChecked={
                           selectedRiderCategory.is_default_fare_category
                         }
                       />
                     </Form.Group>
                     <Button variant="primary" type="submit">
-                      Save Changes
+                      {t("Save Changes")}
                     </Button>
                   </Form>
                 )}
               </Modal.Body>
             </Modal>
           </Tab>
-          <Tab eventKey="fare_media" title="Payment Methods">
+          <Tab eventKey="fare_media" title={t("Payment Methods")}>
             <div className="d-flex justify-content-end mb-3">
               <Button
                 onClick={() => setShowFareMediaForm(true)}
                 className="add-button"
               >
-                <PlusLg size={16} className="me-1" /> Add New Fare Media
+                <PlusLg size={16} className="me-1" /> {t("Add New Fare Media")}
               </Button>
             </div>
             <Table striped bordered hover className="mt-3">
               <thead>
                 <tr>
-                  <th>Payment Method Name</th>
-                  <th>Type</th>
-                  <th>Actions</th>
+                  <th>{t("Payment Method Name")}</th>
+                  <th>{t("Type")}</th>
+                  <th>{t("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -721,14 +724,14 @@ const FareSettingsPanel = ({
                       <td>
                         <Button
                           variant="link"
-                          title="Edit"
+                          title={t("Edit")}
                           onClick={() => handleEditFareMedia(media)}
                         >
                           <Pencil size={16} />
                         </Button>
                         <Button
                           variant="link"
-                          title="Delete"
+                          title={t("Delete")}
                           onClick={() =>
                             handleDeleteFareMedia(media.fare_media_id)
                           }
@@ -741,7 +744,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={3} className="text-center">
-                      No fare media found.
+                      {t("No fare media found.")}
                     </td>
                   </tr>
                 )}
@@ -753,7 +756,7 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Add New Fare Media</Modal.Title>
+                <Modal.Title>{t("Add New Fare Media")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 <FareMediaAddPage
@@ -770,13 +773,13 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Edit Fare Media</Modal.Title>
+                <Modal.Title>{t("Edit Fare Media")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 {selectedFareMedia && (
                   <Form onSubmit={handleUpdateFareMedia}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Payment Method Name</Form.Label>
+                      <Form.Label>{t("Payment Method Name")}</Form.Label>
                       <Form.Control
                         type="text"
                         name="fare_media_name"
@@ -785,49 +788,50 @@ const FareSettingsPanel = ({
                       />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label>Fare Media Type</Form.Label>
+                      <Form.Label>{t("Fare Media Type")}</Form.Label>
                       <Form.Select
                         name="fare_media_type"
                         defaultValue={selectedFareMedia.fare_media_type}
                         required
                       >
-                        <option value="0">Cash Payment</option>
-                        <option value="1">Physical Paper Ticket</option>
-                        <option value="2">Physical Transit Card</option>
+                        <option value="0">{t("Cash Payment")}</option>
+                        <option value="1">{t("Physical Paper Ticket")}</option>
+                        <option value="2">{t("Physical Transit Card")}</option>
                         <option value="3">
-                          cEMV (contactless Europay, Mastercard and Visa)
+                          {t("cEMV (contactless Europay, Mastercard and Visa)")}
                         </option>
-                        <option value="4">Mobile App</option>
+                        <option value="4">{t("Mobile App")}</option>
                       </Form.Select>
                     </Form.Group>
                     <Button variant="primary" type="submit">
-                      Save Changes
+                      {t("Save Changes")}
                     </Button>
                   </Form>
                 )}
               </Modal.Body>
             </Modal>
           </Tab>
-          <Tab eventKey="transfer_rules" title="Transfer Rules">
+          <Tab eventKey="transfer_rules" title={t("Transfer Rules")}>
             <div className="d-flex justify-content-end mb-3">
               <Button
                 onClick={() => setShowTransferRuleForm(true)}
                 className="add-button"
               >
-                <PlusLg size={16} className="me-1" /> Add New Transfer Rule
+                <PlusLg size={16} className="me-1" />{" "}
+                {t("Add New Transfer Rule")}
               </Button>
             </div>
             <Table striped bordered hover className="mt-3">
               <thead>
                 <tr>
-                  <th>From Leg Group</th>
-                  <th>To Leg Group</th>
-                  <th>Transfer Count</th>
-                  <th>Duration Limit (s)</th>
-                  <th>Duration Limit Type</th>
-                  <th>Transfer Type</th>
-                  <th>Fare Product</th>
-                  <th>Actions</th>
+                  <th>{t("From Leg Group")}</th>
+                  <th>{t("To Leg Group")}</th>
+                  <th>{t("Transfer Count")}</th>
+                  <th>{t("Duration Limit (s)")}</th>
+                  <th>{t("Duration Limit Type")}</th>
+                  <th>{t("Transfer Type")}</th>
+                  <th>{t("Fare Product")}</th>
+                  <th>{t("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -849,14 +853,14 @@ const FareSettingsPanel = ({
                       <td>
                         <Button
                           variant="link"
-                          title="Edit"
+                          title={t("Edit")}
                           onClick={() => handleEditTransferRule(rule)}
                         >
                           <Pencil size={16} />
                         </Button>
                         <Button
                           variant="link"
-                          title="Delete"
+                          title={t("Delete")}
                           onClick={() =>
                             handleDeleteTransferRule(
                               rule.from_leg_group_id,
@@ -872,7 +876,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={8} className="text-center">
-                      No transfer rules found.
+                      {t("No transfer rules found.")}
                     </td>
                   </tr>
                 )}
@@ -884,7 +888,7 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Add New Transfer Rule</Modal.Title>
+                <Modal.Title>{t("Add New Transfer Rule")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 <AddFareTransferRuleForm
@@ -901,13 +905,13 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Edit Transfer Rule</Modal.Title>
+                <Modal.Title>{t("Edit Transfer Rule")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 {selectedTransferRule && (
                   <Form onSubmit={handleUpdateTransferRule}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Transfer Count</Form.Label>
+                      <Form.Label>{t("Transfer Count")}</Form.Label>
                       <Form.Control
                         type="number"
                         name="transfer_count"
@@ -916,51 +920,51 @@ const FareSettingsPanel = ({
                       />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label>Duration Limit (s)</Form.Label>
+                      <Form.Label>{t("Duration Limit (s)")}</Form.Label>
                       <Form.Control
                         type="number"
                         name="duration_limit"
                         defaultValue={selectedTransferRule.duration_limit || ""}
                         min="0"
-                        placeholder="Optional"
+                        placeholder={t("Optional")}
                       />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label>Duration Limit Type</Form.Label>
+                      <Form.Label>{t("Duration Limit Type")}</Form.Label>
                       <Form.Select
                         name="duration_limit_type"
                         defaultValue={
                           selectedTransferRule.duration_limit_type || ""
                         }
                       >
-                        <option value="">Select (Optional)</option>
-                        <option value="0">Departure-to-Departure</option>
-                        <option value="1">Departure-to-Arrival</option>
-                        <option value="2">Arrival-to-Departure</option>
-                        <option value="3">Arrival-to-Arrival</option>
+                        <option value="">{t("Select (Optional)")}</option>
+                        <option value="0">{t("Departure-to-Departure")}</option>
+                        <option value="1">{t("Departure-to-Arrival")}</option>
+                        <option value="2">{t("Arrival-to-Departure")}</option>
+                        <option value="3">{t("Arrival-to-Arrival")}</option>
                       </Form.Select>
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label>Transfer Type</Form.Label>
+                      <Form.Label>{t("Transfer Type")}</Form.Label>
                       <Form.Select
                         name="fare_transfer_type"
                         defaultValue={selectedTransferRule.fare_transfer_type}
                         required
                       >
-                        <option value="0">One-Way</option>
-                        <option value="1">Two-Way</option>
-                        <option value="2">Circular</option>
+                        <option value="0">{t("One-Way")}</option>
+                        <option value="1">{t("Two-Way")}</option>
+                        <option value="2">{t("Circular")}</option>
                       </Form.Select>
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label>Fare Product</Form.Label>
+                      <Form.Label>{t("Fare Product")}</Form.Label>
                       <Form.Select
                         name="fare_product_id"
                         defaultValue={
                           selectedTransferRule.fare_product_id || ""
                         }
                       >
-                        <option value="">Select (Optional)</option>
+                        <option value="">{t("Select (Optional)")}</option>
                         {fareProducts.map((product) => (
                           <option
                             key={product.fare_product_id}
@@ -972,29 +976,29 @@ const FareSettingsPanel = ({
                       </Form.Select>
                     </Form.Group>
                     <Button variant="primary" type="submit">
-                      Save Changes
+                      {t("Save Changes")}
                     </Button>
                   </Form>
                 )}
               </Modal.Body>
             </Modal>
           </Tab>
-          <Tab eventKey="networks" title="Networks">
+          <Tab eventKey="networks" title={t("Networks")}>
             <div className="d-flex justify-content-end mb-3">
               <Button
                 onClick={() => setShowNetworkForm(true)}
                 className="add-button"
               >
-                <PlusLg size={16} className="me-1" /> Add New Network
+                <PlusLg size={16} className="me-1" /> {t("Add New Network")}
               </Button>
             </div>
             <Table striped bordered hover className="mt-3">
               <thead>
                 <tr>
-                  <th>Network ID</th>
-                  <th>Network Name</th>
-                  <th>Routes</th>
-                  <th>Actions</th>
+                  <th>{t("Network ID")}</th>
+                  <th>{t("Network Name")}</th>
+                  <th>{t("Routes")}</th>
+                  <th>{t("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1007,17 +1011,15 @@ const FareSettingsPanel = ({
                       <td>
                         <Button
                           variant="link"
-                          title="Edit"
+                          title={t("Edit")}
                           onClick={() => handleEditNetwork(network)}
                         >
                           <Pencil size={16} />
                         </Button>
                         <Button
                           variant="link"
-                          title="Delete"
-                          onClick={() =>
-                            handleDeleteNetwork(network.network_id)
-                          }
+                          title={t("Delete")}
+                          onClick={() => handleDeleteNetwork(network.network_id)}
                         >
                           <Trash size={16} />
                         </Button>
@@ -1027,7 +1029,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={4} className="text-center">
-                      No networks found.
+                      {t("No networks found.")}
                     </td>
                   </tr>
                 )}
@@ -1039,7 +1041,7 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Add New Network</Modal.Title>
+                <Modal.Title>{t("Add New Network")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 <NetworkAddForm
@@ -1056,7 +1058,7 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Edit Network</Modal.Title>
+                <Modal.Title>{t("Edit Network")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 {selectedNetwork && (
@@ -1065,7 +1067,7 @@ const FareSettingsPanel = ({
                     className="edit-network-form"
                   >
                     <Form.Group className="mb-4">
-                      <Form.Label>Network ID</Form.Label>
+                      <Form.Label>{t("Network ID")}</Form.Label>
                       <Form.Control
                         type="text"
                         name="network_id"
@@ -1075,7 +1077,7 @@ const FareSettingsPanel = ({
                       />
                     </Form.Group>
                     <Form.Group className="mb-4">
-                      <Form.Label>Network Name</Form.Label>
+                      <Form.Label>{t("Network Name")}</Form.Label>
                       <Form.Control
                         type="text"
                         name="network_name"
@@ -1085,17 +1087,17 @@ const FareSettingsPanel = ({
                       />
                     </Form.Group>
                     <Form.Group className="mb-4">
-                      <Form.Label>Routes (Optional)</Form.Label>
+                      <Form.Label>{t("Routes (Optional)")}</Form.Label>
                       <Select
                         isMulti
                         name="route_ids"
                         options={routeOptions}
                         value={selectedRoutes}
                         onChange={setSelectedRoutes}
-                        placeholder="Select routes..."
+                        placeholder={t("Select routes...")}
                         className="basic-multi-select"
                         classNamePrefix="select"
-                        noOptionsMessage={() => "No routes available"}
+                        noOptionsMessage={() => t("No routes available")}
                         isSearchable
                         styles={{
                           control: (base) => ({
@@ -1168,7 +1170,7 @@ const FareSettingsPanel = ({
                     </Form.Group>
                     <div className="d-flex justify-content-end">
                       <Button variant="primary" type="submit">
-                        Save Changes
+                        {t("Save Changes")}
                       </Button>
                     </div>
                   </Form>
@@ -1176,22 +1178,22 @@ const FareSettingsPanel = ({
               </Modal.Body>
             </Modal>
           </Tab>
-          <Tab eventKey="areas" title="Areas">
+          <Tab eventKey="areas" title={t("Areas")}>
             <div className="d-flex justify-content-end mb-3">
               <Button
                 onClick={() => setShowAreaForm(true)}
                 className="add-button"
               >
-                <PlusLg size={16} className="me-1" /> Add New Area
+                <PlusLg size={16} className="me-1" /> {t("Add New Area")}
               </Button>
             </div>
             <Table striped bordered hover className="mt-3">
               <thead>
                 <tr>
-                  <th>Area ID</th>
-                  <th>Area Name</th>
-                  <th>Stops</th>
-                  <th>Actions</th>
+                  <th>{t("Area ID")}</th>
+                  <th>{t("Area Name")}</th>
+                  <th>{t("Stops")}</th>
+                  <th>{t("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1204,14 +1206,14 @@ const FareSettingsPanel = ({
                       <td>
                         <Button
                           variant="link"
-                          title="Edit"
+                          title={t("Edit")}
                           onClick={() => handleEditArea(area)}
                         >
                           <Pencil size={16} />
                         </Button>
                         <Button
                           variant="link"
-                          title="Delete"
+                          title={t("Delete")}
                           onClick={() => handleDeleteArea(area.area_id)}
                         >
                           <Trash size={16} />
@@ -1222,7 +1224,7 @@ const FareSettingsPanel = ({
                 ) : (
                   <tr>
                     <td colSpan={4} className="text-center">
-                      No areas found.
+                      {t("No areas found.")}
                     </td>
                   </tr>
                 )}
@@ -1234,7 +1236,7 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Add New Area</Modal.Title>
+                <Modal.Title>{t("Add New Area")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 <AreaAddPage
@@ -1251,13 +1253,13 @@ const FareSettingsPanel = ({
               centered
             >
               <Modal.Header closeButton>
-                <Modal.Title>Edit Area</Modal.Title>
+                <Modal.Title>{t("Edit Area")}</Modal.Title>
               </Modal.Header>
               <Modal.Body>
                 {selectedArea && (
                   <Form onSubmit={handleUpdateArea} className="edit-area-form">
                     <Form.Group className="mb-4">
-                      <Form.Label>Area ID</Form.Label>
+                      <Form.Label>{t("Area ID")}</Form.Label>
                       <Form.Control
                         type="text"
                         name="area_id"
@@ -1267,7 +1269,7 @@ const FareSettingsPanel = ({
                       />
                     </Form.Group>
                     <Form.Group className="mb-4">
-                      <Form.Label>Area Name</Form.Label>
+                      <Form.Label>{t("Area Name")}</Form.Label>
                       <Form.Control
                         type="text"
                         name="area_name"
@@ -1277,17 +1279,17 @@ const FareSettingsPanel = ({
                       />
                     </Form.Group>
                     <Form.Group className="mb-4">
-                      <Form.Label>Stops (Optional)</Form.Label>
+                      <Form.Label>{t("Stops (Optional)")}</Form.Label>
                       <Select
                         isMulti
                         name="stop_ids"
                         options={stopOptions}
                         value={selectedStops}
                         onChange={setSelectedStops}
-                        placeholder="Select stops..."
+                        placeholder={t("Select stops...")}
                         className="basic-multi-select"
                         classNamePrefix="select"
-                        noOptionsMessage={() => "No stops available"}
+                        noOptionsMessage={() => t("No stops available")}
                         isSearchable
                         styles={{
                           control: (base) => ({
@@ -1360,7 +1362,7 @@ const FareSettingsPanel = ({
                     </Form.Group>
                     <div className="d-flex justify-content-end">
                       <Button variant="primary" type="submit">
-                        Save Changes
+                        {t("Save Changes")}
                       </Button>
                     </div>
                   </Form>

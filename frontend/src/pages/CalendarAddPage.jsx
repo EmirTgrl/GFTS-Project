@@ -3,8 +3,10 @@ import { saveCalendar } from "../api/calendarApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     monday: 0,
@@ -31,19 +33,19 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.start_date || !formData.end_date) {
-      Swal.fire("Error!", "Start and end date is required!", "error");
+      Swal.fire(t("Error!"), t("Start and end date is required!"), "error");
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to add this calendar?",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to add this calendar?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, add!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, add!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -51,12 +53,12 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
         setLoading(true);
         const newCalendar = await saveCalendar(formData, token);
         setCalendars((prev) => [...prev, newCalendar]);
-        Swal.fire("Added!", "Calendar successfully added.", "success");
+        Swal.fire(t("Added!"), t("Calendar successfully added."), "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Error!",
-          `Error adding a calendar: ${error.message}`,
+          t("Error!"),
+          t("Error adding a calendar:") + " " + error.message,
           "error"
         );
       } finally {
@@ -67,7 +69,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
 
   return (
     <div className="form-container">
-      <h5>Add New Calendar</h5>
+      {/* <h5>{t("Add New Calendar")}</h5> */}
       <form onSubmit={handleSubmit}>
         <div className="row mb-2">
           {[
@@ -89,14 +91,14 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
                 onChange={handleChange}
               />
               <label htmlFor={day} className="form-check-label">
-                {day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                {t(day.charAt(0).toUpperCase() + day.slice(1, 3))}
               </label>
             </div>
           ))}
         </div>
         <div className="mb-2">
           <label htmlFor="start_date" className="form-label">
-            Start Date (*)
+            {t("Start Date")} (*)
           </label>
           <input
             type="date"
@@ -110,7 +112,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="end_date" className="form-label">
-            End Date (*)
+            {t("End Date")} (*)
           </label>
           <input
             type="date"
@@ -124,7 +126,7 @@ const CalendarAddPage = ({ project_id, onClose, setCalendars }) => {
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Adding..." : "Add"}
+            {loading ? t("Adding...") : t("Add")}
           </button>
         </div>
       </form>

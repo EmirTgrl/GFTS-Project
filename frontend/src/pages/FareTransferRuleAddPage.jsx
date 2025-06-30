@@ -7,8 +7,10 @@ import {
 } from "../api/fareApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
 
 const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     from_leg_group_id: "",
@@ -28,30 +30,28 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch fare products
         const products = await fetchAllFareProducts(project_id, token);
         if (!products || products.length === 0) {
-          setError("Fare products not found.");
+          setError(t("Fare products not found."));
         } else {
           setFareProducts(products);
         }
 
-        // Fetch leg groups
         const legGroupsData = await fetchAllLegGroups(project_id, token);
         if (!legGroupsData || legGroupsData.length === 0) {
-          setError("No leg groups found. Please create leg groups first.");
+          setError(t("No leg groups found. Please create leg groups first."));
         } else {
           setLegGroups(legGroupsData);
         }
       } catch (err) {
-        setError("An error occurred while loading data: " + err.message);
+        setError(t("An error occurred while loading data:") + " " + err.message);
       }
     };
 
     if (project_id && token) {
       fetchData();
     }
-  }, [project_id, token]);
+  }, [project_id, token, t]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -66,22 +66,22 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
       !formData.fare_transfer_type
     ) {
       Swal.fire(
-        "Error!",
-        "Starting Leg Group, Ending Leg Group and Transfer Type are required!",
+        t("Error!"),
+        t("Starting Leg Group, Ending Leg Group and Transfer Type are required!"),
         "error"
       );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to add this transfer rule??",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to add this transfer rule?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, add!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, add!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -103,7 +103,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
 
         const response = await addFareTransferRule(project_id, token, payload);
 
-        Swal.fire("Success!", "Transfer rule added successfully.", "success");
+        Swal.fire(t("Success!"), t("Transfer rule added successfully."), "success");
 
         if (onAdd) {
           onAdd(response);
@@ -122,8 +122,8 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
       } catch (error) {
         console.error("Hata:", error);
         Swal.fire(
-          "Error!",
-          `Transfer rule could not be added: ${error.message}`,
+          t("Error!"),
+          t("Transfer rule could not be added:") + " " + error.message,
           "error"
         );
       } finally {
@@ -138,7 +138,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         {error && <div className="text-red-500 mb-4">{error}</div>}
         <div className="mb-2">
           <label htmlFor="from_leg_group_id" className="form-label">
-            From Leg Group (*)
+            {t("From Leg Group")} (*)
           </label>
           <select
             className="form-control"
@@ -148,7 +148,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             onChange={handleChange}
             required
           >
-            <option value="">Select</option>
+            <option value="">{t("Select")}</option>
             {legGroups.map((legGroup) => (
               <option key={legGroup} value={legGroup}>
                 {legGroup}
@@ -158,7 +158,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="to_leg_group_id" className="form-label">
-            To Leg Group (*)
+            {t("To Leg Group")} (*)
           </label>
           <select
             className="form-control"
@@ -168,7 +168,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             onChange={handleChange}
             required
           >
-            <option value="">Select</option>
+            <option value="">{t("Select")}</option>
             {legGroups.map((legGroup) => (
               <option key={legGroup} value={legGroup}>
                 {legGroup}
@@ -178,7 +178,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="transfer_count" className="form-label">
-            Transfer Count
+            {t("Transfer Count")}
           </label>
           <input
             type="number"
@@ -192,7 +192,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="duration_limit" className="form-label">
-            Duration Limit (second)
+            {t("Duration Limit (second)")}
           </label>
           <input
             type="number"
@@ -202,12 +202,12 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             value={formData.duration_limit}
             onChange={handleChange}
             min="0"
-            placeholder="Optional"
+            placeholder={t("Optional")}
           />
         </div>
         <div className="mb-2">
           <label htmlFor="duration_limit_type" className="form-label">
-            Duration Limit Type
+            {t("Duration Limit Type")}
           </label>
           <select
             className="form-control"
@@ -216,16 +216,16 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             value={formData.duration_limit_type}
             onChange={handleChange}
           >
-            <option value="">Select (Optional)</option>
-            <option value="0">Departure to Departure</option>
-            <option value="1">Departure to Arrival</option>
-            <option value="2">Arrival to Departure</option>
-            <option value="3">Arrival to Arrival</option>
+            <option value="">{t("Select (Optional)")}</option>
+            <option value="0">{t("Departure to Departure")}</option>
+            <option value="1">{t("Departure to Arrival")}</option>
+            <option value="2">{t("Arrival to Departure")}</option>
+            <option value="3">{t("Arrival to Arrival")}</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="fare_transfer_type" className="form-label">
-            Transfer Type (*)
+            {t("Transfer Type")} (*)
           </label>
           <select
             className="form-control"
@@ -235,15 +235,15 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             onChange={handleChange}
             required
           >
-            <option value="">Select</option>
-            <option value="0">One Way</option>
-            <option value="1">Two Way</option>
-            <option value="2">Cyclical</option>
+            <option value="">{t("Select")}</option>
+            <option value="0">{t("One Way")}</option>
+            <option value="1">{t("Two Way")}</option>
+            <option value="2">{t("Cyclical")}</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="fare_product_id" className="form-label">
-            Fare Product
+            {t("Fare Product")}
           </label>
           <select
             className="form-control"
@@ -252,7 +252,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
             value={formData.fare_product_id}
             onChange={handleChange}
           >
-            <option value="">Select (Optional)</option>
+            <option value="">{t("Select (Optional)")}</option>
             {fareProducts.map((product) => (
               <option
                 key={product.fare_product_id}
@@ -265,7 +265,7 @@ const FareTransferRuleAddForm = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Adding..." : "Add Transfer Rule"}
+            {loading ? t("Adding...") : t("Add Transfer Rule")}
           </button>
         </div>
       </form>

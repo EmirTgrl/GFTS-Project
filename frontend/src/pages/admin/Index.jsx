@@ -8,10 +8,12 @@ import {
   TagFill,
   GearFill,
 } from "react-bootstrap-icons";
+import { useTranslation } from "react-i18next";
 import "../../styles/AdminPage.css";
 
 const AdminPage = () => {
   const { isAuthenticated } = useContext(AuthContext);
+  const { t } = useTranslation();
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
@@ -21,22 +23,22 @@ const AdminPage = () => {
     <Container fluid className="py-4 admin-panel">
       <Navbar expand="lg" className="my-4 rounded">
         <Navbar.Brand as={Link} to="/admin" className="ms-3 fw-bold">
-          Admin Dashboard
+          {t("Admin Dashboard")}
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="admin-nav" />
         <Navbar.Collapse id="admin-nav">
           <Nav className="me-auto">
             <Nav.Link as={Link} to="/admin/users">
-              <PeopleFill className="me-1" /> Users
+              <PeopleFill className="me-1" /> {t("Users")}
             </Nav.Link>
             <Nav.Link as={Link} to="/admin/projects">
-              <FolderFill className="me-1" /> Projects
+              <FolderFill className="me-1" /> {t("Projects")}
             </Nav.Link>
             <Nav.Link as={Link} to="/admin/roles">
-              <TagFill className="me-1" /> Roles
+              <TagFill className="me-1" /> {t("Roles")}
             </Nav.Link>
             <Nav.Link as={Link} to="/admin/versions">
-              <GearFill className="me-1" /> Versions
+              <GearFill className="me-1" /> {t("Versions")}
             </Nav.Link>
           </Nav>
         </Navbar.Collapse>

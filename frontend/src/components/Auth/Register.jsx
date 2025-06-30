@@ -3,8 +3,10 @@ import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import { Container, Form, Button, Alert } from "react-bootstrap";
 import "../../styles/Register.css";
+import { useTranslation } from "react-i18next";
 
 const Register = ({ switchToLogin }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,11 +28,11 @@ const Register = ({ switchToLogin }) => {
         navigate("/auth", { state: { isRegister: true, isLogin: true } });
       } else {
         const errorData = await response.json();
-        setError(errorData.message || "Registration failed!");
+        setError(errorData.message || t("Registration failed!"));
       }
     } catch (error) {
       console.error("Registration error:", error);
-      setError("An error occurred!");
+      setError(t("An error occurred!"));
     }
   };
 
@@ -38,15 +40,15 @@ const Register = ({ switchToLogin }) => {
     <Container className="auth-container">
       <div className="form-wrapper">
         <Form onSubmit={handleRegister}>
-          <h2 className="title text-center">Register</h2>
+          <h2 className="title text-center">{t("Register")}</h2>
           {error && <Alert variant="danger">{error}</Alert>}
 
           <Form.Group className="mb-3">
-            <Form.Label>Email Address</Form.Label>
+            <Form.Label>{t("Email Address")}</Form.Label>
             <Form.Control
               className="input-field"
               type="email"
-              placeholder="Enter email"
+              placeholder={t("Enter your email")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -54,11 +56,11 @@ const Register = ({ switchToLogin }) => {
           </Form.Group>
 
           <Form.Group className="mb-4">
-            <Form.Label>Password</Form.Label>
+            <Form.Label>{t("Password")}</Form.Label>
             <Form.Control
               className="input-field"
               type="password"
-              placeholder="Password"
+              placeholder={t("Password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -66,13 +68,13 @@ const Register = ({ switchToLogin }) => {
           </Form.Group>
 
           <Button className="styled-button" variant="primary" type="submit">
-            Register
+            {t("Register")}
           </Button>
 
           <p className="switch-link text-center mt-3">
-            Already have an account?{" "}
+            {t("Already have an account?")}{" "}
             <span className="link" onClick={switchToLogin}>
-              Login here
+              {t("Login here")}
             </span>
           </p>
         </Form>

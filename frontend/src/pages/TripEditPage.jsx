@@ -3,6 +3,7 @@ import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
 import { updateTrip } from "../api/tripApi";
+import { useTranslation } from "react-i18next";
 
 const TripEditPage = ({
   project_id,
@@ -13,6 +14,7 @@ const TripEditPage = ({
   calendars,
   trips,
 }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [tripData, setTripData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +27,7 @@ const TripEditPage = ({
         const trip = tripList.find((t) => t.trip_id === trip_id);
 
         if (!trip) {
-          throw new Error("Trip bulunamadı");
+          throw new Error(t("Trip not found."));
         }
 
         setTripData({
@@ -46,14 +48,13 @@ const TripEditPage = ({
             trip.bikes_allowed !== undefined ? trip.bikes_allowed : null,
         });
       } catch (error) {
-        console.error("Error fetching data:", error);
         setError(error.message);
       } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, [trip_id, project_id, trips]);
+  }, [trip_id, project_id, trips, t]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -72,13 +73,13 @@ const TripEditPage = ({
 
   const getServiceName = (calendar) => {
     const days = [
-      { name: "Mon", value: calendar.monday },
-      { name: "Tue", value: calendar.tuesday },
-      { name: "Wed", value: calendar.wednesday },
-      { name: "Thu", value: calendar.thursday },
-      { name: "Fri", value: calendar.friday },
-      { name: "Sat", value: calendar.saturday },
-      { name: "Sun", value: calendar.sunday },
+      { name: t("Mon"), value: calendar.monday },
+      { name: t("Tue"), value: calendar.tuesday },
+      { name: t("Wed"), value: calendar.wednesday },
+      { name: t("Thu"), value: calendar.thursday },
+      { name: t("Fri"), value: calendar.friday },
+      { name: t("Sat"), value: calendar.saturday },
+      { name: t("Sun"), value: calendar.sunday },
     ];
     const activeDays = days
       .filter((day) => day.value === 1)
@@ -93,22 +94,22 @@ const TripEditPage = ({
     e.preventDefault();
     if (!tripData.service_id || !tripData.trip_headsign || !tripData.route_id) {
       Swal.fire(
-        "Error!",
-        "Service, trip title and route are required!",
+        t("Error!"),
+        t("Service, trip title and route are required!"),
         "error"
       );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to update this trip?",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to update this trip?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, update!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, update!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -124,25 +125,29 @@ const TripEditPage = ({
             ),
           };
         });
-        Swal.fire("Updated!", "Trip successfully updated.", "success");
+        Swal.fire(t("Updated!"), t("Trip successfully updated."), "success");
         onClose();
       } catch (error) {
-        Swal.fire("Error!", `Error updating Trip: ${error.message}`, "error");
+        Swal.fire(
+          t("Error!"),
+          t("Error updating Trip:") + " " + error.message,
+          "error"
+        );
       }
     }
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
-  if (!tripData) return <p>No data found for this trip. Trip ID: {trip_id}</p>;
+  if (loading) return <p>{t("Loading...")}</p>;
+  if (error) return <p>{t("Error") + ": " + error}</p>;
+  if (!tripData) return <p>{t("No data found for this trip.")} Trip ID: {trip_id}</p>;
 
   return (
     <div className="form-container">
-      <h5>Update Trip</h5>
+      {/* <h5>{t("Update Trip")}</h5> */}
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="trip_id" className="form-label">
-            Trip ID (Cannot be changed)
+            {t("Trip ID")} ({t("Cannot be changed")})
           </label>
           <input
             type="text"
@@ -155,7 +160,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="route_id" className="form-label">
-            Route (*)
+            {t("Route")} (*)
           </label>
           <select
             id="route_id"
@@ -165,7 +170,7 @@ const TripEditPage = ({
             onChange={handleChange}
             required
           >
-            <option value="">Select a Route</option>
+            <option value="">{t("Select a Route")}</option>
             {routes.map((route) => (
               <option key={route.route_id} value={route.route_id}>
                 {route.route_long_name ||
@@ -177,7 +182,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="service_id" className="form-label">
-            Calendar (*)
+            {t("Calendar")} (*)
           </label>
           <select
             id="service_id"
@@ -187,7 +192,7 @@ const TripEditPage = ({
             onChange={handleChange}
             required
           >
-            <option value="">Select a Calendar</option>
+            <option value="">{t("Select a Calendar")}</option>
             {calendars.map((calendar) => (
               <option key={calendar.service_id} value={calendar.service_id}>
                 {getServiceName(calendar)}
@@ -197,7 +202,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_headsign" className="form-label">
-            Trip Headsign (*)
+            {t("Trip Headsign")} (*)
           </label>
           <input
             type="text"
@@ -211,7 +216,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="trip_short_name" className="form-label">
-            Trip Short Name
+            {t("Trip Short Name")}
           </label>
           <input
             type="text"
@@ -224,7 +229,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="direction_id" className="form-label">
-            Direction
+            {t("Direction")}
           </label>
           <select
             id="direction_id"
@@ -233,14 +238,14 @@ const TripEditPage = ({
             value={tripData.direction_id ?? ""}
             onChange={handleChange}
           >
-            <option value="">Select</option>
-            <option value="0">0 - Departure</option>
-            <option value="1">1 - Return</option>
+            <option value="">{t("Select")}</option>
+            <option value="0">{t("0 - Departure")}</option>
+            <option value="1">{t("1 - Return")}</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="block_id" className="form-label">
-            Block ID
+            {t("Block ID")}
           </label>
           <input
             type="text"
@@ -253,7 +258,7 @@ const TripEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="wheelchair_accessible" className="form-label">
-            Wheelchair Access
+            {t("Wheelchair Access")}
           </label>
           <select
             id="wheelchair_accessible"
@@ -262,15 +267,15 @@ const TripEditPage = ({
             value={tripData.wheelchair_accessible ?? ""}
             onChange={handleChange}
           >
-            <option value="">Select</option>
-            <option value="0">0 - No Information</option>
-            <option value="1">1 - Accessible</option>
-            <option value="2">2 - Inaccessible</option>
+            <option value="">{t("Select")}</option>
+            <option value="0">{t("0 - No Information")}</option>
+            <option value="1">{t("1 - Accessible")}</option>
+            <option value="2">{t("2 - Inaccessible")}</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="bikes_allowed" className="form-label">
-            Bikes Allowed
+            {t("Bikes Allowed")}
           </label>
           <select
             id="bikes_allowed"
@@ -279,15 +284,15 @@ const TripEditPage = ({
             value={tripData.bikes_allowed ?? ""}
             onChange={handleChange}
           >
-            <option value="">Select</option>
-            <option value="0">0 - No Information</option>
-            <option value="1">1 - Permission Available</option>
-            <option value="2">2 - No Permission</option>
+            <option value="">{t("Select")}</option>
+            <option value="0">{t("0 - No Information")}</option>
+            <option value="1">{t("1 - Permission Available")}</option>
+            <option value="2">{t("2 - No Permission")}</option>
           </select>
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
-            Save
+            {t("Save")}
           </button>
         </div>
       </form>

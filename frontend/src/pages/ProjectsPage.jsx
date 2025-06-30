@@ -163,9 +163,9 @@ const ProjectsPage = () => {
     setSelectedProject(null);
   };
 
-  const handleOpenModal = () => {
-    setShowModal(true);
-  };
+  // const handleOpenModal = () => {
+  //   setShowModal(true);
+  // };
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -223,9 +223,9 @@ const ProjectsPage = () => {
                   <h2 className="card-title h3 fw-bold">
                     {t("Your GTFS Files")}
                   </h2>
-                  <Button variant="success" size="sm" onClick={handleOpenModal}>
+                  {/* <Button variant="success" size="sm" onClick={handleOpenModal}>
                     + {t("New Project")}
-                  </Button>
+                  </Button> */}
                 </div>
                 <hr className="mb-4" />
                 {currentProjects.length > 0 ? (

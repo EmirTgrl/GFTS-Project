@@ -3,8 +3,10 @@ import { AuthContext } from "../components/Auth/AuthContext";
 import { addFareMedia } from "../api/fareApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
 
 const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     fare_media_id: "",
@@ -21,19 +23,23 @@ const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.fare_media_id || !formData.fare_media_type) {
-      Swal.fire("Error!", "Payment method ID and type are required!", "error");
+      Swal.fire(
+        t("Error!"),
+        t("Payment method ID and type are required!"),
+        "error"
+      );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to add this payment method?",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to add this payment method?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, add!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, add!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -47,7 +53,11 @@ const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
 
         const response = await addFareMedia(project_id, token, payload);
 
-        Swal.fire("Success!", "Payment method added successfully.", "success");
+        Swal.fire(
+          t("Success!"),
+          t("Payment method added successfully."),
+          "success"
+        );
 
         if (onAdd) {
           onAdd(response);
@@ -62,10 +72,10 @@ const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
       } catch (error) {
         console.error("Error:", error);
         Swal.fire(
-          "Error!",
-          `An error occurred while adding the payment method: ${
-            error.message || "An unknown error occurred."
-          }`,
+          t("Error!"),
+          t("An error occurred while adding the payment method:") +
+            " " +
+            (error.message || t("An unknown error occurred.")),
           "error"
         );
       } finally {
@@ -79,7 +89,7 @@ const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="fare_media_id" className="form-label">
-            Payment Method ID (*)
+            {t("Payment Method ID")} (*)
           </label>
           <input
             type="text"
@@ -93,7 +103,7 @@ const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="fare_media_name" className="form-label">
-            Payment Method Name
+            {t("Payment Method Name")}
           </label>
           <input
             type="text"
@@ -106,7 +116,7 @@ const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="fare_media_type" className="form-label">
-            Payment Method Type (*)
+            {t("Payment Method Type")} (*)
           </label>
           <select
             className="form-control"
@@ -116,18 +126,18 @@ const FareMediaAddPage = ({ project_id, onClose, onAdd }) => {
             onChange={handleChange}
             required
           >
-            <option value="0">Cash Payment</option>
-            <option value="1">Physical Paper Ticket</option>
-            <option value="2">Physical Transit Card</option>
+            <option value="0">{t("Cash Payment")}</option>
+            <option value="1">{t("Physical Paper Ticket")}</option>
+            <option value="2">{t("Physical Transit Card")}</option>
             <option value="3">
-              cEMV (contactless Europay, Mastercard and Visa)
+              {t("cEMV (contactless Europay, Mastercard and Visa)")}
             </option>
-            <option value="4">Mobile App</option>
+            <option value="4">{t("Mobile App")}</option>
           </select>
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Adding..." : "Add"}
+            {loading ? t("Adding...") : t("Add")}
           </button>
         </div>
       </form>

@@ -10,6 +10,7 @@ import {
   Spinner,
   Alert,
 } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import "../../styles/AdminPage.css";
 
 const AdminProjects = () => {
@@ -17,6 +18,7 @@ const AdminProjects = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { token, user } = useContext(AuthContext);
+  const { t } = useTranslation();
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -36,18 +38,18 @@ const AdminProjects = () => {
       const data = await response.json();
       setProjects(data);
     } catch (error) {
-      setError(error.message || "Projects failed to load.");
+      setError(error.message || t("Projects failed to load."));
       console.error("Error in loading projects:", error);
     } finally {
       setLoading(false);
     }
-  }, [token, API_URL]);
+  }, [token, API_URL, t]);
 
   useEffect(() => {
     if (user?.role === "admin") {
       fetchProjects();
     }
-  }, [fetchProjects]);
+  }, [fetchProjects, user]);
 
   if (user?.role !== "admin") {
     return <Navigate to="/auth" replace />;
@@ -60,24 +62,24 @@ const AdminProjects = () => {
           <Card>
             <Card.Body>
               <Card.Title className="h3 fs-1 text-primary my-4">
-                Project Management
+                {t("Project Management")}
               </Card.Title>
-              {error && <Alert variant="danger">Error: {error}</Alert>}
+              {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
               {loading ? (
                 <div className="text-center">
                   <Spinner animation="border" role="status" />
-                  <span className="visually-hidden">Loading...</span>
+                  <span className="visually-hidden">{t("Loading...")}</span>
                 </div>
               ) : (
                 <Table striped bordered hover responsive>
                   <thead>
                     <tr>
-                      <th>Project ID</th>
-                      <th>User Email</th>
-                      <th>User Role</th>
-                      <th>User Version</th>
-                      <th>File Name</th>
-                      <th>Imported Date</th>
+                      <th>{t("Project ID")}</th>
+                      <th>{t("User Email")}</th>
+                      <th>{t("User Role")}</th>
+                      <th>{t("User Version")}</th>
+                      <th>{t("File Name")}</th>
+                      <th>{t("Imported Date")}</th>
                     </tr>
                   </thead>
                   <tbody>

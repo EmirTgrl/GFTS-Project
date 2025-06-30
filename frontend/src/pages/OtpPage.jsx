@@ -3,8 +3,10 @@ import { TextField, Button, List, ListItem, ListItemText } from "@mui/material";
 import { useContext } from "react";
 import { AuthContext } from "../Auth/AuthContext";
 import MapView from "./MapView";
+import { useTranslation } from "react-i18next";
 
 const OtpPage = () => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -33,8 +35,8 @@ const OtpPage = () => {
 
   return (
     <div className="form-container">
-      <h2>Trip Planning</h2>
-      {error && <p style={{ color: "red" }}>Error: {error}</p>}
+      <h2>{t("Trip Planning")}</h2>
+      {error && <p style={{ color: "red" }}>{t("Error")}: {error}</p>}
       <MapView
         mapCenter={[39.9255, 32.8663]}
         zoom={6}
@@ -67,7 +69,7 @@ const OtpPage = () => {
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <TextField
-            label="Tarih"
+            label={t("Date")}
             type="date"
             name="date"
             value={formData.date}
@@ -79,7 +81,7 @@ const OtpPage = () => {
         </div>
         <div className="mb-2">
           <TextField
-            label="Saat"
+            label={t("Time")}
             type="time"
             name="time"
             value={formData.time}
@@ -91,7 +93,7 @@ const OtpPage = () => {
         </div>
         <div className="d-flex justify-content-end gap-2">
           <Button type="submit" variant="contained" disabled>
-            Plan (Select From Map)
+            {t("Plan (Select From Map)")}
           </Button>
         </div>
       </form>
@@ -100,15 +102,17 @@ const OtpPage = () => {
           {itineraries.map((itinerary, index) => (
             <ListItem key={index}>
               <ListItemText
-                primary={`Option ${index + 1}: ${Math.round(
-                  itinerary.duration / 60
-                )} minutes`}
+                primary={
+                  t("Option") +
+                  ` ${index + 1}: ${Math.round(itinerary.duration / 60)} ` +
+                  t("minutes")
+                }
                 secondary={itinerary.legs
                   .map(
                     (leg) =>
-                      `${leg.mode}: ${leg.from} → ${leg.to} (${Math.round(
+                      `${t(leg.mode)}: ${leg.from} → ${leg.to} (${Math.round(
                         leg.distance
-                      )} m)`
+                      )} ${t("m")})`
                   )
                   .join(" | ")}
               />

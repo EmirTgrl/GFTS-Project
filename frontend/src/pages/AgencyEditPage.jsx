@@ -3,6 +3,7 @@ import { updateAgency } from "../api/agencyApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const AgencyEditPage = ({
   project_id,
@@ -11,6 +12,7 @@ const AgencyEditPage = ({
   setAgencies,
   agencies,
 }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -18,12 +20,9 @@ const AgencyEditPage = ({
   useEffect(() => {
     const loadAgency = async () => {
       try {
-        // agencies’in tanımlı olup olmadığını kontrol et
         if (!agencies || (!agencies.data && !Array.isArray(agencies))) {
           throw new Error("Agencies prop is invalid or incomplete");
         }
-
-        // agencies.data varsa onu kullan, yoksa direkt agencies’i kullan
         const agencyList = agencies.data || agencies;
         const agency = agencyList.find((ag) => ag.agency_id === agency_id);
 
@@ -37,20 +36,20 @@ const AgencyEditPage = ({
             agency_phone: agency.agency_phone || "",
           });
         } else {
-          Swal.fire("Error!", "Agency not found.", "error");
+          Swal.fire(t("Error!"), t("Agency not found."), "error");
           onClose();
         }
       } catch (error) {
         Swal.fire(
-          "Error!",
-          `Error loading the agency: ${error.message}`,
+          t("Error!"),
+          t("Error loading the agency:") + " " + error.message,
           "error"
         );
         onClose();
       }
     };
     loadAgency();
-  }, [token, agencies, agency_id, onClose]);
+  }, [token, agencies, agency_id, onClose, t]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -65,22 +64,22 @@ const AgencyEditPage = ({
       !formData?.agency_timezone
     ) {
       Swal.fire(
-        "Error!",
-        "Agency name, URL and time zone are required!",
+        t("Error!"),
+        t("Agency name, URL and time zone are required!"),
         "error"
       );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to update this agency?",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to update this agency?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, update!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, update!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -99,12 +98,12 @@ const AgencyEditPage = ({
             ),
           };
         });
-        Swal.fire("Updated!", "Agency successfully updated.", "success");
+        Swal.fire(t("Updated!"), t("Agency successfully updated."), "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Error!",
-          `Error updating the agency: ${error.message}`,
+          t("Error!"),
+          t("Error updating the agency:") + " " + error.message,
           "error"
         );
       } finally {
@@ -113,15 +112,15 @@ const AgencyEditPage = ({
     }
   };
 
-  if (!formData) return <p>Loading...</p>;
+  if (!formData) return <p>{t("Loading...")}</p>;
 
   return (
     <div className="form-container">
-      <h5>Update Agency</h5>
+      {/* <h5>{t("Update Agency")}</h5> */}
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="agency_id" className="form-label">
-            Agency ID (Unchangeable)
+            {t("Agency ID")} ({t("Unchangeable")})
           </label>
           <input
             type="text"
@@ -134,7 +133,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_name" className="form-label">
-            Agency Name
+            {t("Agency Name")}
           </label>
           <input
             type="text"
@@ -148,7 +147,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_url" className="form-label">
-            Agency URL
+            {t("Agency URL")}
           </label>
           <input
             type="url"
@@ -162,7 +161,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_timezone" className="form-label">
-            Timezone
+            {t("Timezone")}
           </label>
           <input
             type="text"
@@ -176,7 +175,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_lang" className="form-label">
-            Language (Optional)
+            {t("Language (Optional)")}
           </label>
           <input
             type="text"
@@ -189,7 +188,7 @@ const AgencyEditPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="agency_phone" className="form-label">
-            Phone (Optional)
+            {t("Phone (Optional)")}
           </label>
           <input
             type="text"
@@ -202,7 +201,7 @@ const AgencyEditPage = ({
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Saving..." : "Save"}
+            {loading ? t("Saving...") : t("Save")}
           </button>
         </div>
       </form>

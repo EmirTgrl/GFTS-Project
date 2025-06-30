@@ -14,8 +14,10 @@ import {
 import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "../styles/ImportPage.css";
+import { useTranslation } from "react-i18next";
 
 const ImportPage = () => {
+  const { t } = useTranslation();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -190,16 +192,16 @@ const ImportPage = () => {
             <Card className="import-card shadow-sm">
               <Card.Body className="p-4">
                 <h2 className="card-title h4 mb-3 text-center">
-                  Import GTFS Data
+                  {t("Import GTFS Data")}
                 </h2>
                 <p className="text-muted small mb-4 text-center">
-                  Manage transit data by uploading GTFS ZIP file
+                  {t("Manage transit data by uploading GTFS ZIP file")}
                 </p>
 
                 <Form onSubmit={handleUpload}>
                   {error && (
                     <Alert variant="success" className="py-2 small">
-                      {error}
+                      {t(error)}
                     </Alert>
                   )}
 
@@ -213,7 +215,9 @@ const ImportPage = () => {
                       size="sm"
                     />
                     <Form.Text className="text-muted small">
-                      Only .zip files containing valid GTFS data are accepted
+                      {t(
+                        "Only .zip files containing valid GTFS data are accepted."
+                      )}
                     </Form.Text>
                   </Form.Group>
 
@@ -237,10 +241,10 @@ const ImportPage = () => {
                       {loading ? (
                         <>
                           <span className="spinner-border spinner-border-sm me-2" />
-                          Loading...
+                          {t("Loading...")}
                         </>
                       ) : (
-                        "Load GTFS Data"
+                        t("Load GTFS Data")
                       )}
                     </Button>
                   )}
@@ -253,7 +257,7 @@ const ImportPage = () => {
                         disabled={loading}
                         className="flex-grow-1"
                       >
-                        Continue Despite Errors
+                        {t("Continue Despite Errors")}
                       </Button>
                       <Button
                         variant="outline-secondary"
@@ -261,7 +265,7 @@ const ImportPage = () => {
                         disabled={loading}
                         className="flex-grow-1"
                       >
-                        Cancel
+                        {t("Cancel")}
                       </Button>
                     </div>
                   )}
@@ -274,12 +278,14 @@ const ImportPage = () => {
             <div className="col-md-6">
               <Card className="validation-results shadow-sm">
                 <Card.Body>
-                  <h5 className="mb-3">Validation Results</h5>
+                  <h5 className="mb-3">{t("Validation Results")}</h5>
                   <Accordion defaultActiveKey="0">
                     {validationErrors.length > 0 && (
                       <Accordion.Item eventKey="0">
                         <Accordion.Header>
-                          <strong>Errors ({validationErrors.length})</strong>
+                          <strong>
+                            {t("Errors")} ({validationErrors.length})
+                          </strong>
                         </Accordion.Header>
                         <Accordion.Body>
                           <Accordion>
@@ -292,7 +298,7 @@ const ImportPage = () => {
                                   onClick={() => handleErrorToggle(index)}
                                 >
                                   <strong>{err.code}</strong>: {err.message}{" "}
-                                  (Total: {err.total})
+                                  ({t("Total")}: {err.total})
                                 </Accordion.Header>
                                 <Accordion.Body>
                                   {openErrorItems[index] &&
@@ -329,9 +335,9 @@ const ImportPage = () => {
                                       )}
                                     </ListGroup>
                                   ) : openErrorItems[index] ? (
-                                    <p>No details found.</p>
+                                    <p>{t("No details found.")}</p>
                                   ) : (
-                                    <p>Loading...</p>
+                                    <p>{t("Loading...")}</p>
                                   )}
                                 </Accordion.Body>
                               </Accordion.Item>
@@ -344,7 +350,7 @@ const ImportPage = () => {
                       <Accordion.Item eventKey="1">
                         <Accordion.Header>
                           <strong>
-                            Warnings ({validationWarnings.length})
+                            {t("Warnings")} ({validationWarnings.length})
                           </strong>
                         </Accordion.Header>
                         <Accordion.Body>
@@ -358,7 +364,7 @@ const ImportPage = () => {
                                   onClick={() => handleWarningToggle(index)}
                                 >
                                   <strong>{warn.code}</strong>: {warn.message}{" "}
-                                  (Total: {warn.total})
+                                  ({t("Total")}: {warn.total})
                                 </Accordion.Header>
                                 <Accordion.Body>
                                   {openWarningItems[index] &&
@@ -395,9 +401,9 @@ const ImportPage = () => {
                                       )}
                                     </ListGroup>
                                   ) : openWarningItems[index] ? (
-                                    <p>Details Not Found.</p>
+                                    <p>{t("Details Not Found.")}</p>
                                   ) : (
-                                    <p>Loading...</p>
+                                    <p>{t("Loading...")}</p>
                                   )}
                                 </Accordion.Body>
                               </Accordion.Item>

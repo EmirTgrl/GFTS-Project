@@ -37,6 +37,7 @@ import {
 import { fetchRoutesByStopId } from "../../api/stopApi.js";
 import { planTrip } from "../../api/otpApi.js";
 import polyline from "polyline";
+import { useTranslation } from "react-i18next";
 
 const stopIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -207,7 +208,8 @@ const modeIcons = {
   FERRY: <GeoAltFill className="me-1 text-info" />,
 };
 
-const getModeIcon = (mode) => modeIcons[mode] || <QuestionCircleFill className="me-1 text-muted" />;
+const getModeIcon = (mode) =>
+  modeIcons[mode] || <QuestionCircleFill className="me-1 text-muted" />;
 
 const MapView = ({
   mapCenter,
@@ -247,6 +249,7 @@ const MapView = ({
   const mapRef = useRef(null);
   const prevStopsAndTimesRef = useRef(null);
   const hasLoggedAreaWarnings = useRef(new Set());
+  const { t } = useTranslation();
 
   const MIN_STOP_ZOOM = 11;
 
@@ -814,12 +817,12 @@ const MapView = ({
               <br />
               {stop.arrival_time && stop.departure_time
                 ? `${stop.arrival_time} - ${stop.departure_time}`
-                : "N/A"}
+                : t("N/A")}
             </Popup>
           </Marker>
         ))
       : null;
-  }, [visibleStops, handleStopClick]);
+  }, [visibleStops, handleStopClick, t]);
 
   return (
     <div
@@ -874,12 +877,12 @@ const MapView = ({
 
         {startPoint && (
           <Marker position={[startPoint.lat, startPoint.lng]} icon={startIcon}>
-            <Popup>Start Point</Popup>
+            <Popup>{t("Start Point")}</Popup>
           </Marker>
         )}
         {endPoint && (
           <Marker position={[endPoint.lat, endPoint.lng]} icon={endIcon}>
-            <Popup>End Point</Popup>
+            <Popup>{t("End Point")}</Popup>
           </Marker>
         )}
         {route && route.length > 0 && (
@@ -936,7 +939,7 @@ const MapView = ({
             }}
           >
             <h4 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "500" }}>
-              Trip Planning
+              {t("Trip Planning")}
             </h4>
             <button
               onClick={() => setEditorMode("close")}
@@ -949,6 +952,7 @@ const MapView = ({
                 padding: "0",
                 lineHeight: "1",
               }}
+              title={t("Close")}
             >
               ×
             </button>
@@ -962,7 +966,7 @@ const MapView = ({
                 marginBottom: "5px",
               }}
             >
-              Start Point:
+              {t("Start Point")}:
             </label>
             <div
               style={{
@@ -975,10 +979,10 @@ const MapView = ({
               }}
             >
               {startPoint
-                ? `Lat: ${startPoint.lat.toFixed(
-                    5
-                  )}, Lng: ${startPoint.lng.toFixed(5)}`
-                : "Select on map (click)"}
+                ? `${t("Lat")}: ${startPoint.lat.toFixed(5)}, ${t(
+                    "Lng"
+                  )}: ${startPoint.lng.toFixed(5)}`
+                : t("Select on map (click)")}
             </div>
           </div>
           <div style={{ marginBottom: "10px" }}>
@@ -990,7 +994,7 @@ const MapView = ({
                 marginBottom: "5px",
               }}
             >
-              End Point:
+              {t("End Point")}:
             </label>
             <div
               style={{
@@ -1003,10 +1007,10 @@ const MapView = ({
               }}
             >
               {endPoint
-                ? `Lat: ${endPoint.lat.toFixed(5)}, Lng: ${endPoint.lng.toFixed(
-                    5
-                  )}`
-                : "Select on map (click)"}
+                ? `${t("Lat")}: ${endPoint.lat.toFixed(5)}, ${t(
+                    "Lng"
+                  )}: ${endPoint.lng.toFixed(5)}`
+                : t("Select on map (click)")}
             </div>
           </div>
           <div style={{ marginBottom: "10px" }}>
@@ -1018,7 +1022,7 @@ const MapView = ({
                 marginBottom: "5px",
               }}
             >
-              Date:
+              {t("Date")}:
             </label>
             <input
               type="date"
@@ -1042,7 +1046,7 @@ const MapView = ({
                 marginBottom: "5px",
               }}
             >
-              Time:
+              {t("Time")}:
             </label>
             <input
               type="time"
@@ -1071,7 +1075,7 @@ const MapView = ({
                 fontSize: "0.9rem",
               }}
             >
-              Plan Route
+              {t("Plan Route")}
             </button>
             <button
               onClick={handleClearPoints}
@@ -1086,7 +1090,7 @@ const MapView = ({
                 fontSize: "0.9rem",
               }}
             >
-              Clear
+              {t("Clear")}
             </button>
           </div>
         </div>
@@ -1145,6 +1149,7 @@ const MapView = ({
                   cursor: "pointer",
                   padding: "0",
                 }}
+                title={t("Close")}
               >
                 <XCircleFill />
               </button>
@@ -1158,7 +1163,7 @@ const MapView = ({
                   display: "block",
                 }}
               >
-                Routes:
+                {t("Routes")}:
               </strong>
               {selectedStop.route_names === null ? (
                 <p
@@ -1168,7 +1173,7 @@ const MapView = ({
                     textAlign: "center",
                   }}
                 >
-                  Loading...
+                  {t("Loading...")}
                 </p>
               ) : selectedStop.error ? (
                 <p
@@ -1178,7 +1183,7 @@ const MapView = ({
                     textAlign: "center",
                   }}
                 >
-                  Failed to load stop information.
+                  {t("Failed to load stop information.")}
                 </p>
               ) : Array.isArray(selectedStop.route_names) &&
                 selectedStop.route_names.length > 0 ? (
@@ -1227,7 +1232,7 @@ const MapView = ({
                     textAlign: "center",
                   }}
                 >
-                  No routes pass through this stop.
+                  {t("No routes pass through this stop.")}
                 </p>
               )}
             </div>
@@ -1255,8 +1260,15 @@ const MapView = ({
             transition: "all 0.3s",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h5 className="mb-0">Route Details</h5>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <h5 className="mb-0">{t("Route Details")}</h5>
             <button
               onClick={() => setRoute(null)}
               style={{
@@ -1267,7 +1279,7 @@ const MapView = ({
                 cursor: "pointer",
                 lineHeight: 1,
               }}
-              title="Close"
+              title={t("Close")}
             >
               ×
             </button>
@@ -1283,9 +1295,11 @@ const MapView = ({
                   <Badge bg="primary" className="me-2">
                     {index + 1}
                   </Badge>
-                  <span className="fw-bold text-dark">Option {index + 1}</span>
+                  <span className="fw-bold text-dark">
+                    {t("Option")} {index + 1}
+                  </span>
                   <span className="ms-auto text-muted">
-                    {Math.round(itinerary.duration / 60)} min
+                    {Math.round(itinerary.duration / 60)} {t("min")}
                   </span>
                 </div>
                 <ListGroup variant="flush">
@@ -1297,7 +1311,7 @@ const MapView = ({
                     >
                       <div className="d-flex align-items-center flex-wrap">
                         {getModeIcon(leg.mode)}
-                        <span className="fw-semibold">{leg.mode}</span>
+                        <span className="fw-semibold">{t(leg.mode)}</span>
                         <span className="mx-2 text-secondary">|</span>
                         <span>
                           <GeoAltFill className="text-success me-1" />
@@ -1312,7 +1326,7 @@ const MapView = ({
                           className="ms-auto text-muted"
                           style={{ fontSize: "0.95em" }}
                         >
-                          {Math.round(leg.distance)} m
+                          {Math.round(leg.distance)} {t("m")}
                           {leg.route && (
                             <span className="ms-2 badge bg-info text-dark">
                               {leg.route}
@@ -1360,7 +1374,7 @@ const MapView = ({
               e.target.style.backgroundColor = "#007bff";
             }}
           >
-            Snap the Routes
+            {t("Snap the Routes")}
           </Button>
         )}
     </div>

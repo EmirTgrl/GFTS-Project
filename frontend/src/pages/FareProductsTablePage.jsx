@@ -3,6 +3,7 @@ import { Button, Table, Form } from "react-bootstrap";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { Trash } from "react-bootstrap-icons";
+import { useTranslation } from "react-i18next";
 import {
   fetchAllFareMedia,
   fetchAllRiderCategories,
@@ -21,6 +22,7 @@ const FareProductsTable = ({
   fareDetails,
   onFareUpdate,
 }) => {
+  const { t } = useTranslation();
   const [fareMediaList, setFareMediaList] = useState([]);
   const [riderCategories, setRiderCategories] = useState([]);
   const [areas, setAreas] = useState([]);
@@ -45,11 +47,11 @@ const FareProductsTable = ({
         setAreas(areasData || []);
       } catch (error) {
         console.error("Error while loading data:", error);
-        Swal.fire("Error!", "Data could not be uploaded.", "error");
+        Swal.fire(t("Error!"), t("Data could not be uploaded."), "error");
       }
     };
     fetchData();
-  }, [project_id, token]);
+  }, [project_id, token, t]);
 
   useEffect(() => {
     if (!fareDetails?.fixed_fares?.length) {
@@ -69,10 +71,6 @@ const FareProductsTable = ({
           );
           if (matchingCategory) {
             riderCategoryId = matchingCategory.rider_category_id;
-          } else {
-            console.warn(
-              `No matching ID found for Rider category name "${fare.rider_category_name}".`
-            );
           }
         }
 
@@ -82,10 +80,6 @@ const FareProductsTable = ({
           );
           if (matchingMedia) {
             fareMediaId = matchingMedia.fare_media_id;
-          } else {
-            console.warn(
-              `No matching ID found for fare media name "${fare.fare_media_name}".`
-            );
           }
         }
 
@@ -128,19 +122,21 @@ const FareProductsTable = ({
         (!toAreaId || f.to_area_id === toAreaId)
     );
     if (!fare) {
-      Swal.fire("Error!", "No fares found to be deleted.", "error");
+      Swal.fire(t("Error!"), t("No fares found to be deleted."), "error");
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: `"Are you sure you want to delete the fare "${fare.rider_category_name} - ${fare.fare_media_name}"?`,
+      title: t("Are you sure?"),
+      text: t(
+        `Are you sure you want to delete the fare "${fare.rider_category_name} - ${fare.fare_media_name}"?`
+      ),
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc3545",
       cancelButtonColor: "#6c757d",
-      confirmButtonText: "Yes, delete!",
-      cancelButtonText: "No, cancel",
+      confirmButtonText: t("Yes, delete!"),
+      cancelButtonText: t("No, cancel"),
     });
 
     if (result.isConfirmed) {
@@ -167,27 +163,28 @@ const FareProductsTable = ({
           return newPrices;
         });
 
-        Swal.fire("Success!", "Fare successfully deleted.", "success");
+        Swal.fire(t("Success!"), t("Fare successfully deleted."), "success");
       } catch (error) {
         console.error("Deletion error:", error);
-        let errorMessage = "An error occurred while deleting the fare.";
+        let errorMessage = t("An error occurred while deleting the fare.");
         if (error.message.includes("dependent tables")) {
-          errorMessage =
-            "This fare could not be deleted because it is linked to other rules. Please remove the related rules first.";
+          errorMessage = t(
+            "This fare could not be deleted because it is linked to other rules. Please remove the related rules first."
+          );
         }
-        Swal.fire("Error!", errorMessage, "error");
+        Swal.fire(t("Error!"), errorMessage, "error");
       }
     }
   };
 
   const handleSubmit = async () => {
     if (!fromAreaId || !toAreaId) {
-      Swal.fire("Error!", "Please select the start and end areas!", "error");
+      Swal.fire(t("Error!"), t("Please select the start and end areas!"), "error");
       return;
     }
 
     if (!selectedRoute?.route_id) {
-      Swal.fire("Error!", "Route not selected!", "error");
+      Swal.fire(t("Error!"), t("Route not selected!"), "error");
       return;
     }
 
@@ -210,14 +207,14 @@ const FareProductsTable = ({
 
     if (validPrices.length === 0) {
       const result = await Swal.fire({
-        title: "No price entered!",
-        text: "Are you sure you want to save without entering a price?",
+        title: t("No price entered!"),
+        text: t("Are you sure you want to save without entering a price?"),
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, save!",
-        cancelButtonText: "No",
+        confirmButtonText: t("Yes, save!"),
+        cancelButtonText: t("No"),
       });
 
       if (!result.isConfirmed) {
@@ -226,14 +223,17 @@ const FareProductsTable = ({
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: `${validPrices.length} price will be saved for the selected fields. Do you want to continue?`,
+      title: t("Are you sure?"),
+      text: t(
+        "{{count}} price will be saved for the selected fields. Do you want to continue?",
+        { count: validPrices.length }
+      ),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, save!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, save!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -286,15 +286,16 @@ const FareProductsTable = ({
           }
         }
 
-        Swal.fire("Success!", "Prices successfully recorded.", "success");
+        Swal.fire(t("Success!"), t("Prices successfully recorded."), "success");
       } catch (error) {
         console.error("Saving error:", error);
-        let errorMessage = `Error saving prices: ${error.message}`;
+        let errorMessage = t("Error saving prices:") + " " + error.message;
         if (error.message.includes("network information")) {
-          errorMessage =
-            "Failed to save fare: No network is defined for the selected area or route. Please define a network.";
+          errorMessage = t(
+            "Failed to save fare: No network is defined for the selected area or route. Please define a network."
+          );
         }
-        Swal.fire("Error!", errorMessage, "error");
+        Swal.fire(t("Error!"), errorMessage, "error");
       }
     }
   };
@@ -387,30 +388,29 @@ const FareProductsTable = ({
     <div className="fare-products-table">
       {fareMediaList.length === 0 || riderCategories.length === 0 ? (
         <div className="alert alert-warning">
-          Please first define Payment Methods and Passenger Categories in the
-          Other Fees section.
+          {t("Please first define Payment Methods and Passenger Categories in the Other Fees section.")}
         </div>
       ) : (
         <>
           <div className="mb-3">
             <Form.Group>
-              <Form.Label>Currency</Form.Label>
+              <Form.Label>{t("Currency")}</Form.Label>
               <Form.Select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
               >
-                <option value="TRY">TRY</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
+                <option value="TRY">{t("TRY")}</option>
+                <option value="USD">{t("USD")}</option>
+                <option value="EUR">{t("EUR")}</option>
               </Form.Select>
             </Form.Group>
             <Form.Group className="mt-3">
-              <Form.Label>From Area</Form.Label>
+              <Form.Label>{t("From Area")}</Form.Label>
               <Form.Select
                 value={fromAreaId}
                 onChange={(e) => setFromAreaId(e.target.value)}
               >
-                <option value="">Select Area</option>
+                <option value="">{t("Select Area")}</option>
                 {areas.map((area) => (
                   <option key={area.area_id} value={area.area_id}>
                     {area.area_name || area.area_id}
@@ -419,12 +419,12 @@ const FareProductsTable = ({
               </Form.Select>
             </Form.Group>
             <Form.Group className="mt-3">
-              <Form.Label>To Area</Form.Label>
+              <Form.Label>{t("To Area")}</Form.Label>
               <Form.Select
                 value={toAreaId}
                 onChange={(e) => setToAreaId(e.target.value)}
               >
-                <option value="">Select Area</option>
+                <option value="">{t("Select Area")}</option>
                 {areas.map((area) => (
                   <option key={area.area_id} value={area.area_id}>
                     {area.area_name || area.area_id}
@@ -437,14 +437,14 @@ const FareProductsTable = ({
             <thead>
               <tr>
                 <th style={{ width: "25%" }}>
-                  Rider Category / Payment Method
+                  {t("Rider Category / Payment Method")}
                 </th>
                 {fareMediaList.map((media) => (
                   <th
                     key={media.fare_media_id}
                     style={{ width: `${75 / fareMediaList.length}%` }}
                   >
-                    {media.fare_media_name || "Unknown"}
+                    {media.fare_media_name || t("Unknown")}
                   </th>
                 ))}
               </tr>
@@ -452,7 +452,7 @@ const FareProductsTable = ({
             <tbody>
               {riderCategories.map((rider) => (
                 <tr key={rider.rider_category_id}>
-                  <td>{rider.rider_category_name || "Unknown"}</td>
+                  <td>{rider.rider_category_name || t("Unknown")}</td>
                   {fareMediaList.map((media) => {
                     const key = `${rider.rider_category_id}_${media.fare_media_id}`;
                     const fare = fareDetails?.fixed_fares?.find(
@@ -477,7 +477,7 @@ const FareProductsTable = ({
                                 e.target.value
                               )
                             }
-                            placeholder="Enter Price"
+                            placeholder={t("Enter Price")}
                             style={{ width: "100px", marginRight: "8px" }}
                           />
                           {fare && (
@@ -503,7 +503,7 @@ const FareProductsTable = ({
             </tbody>
           </Table>
           <Button variant="primary" onClick={handleSubmit}>
-            Save Prices
+            {t("Save Prices")}
           </Button>
         </>
       )}

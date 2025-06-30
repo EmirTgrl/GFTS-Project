@@ -80,6 +80,7 @@ import "../../styles/Sidebar.css";
 import { fetchShapesByTripId } from "../../api/shapeApi";
 import { debounce } from "lodash";
 import { AuthContext } from "../Auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const Sidebar = ({
   token,
@@ -108,6 +109,7 @@ const Sidebar = ({
   activeKey,
   setActiveKey,
 }) => {
+  const { t } = useTranslation();
   const fareProductsRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [pageAgencies, setPageAgencies] = useState(1);
@@ -1116,7 +1118,7 @@ const Sidebar = ({
         <div className="overlay-trigger-wrapper">
           <OverlayTrigger
             placement="top"
-            overlay={renderTooltip(`Add ${category}`)}
+            overlay={renderTooltip(t(`Add ${category}`))}
           >
             <div
               className="sidebar-action-btn add-btn custom-action-icon"
@@ -1154,7 +1156,7 @@ const Sidebar = ({
             <div className="overlay-trigger-wrapper">
               <OverlayTrigger
                 placement="top"
-                overlay={renderTooltip(`Edit ${category}`)}
+                overlay={renderTooltip(t(`Edit ${category}`))}
               >
                 <div
                   className="sidebar-action-btn edit-btn custom-action-icon"
@@ -1178,7 +1180,7 @@ const Sidebar = ({
             <div className="overlay-trigger-wrapper">
               <OverlayTrigger
                 placement="top"
-                overlay={renderTooltip(`Delete ${category}`)}
+                overlay={renderTooltip(t(`Delete ${category}`))}
               >
                 <div
                   className="sidebar-action-btn delete-btn custom-action-icon"
@@ -1211,7 +1213,7 @@ const Sidebar = ({
     return (
       <Accordion.Item eventKey="3">
         <Accordion.Header>
-          <BusFront size={20} className="me-2" /> Trips
+          <BusFront size={20} className="me-2" /> {t("Trips")}
           {renderActionButtons("trip")}
           {selectedEntities.route && (
             <>
@@ -1243,7 +1245,7 @@ const Sidebar = ({
           <Form.Group className="mb-3">
             <Form.Control
               type="text"
-              placeholder="Search Trips..."
+              placeholder={t("Search Trips...")}
               value={searchTerms.trips}
               onChange={(e) => handleSearch("trips", e.target.value)}
             />
@@ -1357,7 +1359,7 @@ const Sidebar = ({
     return (
       <Accordion.Item eventKey="6">
         <Accordion.Header>
-          <CashStack size={20} className="me-2" /> Fares
+          <CashStack size={20} className="me-2" /> {t("Fares")}
           {selectedEntities.route && (
             <>
               <div className="overlay-trigger-wrapper">
@@ -1607,14 +1609,14 @@ const Sidebar = ({
     return (
       <Accordion.Item eventKey="5">
         <Accordion.Header>
-          <Clock size={20} className="me-2" /> Stops
+          <Clock size={20} className="me-2" /> {t("Stops")}
           {renderActionButtons("stop")}
         </Accordion.Header>
         <Accordion.Body>
           <Form.Group className="mb-3">
             <Form.Control
               type="text"
-              placeholder="Search Stops..."
+              placeholder={t("Search Stops...")}
               value={searchTerms.stops}
               onChange={(e) => handleSearch("stops", e.target.value)}
             />
@@ -1681,14 +1683,14 @@ const Sidebar = ({
         >
           <Accordion.Item eventKey="0">
             <Accordion.Header>
-              <Building size={20} className="me-2" /> Agencies
+              <Building size={20} className="me-2" /> {t("Agencies")}
               {renderActionButtons("agency")}
             </Accordion.Header>
             <Accordion.Body>
               <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
-                  placeholder="Search Agencies..."
+                  placeholder={t("Search Agencies...")}
                   value={searchTerms.agencies}
                   onChange={(e) => handleSearch("agencies", e.target.value)}
                 />
@@ -1715,7 +1717,7 @@ const Sidebar = ({
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">Agency not found.</p>
+                <p className="text-muted text-center">{t("Agency not found.")}</p>
               )}
               {renderPagination(agencies.total, pageAgencies, setPageAgencies)}
             </Accordion.Body>
@@ -1723,14 +1725,14 @@ const Sidebar = ({
 
           <Accordion.Item eventKey="1">
             <Accordion.Header>
-              <MapIcon size={20} className="me-2" /> Routes
+              <MapIcon size={20} className="me-2" /> {t("Routes")}
               {renderActionButtons("route")}
             </Accordion.Header>
             <Accordion.Body>
               <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
-                  placeholder="Search Routes..."
+                  placeholder={t("Search Routes...")}
                   value={searchTerms.routes}
                   onChange={(e) => handleSearch("routes", e.target.value)}
                 />
@@ -1764,8 +1766,8 @@ const Sidebar = ({
               ) : (
                 <p className="text-muted text-center">
                   {selectedEntities.agency
-                    ? "Route not found."
-                    : "Please select an agency first."}
+                    ? t("Route not found.")
+                    : t("Please select an agency first.")}
                 </p>
               )}
               {renderPagination(routes.total, pageRoutes, setPageRoutes)}
@@ -1774,7 +1776,7 @@ const Sidebar = ({
 
           <Accordion.Item eventKey="2">
             <Accordion.Header>
-              <Calendar size={20} className="me-2" /> Calendars
+              <Calendar size={20} className="me-2" /> {t("Calendars")}
               {renderActionButtons("calendar")}
             </Accordion.Header>
             <Accordion.Body>
@@ -1800,7 +1802,7 @@ const Sidebar = ({
                   </Card>
                 ))
               ) : (
-                <p className="text-muted text-center">Calendar not found.</p>
+                <p className="text-muted text-center">{t("Calendar not found.")}</p>
               )}
               {renderPagination(
                 calendars.total || 0,

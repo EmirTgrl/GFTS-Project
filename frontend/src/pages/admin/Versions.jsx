@@ -15,6 +15,7 @@ import {
 } from "react-bootstrap";
 import { PencilSquare, Trash } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
+import { useTranslation } from "react-i18next";
 import "../../styles/AdminPage.css";
 
 const AdminVersions = () => {
@@ -22,6 +23,7 @@ const AdminVersions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { token, user } = useContext(AuthContext);
+  const { t } = useTranslation();
 
   const nameRef = useRef(null);
   const editNameRef = useRef(null);
@@ -45,12 +47,12 @@ const AdminVersions = () => {
       const data = await response.json();
       setVersions(data);
     } catch (error) {
-      setError(error.message || "Failed to load versions.");
+      setError(error.message || t("Failed to load versions."));
       console.error("Error loading versions:", error);
     } finally {
       setLoading(false);
     }
-  }, [token, API_URL]);
+  }, [token, API_URL, t]);
 
   useEffect(() => {
     if (user?.role === "admin") {
@@ -74,17 +76,17 @@ const AdminVersions = () => {
   const handleAddVersion = async () => {
     const name = nameRef.current.value.trim();
     if (!name) {
-      setError("Version name required.");
+      setError(t("Version name required."));
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to add this version?",
+      title: t("Are you sure?"),
+      text: t("Do you want to add this version?"),
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Add",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Add"),
+      cancelButtonText: t("Cancel"),
     });
     if (!result.isConfirmed) return;
 
@@ -108,7 +110,7 @@ const AdminVersions = () => {
       handleCloseAddModal();
       fetchVersions();
     } catch (error) {
-      setError(error.message || "Failed to add version.");
+      setError(error.message || t("Failed to add version."));
       console.error("Error adding a version:", error);
     }
   };
@@ -134,17 +136,17 @@ const AdminVersions = () => {
     if (!versionToEdit) return;
     const name = editNameRef.current.value.trim();
     if (!name) {
-      setError("Version name required.");
+      setError(t("Version name required."));
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to update this version?",
+      title: t("Are you sure?"),
+      text: t("Do you want to update this version?"),
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Update",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Update"),
+      cancelButtonText: t("Cancel"),
     });
     if (!result.isConfirmed) return;
 
@@ -172,19 +174,19 @@ const AdminVersions = () => {
       );
       handleCloseEditModal();
     } catch (error) {
-      setError(error.message || "Failed to update version.");
+      setError(error.message || t("Failed to update version."));
       console.error("Error updating version:", error);
     }
   };
 
   const handleDeleteVersion = async (version) => {
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: `Do you really want to delete version "${version.name}"?`,
+      title: t("Are you sure?"),
+      text: t('Do you really want to delete version "{{versionName}}"?', { versionName: version.name }),
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, delete!",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Yes, delete!"),
+      cancelButtonText: t("Cancel"),
     });
 
     if (!result.isConfirmed) return;
@@ -206,9 +208,9 @@ const AdminVersions = () => {
       }
 
       setVersions(versions.filter((v) => v.id !== version.id));
-      Swal.fire("Deleted!", "Version has been deleted.", "success");
+      Swal.fire(t("Deleted!"), t("Version has been deleted."), "success");
     } catch (error) {
-      setError(error.message || "Failed to delete version.");
+      setError(error.message || t("Failed to delete version."));
       console.error("Error deleting a version:", error);
     }
   };
@@ -221,30 +223,30 @@ const AdminVersions = () => {
             <Card.Body>
               <div className="d-flex">
                 <Card.Title className="h3 fs-1 text-primary my-4">
-                  Version Management
+                  {t("Version Management")}
                 </Card.Title>
                 <Button
                   variant="outline-success"
                   className="align-self-center ms-auto me-2"
                   onClick={handleShowAddModal}
                 >
-                  Add New Version
+                  {t("Add New Version")}
                 </Button>
               </div>
 
-              {error && <Alert variant="danger">Hata: {error}</Alert>}
+              {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
               {loading ? (
                 <div className="text-center">
                   <Spinner animation="border" role="status" />
-                  <span className="visually-hidden">Loading...</span>
+                  <span className="visually-hidden">{t("Loading...")}</span>
                 </div>
               ) : (
                 <Table striped bordered hover responsive>
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th className="text-center">Actions</th>
+                      <th>{t("ID")}</th>
+                      <th>{t("Name")}</th>
+                      <th className="text-center">{t("Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -282,24 +284,24 @@ const AdminVersions = () => {
       {/* Add Version Modal */}
       <Modal show={showAddModal} onHide={handleCloseAddModal} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Add New Version</Modal.Title>
+          <Modal.Title>{t("Add New Version")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Version Name</Form.Label>
+              <Form.Label>{t("Version Name")}</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Enter version name"
+                placeholder={t("Enter version name")}
                 ref={nameRef}
               />
             </Form.Group>
           </Form>
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={handleAddVersion}>
-            Add Version
+            {t("Add Version")}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -307,24 +309,24 @@ const AdminVersions = () => {
       {/* Edit Version Modal */}
       <Modal show={showEditModal} onHide={handleCloseEditModal} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Edit Version</Modal.Title>
+          <Modal.Title>{t("Edit Version")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Version Name</Form.Label>
+              <Form.Label>{t("Version Name")}</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Enter version name"
+                placeholder={t("Enter version name")}
                 ref={editNameRef}
               />
             </Form.Group>
           </Form>
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={handleUpdateVersion}>
-            Edit Version
+            {t("Edit Version")}
           </Button>
         </Modal.Footer>
       </Modal>

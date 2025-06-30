@@ -3,8 +3,10 @@ import { saveRoute } from "../api/routeApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [routeData, setRouteData] = useState({
     route_id: "",
@@ -45,22 +47,22 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
       !routeData.route_type
     ) {
       Swal.fire(
-        "Error!",
-        "Route ID, short name and route type are required!",
+        t("Error!"),
+        t("Route ID, short name and route type are required!"),
         "error"
       );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to add this route?",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to add this route?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, add!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, add!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -72,12 +74,12 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
           ...prev,
           data: [...prev.data, { ...newRoute, route_id }],
         }));
-        Swal.fire("Added!", "Route successfully added.", "success");
+        Swal.fire(t("Added!"), t("Route successfully added."), "success");
         onClose();
       } catch (error) {
         Swal.fire(
-          "Error!",
-          `Error while adding a route: ${error.message}`,
+          t("Error!"),
+          t("Error while adding a route:") + " " + error.message,
           "error"
         );
       }
@@ -86,11 +88,11 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
 
   return (
     <div className="form-container">
-      <h5>Add New Route</h5>
+      {/* <h5>{t("Add New Route")}</h5> */}
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="route_id" className="form-label">
-            Route ID (*)
+            {t("Route ID")} (*)
           </label>
           <input
             type="text"
@@ -104,7 +106,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_short_name" className="form-label">
-            Route Short Name (*)
+            {t("Route Short Name")} (*)
           </label>
           <input
             type="text"
@@ -118,7 +120,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_long_name" className="form-label">
-            Route Long Name (*)
+            {t("Route Long Name")} (*)
           </label>
           <input
             type="text"
@@ -131,7 +133,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_type" className="form-label">
-            Route Type (*)
+            {t("Route Type")} (*)
           </label>
           <select
             id="route_type"
@@ -141,17 +143,17 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
             onChange={handleChange}
             required
           >
-            <option value="">Select</option>
-            <option value="0">0 - Tram</option>
-            <option value="1">1 - Subway</option>
-            <option value="2">2 - Train</option>
-            <option value="3">3 - Bus</option>
-            <option value="4">4 - Ferry</option>
+            <option value="">{t("Select")}</option>
+            <option value="0">{t("0 - Tram")}</option>
+            <option value="1">{t("1 - Subway")}</option>
+            <option value="2">{t("2 - Train")}</option>
+            <option value="3">{t("3 - Bus")}</option>
+            <option value="4">{t("4 - Ferry")}</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="route_desc" className="form-label">
-            Description
+            {t("Description")}
           </label>
           <input
             type="text"
@@ -164,7 +166,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_url" className="form-label">
-            URL
+            {t("URL")}
           </label>
           <input
             type="text"
@@ -177,7 +179,7 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
         </div>
         <div className="mb-2">
           <label htmlFor="route_color" className="form-label">
-            Route Color
+            {t("Route Color")}
           </label>
           <input
             type="text"
@@ -186,12 +188,12 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
             className="form-control"
             value={routeData.route_color}
             onChange={handleChange}
-            placeholder="Ör: FF0000"
+            placeholder={t("Example") + ": FF0000"}
           />
         </div>
         <div className="mb-2">
           <label htmlFor="route_text_color" className="form-label">
-            Text Color
+            {t("Text Color")}
           </label>
           <input
             type="text"
@@ -200,12 +202,12 @@ const RouteAddPage = ({ onClose, setRoutes, selectedAgency, project_id }) => {
             className="form-control"
             value={routeData.route_text_color}
             onChange={handleChange}
-            placeholder="Ör: 000000"
+            placeholder={t("Example") + ": 000000"}
           />
         </div>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
-            Add
+            {t("Add")}
           </button>
         </div>
       </form>

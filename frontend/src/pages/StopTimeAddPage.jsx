@@ -4,6 +4,7 @@ import { saveStop } from "../api/stopApi";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/Auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const StopTimeAddPage = ({
   project_id,
@@ -15,6 +16,7 @@ const StopTimeAddPage = ({
   resetClickedCoords,
   route_id,
 }) => {
+  const { t } = useTranslation();
   const { token } = useContext(AuthContext);
   const [stopData, setStopData] = useState({
     stop_id: "",
@@ -143,22 +145,22 @@ const StopTimeAddPage = ({
       !stopData.departure_time
     ) {
       Swal.fire(
-        "Error!",
-        "Stop name, sequence number, arrival and departure time are required!",
+        t("Error!"),
+        t("Stop name, sequence number, arrival and departure time are required!"),
         "error"
       );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Are you sure you want to add this stop time?",
+      title: t("Are you sure?"),
+      text: t("Are you sure you want to add this stop time?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, add!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, add!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -224,7 +226,7 @@ const StopTimeAddPage = ({
 
         await saveStopTime(stopTimeDataForApi, token);
 
-        Swal.fire("Added!", "Stop time successfully added.", "success");
+        Swal.fire(t("Added!"), t("Stop time successfully added."), "success");
 
         setStopData({
           stop_id: "",
@@ -256,8 +258,8 @@ const StopTimeAddPage = ({
         onClose();
       } catch (error) {
         Swal.fire(
-          "Error!",
-          `Error occurred while adding stop time: ${error.message}`,
+          t("Error!"),
+          t("Error occurred while adding stop time:") + " " + error.message,
           "error"
         );
       }
@@ -267,10 +269,10 @@ const StopTimeAddPage = ({
   return (
     <div className="form-container">
       <form onSubmit={handleSubmit}>
-        <h5>Stop</h5>
+        <h5>{t("Stop")}</h5>
         <div className="mb-2">
           <label htmlFor="stop_select" className="form-label">
-            Stop Selection
+            {t("Stop Selection")}
           </label>
           <select
             id="stop_select"
@@ -279,19 +281,19 @@ const StopTimeAddPage = ({
             value={selectedStopId}
             onChange={handleStopSelectChange}
           >
-            <option value="">Choose an Available Stop</option>
+            <option value="">{t("Choose an Available Stop")}</option>
             {allStops.map((stop) => (
               <option key={stop.stop_id} value={stop.stop_id}>
                 {stop.stop_name} ({stop.stop_code})
               </option>
             ))}
-            <option value="new">Add New Stop</option>
+            <option value="new">{t("Add New Stop")}</option>
           </select>
         </div>
         {isNewStop && (
           <div className="mb-2">
             <label htmlFor="stop_id" className="form-label">
-              Stop ID (*)
+              {t("Stop ID")} (*)
             </label>
             <input
               type="text"
@@ -306,7 +308,7 @@ const StopTimeAddPage = ({
         )}
         <div className="mb-2">
           <label htmlFor="stop_code" className="form-label">
-            Stop Code
+            {t("Stop Code")}
           </label>
           <input
             type="text"
@@ -320,7 +322,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_name" className="form-label">
-            Stop Name (*)
+            {t("Stop Name")} (*)
           </label>
           <input
             type="text"
@@ -335,7 +337,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_desc" className="form-label">
-            Stop Description
+            {t("Stop Description")}
           </label>
           <input
             type="text"
@@ -350,7 +352,7 @@ const StopTimeAddPage = ({
         <div className="row">
           <div className="col-6 mb-2">
             <label htmlFor="stop_lat" className="form-label">
-              Stop Latitude (*)
+              {t("Stop Latitude")} (*)
             </label>
             <input
               type="number"
@@ -367,7 +369,7 @@ const StopTimeAddPage = ({
           </div>
           <div className="col-6 mb-2">
             <label htmlFor="stop_lon" className="form-label">
-              Stop Longtitude (*)
+              {t("Stop Longitude")} (*)
             </label>
             <input
               type="number"
@@ -385,7 +387,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_url" className="form-label">
-            Stop URL
+            {t("Stop URL")}
           </label>
           <input
             type="text"
@@ -399,7 +401,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="location_type" className="form-label">
-            Location Type
+            {t("Location Type")}
           </label>
           <select
             id="location_type"
@@ -409,14 +411,14 @@ const StopTimeAddPage = ({
             onChange={handleChange}
             disabled={!isNewStop}
           >
-            <option value="">Select</option>
-            <option value="0">0 - Stop</option>
-            <option value="1">1 - Station</option>
+            <option value="">{t("Select")}</option>
+            <option value="0">{t("0 - Stop")}</option>
+            <option value="1">{t("1 - Station")}</option>
           </select>
         </div>
         <div className="mb-2">
           <label htmlFor="stop_timezone" className="form-label">
-            Stop Timezone
+            {t("Stop Timezone")}
           </label>
           <input
             type="text"
@@ -430,7 +432,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="wheelchair_boarding" className="form-label">
-            Wheelchair Access
+            {t("Wheelchair Access")}
           </label>
           <select
             id="wheelchair_boarding"
@@ -440,17 +442,17 @@ const StopTimeAddPage = ({
             onChange={handleChange}
             disabled={!isNewStop}
           >
-            <option value="">Select</option>
-            <option value="0">0 - No Information</option>
-            <option value="1">1 - Possible</option>
-            <option value="2">2 - Not Possible</option>
+            <option value="">{t("Select")}</option>
+            <option value="0">{t("0 - No Information")}</option>
+            <option value="1">{t("1 - Possible")}</option>
+            <option value="2">{t("2 - Not Possible")}</option>
           </select>
         </div>
         <hr />
-        <h5>Stop Time</h5>
+        <h5>{t("Stop Time")}</h5>
         <div className="mb-2">
           <label htmlFor="arrival_time" className="form-label">
-            Arrival Time (*)
+            {t("Arrival Time")} (*)
           </label>
           <input
             type="text"
@@ -459,13 +461,13 @@ const StopTimeAddPage = ({
             className="form-control"
             value={stopData.arrival_time}
             onChange={handleChange}
-            placeholder="Ex: 12:30:00"
+            placeholder={t("Ex: 12:30:00")}
             required
           />
         </div>
         <div className="mb-2">
           <label htmlFor="departure_time" className="form-label">
-            Departure Time (*)
+            {t("Departure Time")} (*)
           </label>
           <input
             type="text"
@@ -474,13 +476,13 @@ const StopTimeAddPage = ({
             className="form-control"
             value={stopData.departure_time}
             onChange={handleChange}
-            placeholder="Ex: 12:35:00"
+            placeholder={t("Ex: 12:35:00")}
             required
           />
         </div>
         <div className="mb-2">
           <label htmlFor="stop_sequence" className="form-label">
-            Stop Sequence (*)
+            {t("Stop Sequence")} (*)
           </label>
           <input
             type="number"
@@ -494,7 +496,7 @@ const StopTimeAddPage = ({
         </div>
         <div className="mb-2">
           <label htmlFor="stop_headsign" className="form-label">
-            Stop Headsign
+            {t("Stop Headsign")}
           </label>
           <input
             type="text"
@@ -508,7 +510,7 @@ const StopTimeAddPage = ({
         <div className="row">
           <div className="col-6 mb-2">
             <label htmlFor="pickup_type" className="form-label">
-              Pickup Type
+              {t("Pickup Type")}
             </label>
             <select
               id="pickup_type"
@@ -517,16 +519,16 @@ const StopTimeAddPage = ({
               value={stopData.pickup_type}
               onChange={handleChange}
             >
-              <option value="">Select</option>
-              <option value="0">0 - Normal</option>
-              <option value="1">1 - None</option>
-              <option value="2">2 - Contact Agency</option>
-              <option value="3">3 - Contact Driver</option>
+              <option value="">{t("Select")}</option>
+              <option value="0">{t("0 - Normal")}</option>
+              <option value="1">{t("1 - None")}</option>
+              <option value="2">{t("2 - Contact Agency")}</option>
+              <option value="3">{t("3 - Contact Driver")}</option>
             </select>
           </div>
           <div className="col-6 mb-2">
             <label htmlFor="drop_off_type" className="form-label">
-              Drop Off Type
+              {t("Drop Off Type")}
             </label>
             <select
               id="drop_off_type"
@@ -535,18 +537,18 @@ const StopTimeAddPage = ({
               value={stopData.drop_off_type}
               onChange={handleChange}
             >
-              <option value="">Select</option>
-              <option value="0">0 - Normal</option>
-              <option value="1">1 - None</option>
-              <option value="2">2 - Contact Agency</option>
-              <option value="3">3 - Contact Driver</option>
+              <option value="">{t("Select")}</option>
+              <option value="0">{t("0 - Normal")}</option>
+              <option value="1">{t("1 - None")}</option>
+              <option value="2">{t("2 - Contact Agency")}</option>
+              <option value="3">{t("3 - Contact Driver")}</option>
             </select>
           </div>
         </div>
         <div className="row">
           <div className="col-6 mb-2">
             <label htmlFor="shape_dist_traveled" className="form-label">
-              Shape Distance
+              {t("Shape Distance")}
             </label>
             <input
               type="number"
@@ -559,7 +561,7 @@ const StopTimeAddPage = ({
           </div>
           <div className="col-6 mb-2">
             <label htmlFor="timepoint" className="form-label">
-              Time Point
+              {t("Time Point")}
             </label>
             <select
               id="timepoint"
@@ -568,16 +570,16 @@ const StopTimeAddPage = ({
               value={stopData.timepoint}
               onChange={handleChange}
             >
-              <option value="">Select</option>
-              <option value="1">1 - Full Time</option>
-              <option value="0">0 - Approximately</option>
+              <option value="">{t("Select")}</option>
+              <option value="1">{t("1 - Full Time")}</option>
+              <option value="0">{t("0 - Approximately")}</option>
             </select>
           </div>
         </div>
 
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary">
-            Add
+            {t("Add")}
           </button>
         </div>
       </form>

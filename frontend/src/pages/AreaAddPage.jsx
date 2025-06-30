@@ -5,8 +5,10 @@ import PropTypes from "prop-types";
 import Select from "react-select";
 import { addArea } from "../api/fareApi";
 import { fetchAllStopsByProjectId } from "../api/stopApi";
+import { useTranslation } from "react-i18next";
 
 const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     area_id: "",
     area_name: "",
@@ -21,7 +23,7 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
   useEffect(() => {
     const fetchData = async () => {
       if (!project_id || !token) {
-        setError("Project ID or token is missing.");
+        setError(t("Project ID or token is missing."));
         return;
       }
 
@@ -32,7 +34,7 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
         const stopsData = Array.isArray(response.data) ? response.data : [];
 
         if (stopsData.length === 0) {
-          setError("No stops found. Please create stops first.");
+          setError(t("No stops found. Please create stops first."));
           setStops([]);
         } else {
           setStops(stopsData);
@@ -40,7 +42,7 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
         }
       } catch (err) {
         console.error("Error fetching stops:", err);
-        setError(`Error loading stops: ${err.message}`);
+        setError(t("Error loading stops:") + " " + err.message);
         setStops([]);
       } finally {
         setStopsLoading(false);
@@ -48,7 +50,7 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
     };
 
     fetchData();
-  }, [project_id, token]);
+  }, [project_id, token, t]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,19 +60,19 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.area_id || !formData.area_name) {
-      Swal.fire("Error!", "Area ID and Area Name are required!", "error");
+      Swal.fire(t("Error!"), t("Area ID and Area Name are required!"), "error");
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to add this area?",
+      title: t("Are you sure?"),
+      text: t("Do you want to add this area?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, add it!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, add it!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -84,7 +86,7 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
 
         const response = await addArea(project_id, token, payload);
 
-        Swal.fire("Success!", "Area added successfully.", "success");
+        Swal.fire(t("Success!"), t("Area added successfully."), "success");
 
         if (onAdd) {
           onAdd(response);
@@ -99,7 +101,7 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
         onClose();
       } catch (error) {
         console.error("Error adding area:", error);
-        Swal.fire("Error!", `Could not add area: ${error.message}`, "error");
+        Swal.fire(t("Error!"), t("Could not add area:") + " " + error.message, "error");
       } finally {
         setLoading(false);
       }
@@ -116,11 +118,11 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
       <Form onSubmit={handleSubmit} className="add-area-form">
         {error && <div className="text-red-500 mb-4">{error}</div>}
         {stopsLoading && (
-          <div className="loading-text mb-4">Loading stops...</div>
+          <div className="loading-text mb-4">{t("Loading stops...")}</div>
         )}
         <Form.Group className="mb-4">
           <Form.Label htmlFor="area_id" className="form-label">
-            Area ID (*)
+            {t("Area ID")} (*)
           </Form.Label>
           <Form.Control
             type="text"
@@ -129,14 +131,14 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
             value={formData.area_id}
             onChange={handleChange}
             required
-            placeholder="Enter unique area ID"
+            placeholder={t("Enter unique area ID")}
             disabled={loading}
             className="form-control-lg"
           />
         </Form.Group>
         <Form.Group className="mb-4">
           <Form.Label htmlFor="area_name" className="form-label">
-            Area Name (*)
+            {t("Area Name")} (*)
           </Form.Label>
           <Form.Control
             type="text"
@@ -145,14 +147,14 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
             value={formData.area_name}
             onChange={handleChange}
             required
-            placeholder="Enter area name"
+            placeholder={t("Enter area name")}
             disabled={loading}
             className="form-control-lg"
           />
         </Form.Group>
         <Form.Group className="mb-4">
           <Form.Label htmlFor="stop_ids" className="form-label">
-            Stops (Optional)
+            {t("Stops (Optional)")}
           </Form.Label>
           <Select
             isMulti
@@ -160,10 +162,10 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
             options={stopOptions}
             value={selectedStops}
             onChange={setSelectedStops}
-            placeholder="Select stops..."
+            placeholder={t("Select stops...")}
             className="basic-multi-select"
             classNamePrefix="select"
-            noOptionsMessage={() => "No stops available"}
+            noOptionsMessage={() => t("No stops available")}
             isSearchable
             isDisabled={loading || stopsLoading}
             styles={{
@@ -237,7 +239,7 @@ const AreaAddPage = ({ project_id, token, onClose, onAdd }) => {
         </Form.Group>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Adding..." : "Add Area"}
+            {loading ? t("Adding...") : t("Add Area")}
           </button>
         </div>
       </Form>

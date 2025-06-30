@@ -31,8 +31,8 @@ import "../styles/Header.css";
 import { useTranslation } from "react-i18next";
 
 const LANGUAGES = [
-  { code: "en", flag: "gb", name: "EN" },
-  { code: "tr", flag: "tr", name: "TR" },
+  { code: "en", flag: "gb", name: "English" },
+  { code: "tr", flag: "tr", name: "Türkçe" },
 ];
 
 const GTFS_TABLES = [
@@ -305,7 +305,31 @@ const Header = () => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto align-items-center">
-            {isAuthenticated ? (
+            {/* Dil seçici her zaman görünür */}
+            <NavDropdown
+              title={
+                <span className="d-flex align-items-center gap-2">
+                  <span className={`fi fi-${LANGUAGES.find((l) => l.code === i18n.language)?.flag || "xx"} fis`}></span>
+                  <span>{LANGUAGES.find((l) => l.code === i18n.language)?.name ? t(LANGUAGES.find((l) => l.code === i18n.language).name) : t("Language")}</span>
+                </span>
+              }
+              id="language-dropdown"
+              className="nav-link-custom"
+              align="end"
+            >
+              {LANGUAGES.map((lang) => (
+                <NavDropdown.Item
+                  key={lang.code}
+                  onClick={() => i18n.changeLanguage(lang.code)}
+                  className={`d-flex align-items-center gap-2 ${i18n.language === lang.code ? "active" : ""}`}
+                >
+                  <span className={`fi fi-${lang.flag} fis`}></span>
+                  <span>{t(lang.name)}</span>
+                </NavDropdown.Item>
+              ))}
+            </NavDropdown>
+            {/* Diğer ikonlar sadece giriş yaptıysa görünür */}
+            {isAuthenticated && (
               <>
                 <Nav.Link
                   as={Link}
@@ -340,28 +364,6 @@ const Header = () => {
                   <BarChart size={20} />
                 </Nav.Link>
                 <NavDropdown
-                  title={
-                    <span className="d-flex align-items-center gap-2">
-                      <span className={`fi fi-${LANGUAGES.find((l) => l.code === i18n.language)?.flag || "xx"} fis`}></span>
-                      <span>{LANGUAGES.find((l) => l.code === i18n.language)?.name ? t(LANGUAGES.find((l) => l.code === i18n.language).name) : t("Language")}</span>
-                    </span>
-                  }
-                  id="language-dropdown"
-                  className="nav-link-custom"
-                  align="end"
-                >
-                  {LANGUAGES.map((lang) => (
-                    <NavDropdown.Item
-                      key={lang.code}
-                      onClick={() => i18n.changeLanguage(lang.code)}
-                      className={`d-flex align-items-center gap-2 ${i18n.language === lang.code ? "active" : ""}`}
-                    >
-                      <span className={`fi fi-${lang.flag} fis`}></span>
-                      <span>{t(lang.name)}</span>
-                    </NavDropdown.Item>
-                  ))}
-                </NavDropdown>
-                <NavDropdown
                   title={<PersonCircle size={20} color="#fff" />}
                   id="user-dropdown"
                   align="end"
@@ -389,7 +391,7 @@ const Header = () => {
                   </NavDropdown.Item>
                 </NavDropdown>
               </>
-            ) : null}
+            )}
           </Nav>
         </Navbar.Collapse>
       </Navbar>

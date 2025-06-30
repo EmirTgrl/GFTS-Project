@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { Form, Button } from "react-bootstrap";
 import { X } from "react-bootstrap-icons";
+import { useTranslation } from "react-i18next";
 
 const TripFilterPanel = ({
   calendars,
@@ -11,6 +12,7 @@ const TripFilterPanel = ({
   fullTrips,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [filters, setFilters] = useState({
     service_id: "",
     direction_id: "",
@@ -23,16 +25,16 @@ const TripFilterPanel = ({
   const endTimeRef = useRef(null);
 
   const getActiveDays = (calendar) => {
-    if (!calendar) return "N/A";
+    if (!calendar) return t("N/A");
     const days = [];
-    if (calendar.monday === 1) days.push("Pzt");
-    if (calendar.tuesday === 1) days.push("Sal");
-    if (calendar.wednesday === 1) days.push("Çar");
-    if (calendar.thursday === 1) days.push("Per");
-    if (calendar.friday === 1) days.push("Cum");
-    if (calendar.saturday === 1) days.push("Cts");
-    if (calendar.sunday === 1) days.push("Paz");
-    return days.length > 0 ? days.join(",") : "N/A";
+    if (calendar.monday === 1) days.push(t("Mon"));
+    if (calendar.tuesday === 1) days.push(t("Tue"));
+    if (calendar.wednesday === 1) days.push(t("Wed"));
+    if (calendar.thursday === 1) days.push(t("Thu"));
+    if (calendar.friday === 1) days.push(t("Fri"));
+    if (calendar.saturday === 1) days.push(t("Sat"));
+    if (calendar.sunday === 1) days.push(t("Sun"));
+    return days.length > 0 ? days.join(",") : t("N/A");
   };
 
   const compareTimes = (time1, time2) => {
@@ -110,12 +112,12 @@ const TripFilterPanel = ({
   return (
     <div className="trip-filter-panel">
       <div className="filter-header d-flex justify-content-between align-items-center">
-        <h5 className="mb-0">Filtrele</h5>
+        <h5 className="mb-0">{t("Filter")}</h5>
         <X size={24} onClick={onClose} className="close-icon" />
       </div>
       <Form>
         <Form.Group className="mb-2">
-          <Form.Label>Günler</Form.Label>
+          <Form.Label>{t("Days")}</Form.Label>
           <Form.Select
             size="sm"
             value={filters.service_id}
@@ -124,7 +126,7 @@ const TripFilterPanel = ({
               setFilters((prev) => ({ ...prev, service_id: e.target.value }))
             }
           >
-            <option value="">Tümü</option>
+            <option value="">{t("All")}</option>
             {calendars.map((cal) => (
               <option key={cal.service_id} value={cal.service_id}>
                 {getActiveDays(cal)}
@@ -134,7 +136,7 @@ const TripFilterPanel = ({
         </Form.Group>
 
         <Form.Group className="mb-2">
-          <Form.Label>Yön</Form.Label>
+          <Form.Label>{t("Direction")}</Form.Label>
           <Form.Select
             size="sm"
             value={filters.direction_id}
@@ -143,14 +145,14 @@ const TripFilterPanel = ({
               setFilters((prev) => ({ ...prev, direction_id: e.target.value }))
             }
           >
-            <option value="">Tümü</option>
-            <option value="0">Gidiş</option>
-            <option value="1">Dönüş</option>
+            <option value="">{t("All")}</option>
+            <option value="0">{t("Outbound")}</option>
+            <option value="1">{t("Inbound")}</option>
           </Form.Select>
         </Form.Group>
 
         <Form.Group className="mb-2">
-          <Form.Label>Başlangıç</Form.Label>
+          <Form.Label>{t("Start Time")}</Form.Label>
           <Form.Control
             size="sm"
             type="time"
@@ -166,7 +168,7 @@ const TripFilterPanel = ({
         </Form.Group>
 
         <Form.Group className="mb-2">
-          <Form.Label>Bitiş</Form.Label>
+          <Form.Label>{t("End Time")}</Form.Label>
           <Form.Control
             size="sm"
             type="time"
@@ -183,10 +185,10 @@ const TripFilterPanel = ({
 
         <div className="d-flex gap-2">
           <Button size="sm" variant="primary" onClick={handleApplyFilters}>
-            Uygula
+            {t("Apply")}
           </Button>
           <Button size="sm" variant="secondary" onClick={handleResetFilters}>
-            Sıfırla
+            {t("Reset")}
           </Button>
         </div>
       </Form>

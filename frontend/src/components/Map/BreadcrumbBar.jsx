@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import "../../styles/BreadcrumbBar.css";
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const BreadcrumbBar = ({
   selectedEntities,
@@ -12,9 +13,11 @@ const BreadcrumbBar = ({
   itemsPerPage,
   isFilterOpen,
 }) => {
+  const { t } = useTranslation();
+
   const renderTooltip = (text) => (
     <Tooltip id={`tooltip-${text}`} className="custom-tooltip">
-      {text || "N/A"}
+      {text || t("N/A")}
     </Tooltip>
   );
 
@@ -86,23 +89,24 @@ const BreadcrumbBar = ({
   };
 
   const truncateText = (text, maxLength = 12) => {
-    if (!text || typeof text !== "string") return "N/A";
+    if (!text || typeof text !== "string") return t("N/A");
     return text.length > maxLength
       ? `${text.substring(0, maxLength)}...`
       : text;
   };
 
   const formatCalendarDays = (calendar) => {
-    if (!calendar) return "N/A";
+    if (!calendar) return t("N/A");
 
+    // Gün isimlerini çeviriyle al
     const days = [
-      { key: "monday", label: "Pzt", value: calendar.monday },
-      { key: "tuesday", label: "Sal", value: calendar.tuesday },
-      { key: "wednesday", label: "Çar", value: calendar.wednesday },
-      { key: "thursday", label: "Per", value: calendar.thursday },
-      { key: "friday", label: "Cum", value: calendar.friday },
-      { key: "saturday", label: "Cmt", value: calendar.saturday },
-      { key: "sunday", label: "Paz", value: calendar.sunday },
+      { key: "monday", label: t("Mon"), value: calendar.monday },
+      { key: "tuesday", label: t("Tue"), value: calendar.tuesday },
+      { key: "wednesday", label: t("Wed"), value: calendar.wednesday },
+      { key: "thursday", label: t("Thu"), value: calendar.thursday },
+      { key: "friday", label: t("Fri"), value: calendar.friday },
+      { key: "saturday", label: t("Sat"), value: calendar.saturday },
+      { key: "sunday", label: t("Sun"), value: calendar.sunday },
     ];
 
     const activeDays = days
@@ -110,24 +114,24 @@ const BreadcrumbBar = ({
       .map((day) => day.label);
 
     if (activeDays.length === 7) {
-      return "Her Gün";
+      return t("Every Day");
     } else if (
       activeDays.length === 5 &&
       activeDays.every((day) =>
-        ["Pzt", "Sal", "Çar", "Per", "Cum"].includes(day)
+        [t("Mon"), t("Tue"), t("Wed"), t("Thu"), t("Fri")].includes(day)
       )
     ) {
-      return "Hafta İçi";
+      return t("Weekdays");
     } else if (
       activeDays.length === 2 &&
-      activeDays.includes("Cmt") &&
-      activeDays.includes("Paz")
+      activeDays.includes(t("Sat")) &&
+      activeDays.includes(t("Sun"))
     ) {
-      return "Hafta Sonu";
+      return t("Weekend");
     } else if (activeDays.length > 0) {
       return activeDays.join("-");
     } else {
-      return calendar.service_id || "N/A";
+      return calendar.service_id || t("N/A");
     }
   };
 
@@ -138,7 +142,7 @@ const BreadcrumbBar = ({
       fullLabel:
         selectedEntities.agency?.agency_name ||
         selectedEntities.agency?.agency_id ||
-        "Unknown Agency",
+        t("Unknown Agency"),
       category: "agency",
       entity: selectedEntities.agency,
     });
@@ -152,7 +156,7 @@ const BreadcrumbBar = ({
       fullLabel:
         selectedEntities.route?.route_long_name ||
         selectedEntities.route?.route_id ||
-        "Unknown Route",
+        t("Unknown Route"),
       category: "route",
       entity: selectedEntities.route,
     });
@@ -174,17 +178,20 @@ const BreadcrumbBar = ({
       fullLabel:
         selectedEntities.trip?.trip_headsign ||
         selectedEntities.trip?.trip_id ||
-        "Unknown Trip",
+        t("Unknown Trip"),
       category: "trip",
       entity: selectedEntities.trip,
     });
   }
   if (selectedEntities.shape) {
     breadcrumbItems.push({
-      label: truncateText(`Shp ${selectedEntities.shape?.shape_pt_sequence}`),
-      fullLabel: `Shape Point ${
-        selectedEntities.shape?.shape_pt_sequence || "N/A"
-      }`,
+      label: truncateText(
+        t("Shp") + " " + selectedEntities.shape?.shape_pt_sequence
+      ),
+      fullLabel:
+        t("Shape Point") +
+        " " +
+        (selectedEntities.shape?.shape_pt_sequence || t("N/A")),
       category: "shape",
       entity: selectedEntities.shape,
     });
@@ -197,7 +204,7 @@ const BreadcrumbBar = ({
       fullLabel:
         selectedEntities.stop?.stop_name ||
         selectedEntities.stop?.stop_id ||
-        "Unknown Stop",
+        t("Unknown Stop"),
       category: "stop",
       entity: selectedEntities.stop,
     });
@@ -218,7 +225,7 @@ const BreadcrumbBar = ({
               }`}
               onClick={() => handleBreadcrumbClick(item.category, item.entity)}
             >
-              <span className="breadcrumb-category">{item.category}</span>
+              <span className="breadcrumb-category">{t(item.category)}</span>
               <span className="breadcrumb-label">{item.label}</span>
             </div>
           </OverlayTrigger>

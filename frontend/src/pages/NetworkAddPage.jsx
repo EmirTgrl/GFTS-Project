@@ -5,9 +5,11 @@ import PropTypes from "prop-types";
 import Select from "react-select";
 import { addNetwork } from "../api/fareApi";
 import { fetchRoutesByProjectId } from "../api/routeApi";
+import { useTranslation } from "react-i18next";
 
 // NetworkAddForm component for adding a new network
 const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     network_id: "",
     network_name: "",
@@ -23,7 +25,7 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
   useEffect(() => {
     const fetchAllRoutes = async () => {
       if (!project_id || !token) {
-        setError("Project ID or token is missing.");
+        setError(t("Project ID or token is missing."));
         return;
       }
 
@@ -55,7 +57,7 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
         }
 
         if (allRoutes.length === 0) {
-          setError("No routes found. Please create routes first.");
+          setError(t("No routes found. Please create routes first."));
           setRoutes([]);
         } else {
           setRoutes(allRoutes);
@@ -63,7 +65,7 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
         }
       } catch (err) {
         console.error("Error fetching routes:", err);
-        setError(`Error loading routes: ${err.message}`);
+        setError(t("Error loading routes:") + " " + err.message);
         setRoutes([]);
       } finally {
         setRoutesLoading(false);
@@ -71,7 +73,7 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
     };
 
     fetchAllRoutes();
-  }, [project_id, token]);
+  }, [project_id, token, t]);
 
   // Handle text input changes
   const handleChange = (e) => {
@@ -83,19 +85,23 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.network_id || !formData.network_name) {
-      Swal.fire("Error!", "Network ID and Network Name are required!", "error");
+      Swal.fire(
+        t("Error!"),
+        t("Network ID and Network Name are required!"),
+        "error"
+      );
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to add this network?",
+      title: t("Are you sure?"),
+      text: t("Do you want to add this network?"),
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, add it!",
-      cancelButtonText: "No",
+      confirmButtonText: t("Yes, add it!"),
+      cancelButtonText: t("No"),
     });
 
     if (result.isConfirmed) {
@@ -109,7 +115,7 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
 
         const response = await addNetwork(project_id, token, payload);
 
-        Swal.fire("Success!", "Network added successfully.", "success");
+        Swal.fire(t("Success!"), t("Network added successfully."), "success");
 
         if (onAdd) {
           onAdd(response);
@@ -124,7 +130,11 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
         onClose();
       } catch (error) {
         console.error("Error adding network:", error);
-        Swal.fire("Error!", `Could not add network: ${error.message}`, "error");
+        Swal.fire(
+          t("Error!"),
+          t("Could not add network:") + " " + error.message,
+          "error"
+        );
       } finally {
         setLoading(false);
       }
@@ -142,11 +152,11 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
       <Form onSubmit={handleSubmit} className="add-network-form">
         {error && <div className="text-red-500 mb-4">{error}</div>}
         {routesLoading && (
-          <div className="loading-text mb-4">Loading routes...</div>
+          <div className="loading-text mb-4">{t("Loading routes...")}</div>
         )}
         <Form.Group className="mb-4">
           <Form.Label htmlFor="network_id" className="form-label">
-            Network ID (*)
+            {t("Network ID")} (*)
           </Form.Label>
           <Form.Control
             type="text"
@@ -155,14 +165,14 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
             value={formData.network_id}
             onChange={handleChange}
             required
-            placeholder="Enter unique network ID"
+            placeholder={t("Enter unique network ID")}
             disabled={loading}
             className="form-control-lg"
           />
         </Form.Group>
         <Form.Group className="mb-4">
           <Form.Label htmlFor="network_name" className="form-label">
-            Network Name (*)
+            {t("Network Name")} (*)
           </Form.Label>
           <Form.Control
             type="text"
@@ -171,14 +181,14 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
             value={formData.network_name}
             onChange={handleChange}
             required
-            placeholder="Enter network name"
+            placeholder={t("Enter network name")}
             disabled={loading}
             className="form-control-lg"
           />
         </Form.Group>
         <Form.Group className="mb-4">
           <Form.Label htmlFor="route_ids" className="form-label">
-            Routes (Optional)
+            {t("Routes (Optional)")}
           </Form.Label>
           <Select
             isMulti
@@ -186,10 +196,10 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
             options={routeOptions}
             value={selectedRoutes}
             onChange={setSelectedRoutes}
-            placeholder="Select routes..."
+            placeholder={t("Select routes...")}
             className="basic-multi-select"
             classNamePrefix="select"
-            noOptionsMessage={() => "No routes available"}
+            noOptionsMessage={() => t("No routes available")}
             isSearchable
             isDisabled={loading || routesLoading}
             styles={{
@@ -263,7 +273,7 @@ const NetworkAddForm = ({ project_id, token, onClose, onAdd }) => {
         </Form.Group>
         <div className="d-flex justify-content-end gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Adding..." : "Add Network"}
+            {loading ? t("Adding...") : t("Add Network")}
           </button>
         </div>
       </Form>

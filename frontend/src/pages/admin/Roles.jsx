@@ -15,6 +15,7 @@ import {
 } from "react-bootstrap";
 import { PencilSquare, Trash } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
+import { useTranslation } from "react-i18next";
 import "../../styles/AdminPage.css";
 
 const AdminRoles = () => {
@@ -22,6 +23,7 @@ const AdminRoles = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { token, user } = useContext(AuthContext);
+  const { t } = useTranslation();
 
   const nameRef = useRef(null);
   const editNameRef = useRef(null);
@@ -45,12 +47,12 @@ const AdminRoles = () => {
       const data = await response.json();
       setRoles(data);
     } catch (error) {
-      setError(error.message || "Failed to load roles.");
+      setError(error.message || t("Failed to load roles."));
       console.error("Error loading roles:", error);
     } finally {
       setLoading(false);
     }
-  }, [token, API_URL]);
+  }, [token, API_URL, t]);
 
   useEffect(() => {
     if (user?.role === "admin") {
@@ -74,17 +76,17 @@ const AdminRoles = () => {
   const handleAddRole = async () => {
     const name = nameRef.current.value.trim();
     if (!name) {
-      setError("Role name required.");
+      setError(t("Role name required."));
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to add this role?",
+      title: t("Are you sure?"),
+      text: t("Do you want to add this role?"),
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Add",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Add"),
+      cancelButtonText: t("Cancel"),
     });
     if (!result.isConfirmed) return;
 
@@ -108,7 +110,7 @@ const AdminRoles = () => {
       handleCloseAddModal();
       fetchRoles();
     } catch (error) {
-      setError(error.message || "Failed to add role.");
+      setError(error.message || t("Failed to add role."));
       console.error("Error adding a role:", error);
     }
   };
@@ -134,17 +136,17 @@ const AdminRoles = () => {
     if (!roleToEdit) return;
     const name = editNameRef.current.value.trim();
     if (!name) {
-      setError("Role name required.");
+      setError(t("Role name required."));
       return;
     }
 
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to update this role?",
+      title: t("Are you sure?"),
+      text: t("Do you want to update this role?"),
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Update",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Update"),
+      cancelButtonText: t("Cancel"),
     });
     if (!result.isConfirmed) return;
 
@@ -172,19 +174,19 @@ const AdminRoles = () => {
       );
       handleCloseEditModal();
     } catch (error) {
-      setError(error.message || "Failed to update role.");
+      setError(error.message || t("Failed to update role."));
       console.error("Error updating role:", error);
     }
   };
 
   const handleDeleteRole = async (role) => {
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: `Do you really want to delete role "${role.name}"?`,
+      title: t("Are you sure?"),
+      text: t('Do you really want to delete role "{{roleName}}"?', { roleName: role.name }),
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, delete!",
-      cancelButtonText: "Cancel",
+      confirmButtonText: t("Yes, delete!"),
+      cancelButtonText: t("Cancel"),
     });
 
     if (!result.isConfirmed) return;
@@ -206,9 +208,9 @@ const AdminRoles = () => {
       }
 
       setRoles(roles.filter((r) => r.id !== role.id));
-      Swal.fire("Deleted!", "Role has been deleted.", "success");
+      Swal.fire(t("Deleted!"), t("Role has been deleted."), "success");
     } catch (error) {
-      setError(error.message || "Failed to delete role.");
+      setError(error.message || t("Failed to delete role."));
       console.error("Error deleting a role:", error);
     }
   };
@@ -221,30 +223,30 @@ const AdminRoles = () => {
             <Card.Body>
               <div className="d-flex">
                 <Card.Title className="h3 fs-1 text-primary my-4">
-                  Role Management
+                  {t("Role Management")}
                 </Card.Title>
                 <Button
                   variant="outline-success"
                   className="align-self-center ms-auto me-2"
                   onClick={handleShowAddModal}
                 >
-                  Add New Role
+                  {t("Add New Role")}
                 </Button>
               </div>
 
-              {error && <Alert variant="danger">Hata: {error}</Alert>}
+              {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
               {loading ? (
                 <div className="text-center">
                   <Spinner animation="border" role="status" />
-                  <span className="visually-hidden">Loading...</span>
+                  <span className="visually-hidden">{t("Loading...")}</span>
                 </div>
               ) : (
                 <Table striped bordered hover responsive>
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th className="text-center">Actions</th>
+                      <th>{t("ID")}</th>
+                      <th>{t("Name")}</th>
+                      <th className="text-center">{t("Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -282,24 +284,24 @@ const AdminRoles = () => {
       {/* Add Role Modal */}
       <Modal show={showAddModal} onHide={handleCloseAddModal} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Add New Role</Modal.Title>
+          <Modal.Title>{t("Add New Role")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Role Name</Form.Label>
+              <Form.Label>{t("Role Name")}</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Enter role name"
+                placeholder={t("Enter role name")}
                 ref={nameRef}
               />
             </Form.Group>
           </Form>
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={handleAddRole}>
-            Add Role
+            {t("Add Role")}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -307,24 +309,24 @@ const AdminRoles = () => {
       {/* Edit Role Modal */}
       <Modal show={showEditModal} onHide={handleCloseEditModal} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Edit Role</Modal.Title>
+          <Modal.Title>{t("Edit Role")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Role Name</Form.Label>
+              <Form.Label>{t("Role Name")}</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Enter role name"
+                placeholder={t("Enter role name")}
                 ref={editNameRef}
               />
             </Form.Group>
           </Form>
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <Alert variant="danger">{t("Error")}: {error}</Alert>}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={handleUpdateRole}>
-            Edit Role
+            {t("Edit Role")}
           </Button>
         </Modal.Footer>
       </Modal>
