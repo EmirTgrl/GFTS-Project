@@ -44,7 +44,10 @@ const getDetailedFareForRoute = async (route_id, user_id, project_id) => {
     const [routeData] = routeResult; // Tek bir satır alıyoruz
 
     if (!routeData) {
-      console.log("Route not found for route_id:", route_id, { user_id, project_id });
+      console.log("Route not found for route_id:", route_id, {
+        user_id,
+        project_id,
+      });
       return null; // Route bulunamazsa null dön
     }
 
@@ -529,24 +532,24 @@ const updateNetwork = async (
 ) => {
   try {
     if (!user_id || !project_id || !network_id || !network_name) {
-      console.error("Eksik zorunlu alanlar:", {
+      console.error("Missing required fields:", {
         user_id,
         project_id,
         network_id,
         network_name,
       });
-      throw new Error("Kullanıcı ID, proje ID, ağ ID veya isim eksik.");
+      throw new Error("Missing user ID, project ID, network ID or name.");
     }
 
     user_id = parseInt(user_id, 10);
     project_id = parseInt(project_id, 10);
 
     if (isNaN(user_id) || isNaN(project_id)) {
-      console.error("Geçersiz user_id veya project_id:", {
+      console.error("Invalid user_id or project_id:", {
         user_id,
         project_id,
       });
-      throw new Error("Geçersiz kullanıcı ID veya proje ID.");
+      throw new Error("Invalid user ID or project ID.");
     }
 
     // Ağın varlığını kontrol et
@@ -556,7 +559,7 @@ const updateNetwork = async (
     );
 
     if (!existingNetwork) {
-      throw new Error("Ağ bulunamadı.");
+      throw new Error("Network not found.");
     }
 
     // Ağ adını güncelle
@@ -614,7 +617,7 @@ const updateNetwork = async (
       network_id,
       network_name,
       route_ids: route_ids || [],
-      message: "Ağ başarıyla güncellendi.",
+      message: "Network updated successfully.",
     };
   } catch (error) {
     console.error("updateNetwork error:", error.message);
@@ -734,8 +737,23 @@ const addFareProduct = async (
       throw new Error("Both from_area_id and to_area_id are required.");
     }
 
-    // Generate unique fare_product_id
-    const fare_product_id = `fare_product_${Date.now()}`;
+    // Count existing fare products for this project to ensure unique ID
+    const [[{ count }]] = await pool.query(
+      `
+        SELECT COUNT(*) as count
+        FROM fare_products
+        WHERE project_id = ?
+      `,
+      [project_id]
+    );
+
+    // Generate meaningful and unique fare_product_id
+    const sanitizedName = fare_product_name
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toLowerCase();
+    const fare_product_id = `fp_${project_id}_${sanitizedName}_${from_area_id}_${to_area_id}_${
+      count + 1
+    }`;
 
     // Insert into fare_products table
     const [result] = await pool.query(
@@ -826,8 +844,12 @@ const addFareProduct = async (
       throw new Error(`Invalid to_area_id: ${to_area_id} does not exist.`);
     }
 
+    // Generate leg_group_id
+    const leg_group_id = `lg_${project_id}_${sanitizedName}_${from_area_id}_${to_area_id}_${
+      count + 1
+    }`;
+
     // Insert into fare_leg_rules table
-    const leg_group_id = `leg_${fare_product_id}`;
     await pool.query(
       `
         INSERT INTO fare_leg_rules 

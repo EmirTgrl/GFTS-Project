@@ -388,7 +388,7 @@ const FareProductsTable = ({
     <div className="fare-products-table">
       {fareMediaList.length === 0 || riderCategories.length === 0 ? (
         <div className="alert alert-warning">
-          {t("Please first define Payment Methods and Passenger Categories in the Other Fees section.")}
+          {t("Please first define Payment Methods and Passenger Categories in the Other Fares section.")}
         </div>
       ) : (
         <>
