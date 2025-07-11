@@ -24,14 +24,14 @@ GTFS-Editor, toplu taşıma sistemlerine ait veri setlerinin yönetilmesini ve G
 
 ---
 
-## 🛠️ Kullanılan Teknolojiler
+## 🛠️ Kullanılan Teknolojiler (Technologies Used)
 
 - **Backend:** Node.js, Express.js
 - **Frontend:** React.js
-- **Veritabanı:** MySQL
-- **Kimlik Doğrulama:** JWT
-- **Harita & Rotalama:** OSRM (Open Source Routing Machine), OTP (OpenTripPlanner)
-- **Veri Standardı:** GTFS & GTFS-Fare V2
+- **Veritabanı (Database):** MySQL
+- **Kimlik Doğrulama (Authentication):** JWT
+- **Harita & Rotalama (Mapping and routing):** OSRM (Open Source Routing Machine), OTP (OpenTripPlanner)
+- **Veri Standardı (Data Standard):** GTFS & GTFS-Fare V2
 
 ---
 
