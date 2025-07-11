@@ -18,6 +18,7 @@ GTFS-Editor, toplu taşıma sistemlerine ait veri setlerinin yönetilmesini ve G
   - Fare Leg Rules (Sabit ve mesafeye dayalı ücretlendirme)
   - Fare Transfer Rules (Aktarma kuralları)
 - 📊 Rota bazlı ücret hesaplama
+- 🖉 Harita üzerinden **"Edit Mode"** erişimi: Durak ve rota çizgileri ekleyip düzenleyebilme
 - 🗂️ MySQL ile güçlü veri yönetimi
 - 🧭 OSRM & OTP ile yön ve mesafe hesaplama desteği
 
@@ -54,6 +55,7 @@ GTFS-Editor is a feature-rich platform that supports managing public transit dat
   - Fare Leg Rules (Fixed or distance-based pricing)
   - Fare Transfer Rules (Free or time-limited transfers)
 - 📊 Route-based fare calculation
+- 🖉 Access to **Edit Mode** on the map: Add/edit stops and route paths interactively
 - 🗂️ Robust data management with MySQL
 - 🧭 Routing integration using OSRM & OTP
 
