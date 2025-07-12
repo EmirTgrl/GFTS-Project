@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const authService = {
   register: async (req, res) => {
     try {
-      const { email, password, role_id = 1, version_id = 1 } = req.body; // Default to role_id=1 and version_id=1
+      const { email, password, role_id = 1, version_id = 1 } = req.body;
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -44,11 +44,12 @@ const authService = {
     try {
       const { email, password } = req.body;
       const [users] = await pool.execute(
-        `SELECT u.id, u.email, u.password, r.name as role, v.name as version 
-         FROM users u
-         JOIN roles r ON u.role_id = r.id
-         JOIN versions v ON u.version_id = v.id
-         WHERE u.email = ? AND u.is_active = true`,
+        `SELECT u.id, u.email, u.password, r.name as role, v.name as version, 
+          u.version_id, u.premium_until 
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        JOIN versions v ON u.version_id = v.id
+        WHERE u.email = ? AND u.is_active = true`,
         [email]
       );
 
@@ -62,19 +63,34 @@ const authService = {
         return res.status(400).json({ message: "Invalid credentials" });
       }
 
+      if (
+        user.version === "premium" &&
+        user.premium_until &&
+        new Date(user.premium_until) < new Date()
+      ) {
+        await pool.execute(
+          `UPDATE users SET version_id = 1, premium_until = NULL WHERE id = ?`,
+          [user.id]
+        );
+        user.version = "basic";
+        user.version_id = 1;
+        user.premium_until = null;
+      }
+
       const token = jwt.sign(
         {
           id: user.id,
           email: user.email,
           role: user.role,
           version: user.version,
+          premium_until: user.premium_until,
         },
         process.env.JWT_SECRET,
         { expiresIn: "10h" }
       );
       res.json({ token, id: user.id, role: user.role, version: user.version });
     } catch (error) {
-      console.error(error);
+      console.error("login error:", error.message);
       res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
@@ -109,13 +125,47 @@ const authService = {
     }
   },
 
-  versionCheck: (req, res, next) => {
-    if (req.user?.version !== "premium") {
-      return res
-        .status(403)
-        .json({ message: "Only premium users can perform this action." });
+  versionCheck: async (req, res, next) => {
+    try {
+      const [[user]] = await pool.execute(
+        `SELECT u.version_id, v.name as version, u.premium_until 
+         FROM users u
+         JOIN versions v ON u.version_id = v.id
+         WHERE u.id = ? AND u.is_active = true`,
+        [req.user.id]
+      );
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (
+        user.version === "premium" &&
+        user.premium_until &&
+        new Date(user.premium_until) < new Date()
+      ) {
+        await pool.execute(
+          `UPDATE users SET version_id = 1, premium_until = NULL WHERE id = ?`,
+          [req.user.id]
+        );
+        user.version = "basic";
+        user.version_id = 1;
+        user.premium_until = null;
+      }
+
+      req.user.version = user.version;
+
+      if (user.version !== "premium") {
+        return res
+          .status(403)
+          .json({ message: "Only premium users can perform this action." });
+      }
+
+      next();
+    } catch (error) {
+      console.error("versionCheck error:", error.message);
+      res.status(500).json({ message: "Server Error", error: error.message });
     }
-    next();
   },
 };
 

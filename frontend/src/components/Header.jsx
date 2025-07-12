@@ -8,6 +8,9 @@ import {
   Modal,
   Button,
   Table,
+  Form,
+  Card,
+  Alert,
 } from "react-bootstrap";
 import {
   PersonCircle,
@@ -15,6 +18,7 @@ import {
   HouseDoor,
   CheckCircle,
   BarChart,
+  Gear,
 } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
 import JSZip from "jszip";
@@ -27,6 +31,7 @@ import { fetchStopsByProjectId } from "../api/stopApi.js";
 import { fetchCalendarsByProjectId } from "../api/calendarApi.js";
 import { fetchShapesByTripId } from "../api/shapeApi.js";
 import { fetchStopsAndStopTimesByTripId } from "../api/stopTimeApi.js";
+import { updateEmail, updatePassword } from "../api/accountApi.js";
 import "../styles/Header.css";
 import { useTranslation } from "react-i18next";
 
@@ -161,14 +166,31 @@ const createGTFSZip = async (project_id, token) => {
 };
 
 const Header = () => {
-  const { isAuthenticated, logout, token, user } = useContext(AuthContext);
+  const { isAuthenticated, logout, token, user, setUser, login } =
+    useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
+  const [email, setEmail] = useState(user?.email || "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const { t, i18n } = useTranslation();
+
+  // Modal açıldığında kullanıcının mevcut e-postasını yükle
+  const handleShowAccountModal = () => {
+    setEmail(user?.email || "");
+    setCurrentPassword("");
+    setNewPassword("");
+    setError("");
+    setSuccess("");
+    setShowAccountModal(true);
+  };
 
   const handleLogout = () => {
     logout();
@@ -223,6 +245,61 @@ const Header = () => {
       Swal.close();
     } catch (error) {
       Swal.fire("Error!", `Validation failed: ${error.message}`, "error");
+    }
+  };
+
+  const handleUpdateEmail = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    try {
+      const result = await updateEmail(email, token);
+      setSuccess(result.message);
+      Swal.fire({
+        icon: "success",
+        title: t("Success"),
+        text: result.message,
+      });
+      // Yeni token ile AuthContext'i güncelle
+      if (result.token) {
+        login(result.token);
+      } else {
+        // Token yoksa, sadece user.email'i güncelle
+        setUser({ ...user, email });
+      }
+    } catch (err) {
+      setError(err.message);
+      Swal.fire({
+        icon: "error",
+        title: t("Error"),
+        text: err.message,
+      });
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    try {
+      const result = await updatePassword(currentPassword, newPassword, token);
+      setSuccess(result.message);
+      setCurrentPassword("");
+      setNewPassword("");
+      Swal.fire({
+        icon: "success",
+        title: t("Success"),
+        text: result.message,
+      });
+    } catch (err) {
+      setError(err.message);
+      Swal.fire({
+        icon: "error",
+        title: t("Error"),
+        text: err.message,
+      });
     }
   };
 
@@ -309,8 +386,17 @@ const Header = () => {
             <NavDropdown
               title={
                 <span className="d-flex align-items-center gap-2">
-                  <span className={`fi fi-${LANGUAGES.find((l) => l.code === i18n.language)?.flag || "xx"} fis`}></span>
-                  <span>{LANGUAGES.find((l) => l.code === i18n.language)?.name ? t(LANGUAGES.find((l) => l.code === i18n.language).name) : t("Language")}</span>
+                  <span
+                    className={`fi fi-${
+                      LANGUAGES.find((l) => l.code === i18n.language)?.flag ||
+                      "xx"
+                    } fis`}
+                  ></span>
+                  <span>
+                    {LANGUAGES.find((l) => l.code === i18n.language)?.name
+                      ? t(LANGUAGES.find((l) => l.code === i18n.language).name)
+                      : t("Language")}
+                  </span>
                 </span>
               }
               id="language-dropdown"
@@ -321,7 +407,9 @@ const Header = () => {
                 <NavDropdown.Item
                   key={lang.code}
                   onClick={() => i18n.changeLanguage(lang.code)}
-                  className={`d-flex align-items-center gap-2 ${i18n.language === lang.code ? "active" : ""}`}
+                  className={`d-flex align-items-center gap-2 ${
+                    i18n.language === lang.code ? "active" : ""
+                  }`}
                 >
                   <span className={`fi fi-${lang.flag} fis`}></span>
                   <span>{t(lang.name)}</span>
@@ -376,6 +464,10 @@ const Header = () => {
                     </div>
                   </NavDropdown.Header>
                   <NavDropdown.Divider />
+                  <NavDropdown.Item onClick={handleShowAccountModal}>
+                    <Gear size={16} className="me-2" />
+                    {t("Account Settings")}
+                  </NavDropdown.Item>
                   {user?.version === "basic" && (
                     <NavDropdown.Item
                       onClick={() => setShowVersionModal(true)}
@@ -437,7 +529,9 @@ const Header = () => {
                 )}
               </>
             ) : (
-              <p className="text-muted">{t("Validation data is not available.")}</p>
+              <p className="text-muted">
+                {t("Validation data is not available.")}
+              </p>
             )}
           </Modal.Body>
           <Modal.Footer>
@@ -488,6 +582,81 @@ const Header = () => {
           <Modal.Body className="p-4">
             <VersionPage />
           </Modal.Body>
+        </Modal>
+      )}
+
+      {showAccountModal && (
+        <Modal
+          show={showAccountModal}
+          onHide={() => setShowAccountModal(false)}
+          size="lg"
+          centered
+        >
+          <Modal.Header closeButton className="bg-primary text-white">
+            <Modal.Title>{t("Account Settings")}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="p-4">
+            <Card className="border-0">
+              <Card.Body>
+                {error && <Alert variant="danger">{error}</Alert>}
+                {success && <Alert variant="success">{success}</Alert>}
+
+                {/* E-posta Güncelleme Formu */}
+                <Form onSubmit={handleUpdateEmail} className="mb-4">
+                  <h5 className="mb-3">{t("Update Email")}</h5>
+                  <Form.Group className="mb-3" controlId="email">
+                    <Form.Label>{t("New Email")}</Form.Label>
+                    <Form.Control
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={t("Enter new email")}
+                      required
+                    />
+                  </Form.Group>
+                  <Button variant="primary" type="submit" className="w-100">
+                    {t("Update Email")}
+                  </Button>
+                </Form>
+
+                {/* Şifre Güncelleme Formu */}
+                <Form onSubmit={handleUpdatePassword}>
+                  <h5 className="mb-3">{t("Update Password")}</h5>
+                  <Form.Group className="mb-3" controlId="currentPassword">
+                    <Form.Label>{t("Current Password")}</Form.Label>
+                    <Form.Control
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder={t("Enter current password")}
+                      required
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="newPassword">
+                    <Form.Label>{t("New Password")}</Form.Label>
+                    <Form.Control
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder={t("Enter new password")}
+                      required
+                    />
+                  </Form.Group>
+                  <Button variant="primary" type="submit" className="w-100">
+                    {t("Update Password")}
+                  </Button>
+                </Form>
+              </Card.Body>
+            </Card>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={() => setShowAccountModal(false)}
+            >
+              {t("Close")}
+            </Button>
+          </Modal.Footer>
         </Modal>
       )}
     </>

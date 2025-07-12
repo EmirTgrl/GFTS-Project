@@ -22,6 +22,7 @@ import Header from "./components/Header";
 import AdminPage from "./pages/admin/Index";
 import AdminUsersPage from "./pages/admin/Users";
 import AdminProjectsPage from "./pages/admin/Projects";
+import AccountSettings from "./pages/AccountSettings";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./styles/Layout.css";
 import { useNavigate } from "react-router-dom";
@@ -82,6 +83,14 @@ const AppContent = () => {
                   agencies={agencies}
                   setAgencies={setAgencies}
                 />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account-settings"
+            element={
+              <ProtectedRoute>
+                <AccountSettings />
               </ProtectedRoute>
             }
           />
