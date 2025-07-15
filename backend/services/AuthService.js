@@ -167,6 +167,93 @@ const authService = {
       res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
+
+  forgotPassword: async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      const [users] = await pool.execute(
+        "SELECT id, email FROM users WHERE email = ? AND is_active = true",
+        [email]
+      );
+
+      if (users.length === 0) {
+        return res.status(404).json({ message: "Email address not found." });
+      }
+
+      const user = users[0];
+
+      const characters =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      let resetToken = "";
+      for (let i = 0; i < 32; i++) {
+        resetToken += characters.charAt(
+          Math.floor(Math.random() * characters.length)
+        );
+      }
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await pool.execute(
+        "DELETE FROM password_reset_tokens WHERE user_id = ?",
+        [user.id]
+      );
+
+      await pool.execute(
+        "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
+        [user.id, resetToken, expiresAt]
+      );
+
+      res.json({
+        message:
+          "Your email has been verified. You are redirected to the password reset screen.",
+        resetToken,
+        email: user.email,
+      });
+    } catch (error) {
+      console.error("forgotPassword error:", error.message);
+      res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+
+  resetPassword: async (req, res) => {
+    try {
+      const { resetToken, newPassword } = req.body;
+
+      const [tokens] = await pool.execute(
+        "SELECT user_id, expires_at FROM password_reset_tokens WHERE token = ?",
+        [resetToken]
+      );
+
+      if (tokens.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "Invalid or used token." });
+      }
+
+      const resetTokenData = tokens[0];
+
+      if (new Date() > new Date(resetTokenData.expires_at)) {
+        return res.status(400).json({ message: "Token expired." });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      await pool.execute("UPDATE users SET password = ? WHERE id = ?", [
+        hashedPassword,
+        resetTokenData.user_id,
+      ]);
+
+      await pool.execute("DELETE FROM password_reset_tokens WHERE token = ?", [
+        resetToken,
+      ]);
+
+      res.json({ message: "Your password was successfully updated." });
+    } catch (error) {
+      console.error("resetPassword error:", error.message);
+      res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
 };
 
 module.exports = authService;

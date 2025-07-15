@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./i18n";
+import "./styles/tailwind.css";
 import "flag-icons/css/flag-icons.min.css";
 import {
   BrowserRouter as Router,
@@ -23,6 +24,7 @@ import AdminPage from "./pages/admin/Index";
 import AdminUsersPage from "./pages/admin/Users";
 import AdminProjectsPage from "./pages/admin/Projects";
 import AccountSettings from "./pages/AccountSettings";
+import ForgotPassword from "./components/Auth/ForgotPassword";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./styles/Layout.css";
 import { useNavigate } from "react-router-dom";
@@ -57,6 +59,7 @@ const AppContent = () => {
       <main className="main-content">
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />{" "}
           <Route
             path="/import"
             element={

@@ -25,12 +25,18 @@ const Login = ({ switchToRegister }) => {
   }, [isAuthenticated, isLoggingIn, navigate]);
 
   useEffect(() => {
-    if (isLoggedOut && !location.state?.isRegister) {
+    if (
+      isLoggedOut &&
+      !location.state?.isRegister &&
+      !location.state?.message
+    ) {
       setError(t("You have been logged out."));
     } else if (location.state?.isRegister) {
       setError(t("Registration successful! You can login."));
     } else if (location.state?.isLogout) {
       setError(t("You have been logged out."));
+    } else if (location.state?.message) {
+      setError(t(location.state.message)); // Şifre sıfırlama sonrası mesaj
     } else {
       setError("");
     }
@@ -64,13 +70,23 @@ const Login = ({ switchToRegister }) => {
     }
   };
 
+  const handleForgotPassword = () => {
+    navigate("/forgot-password");
+  };
+
   return (
     <Container className="auth-container">
       <div className="form-wrapper">
         <Form onSubmit={handleLogin}>
           <h2 className="title text-center">{t("Login")}</h2>
           {error && (
-            <Alert variant={location.state?.isRegister ? "success" : "danger"}>
+            <Alert
+              variant={
+                location.state?.isRegister || location.state?.message
+                  ? "success"
+                  : "danger"
+              }
+            >
               {error}
             </Alert>
           )}
@@ -107,6 +123,13 @@ const Login = ({ switchToRegister }) => {
           >
             {t("Login")}
           </Button>
+
+          <p className="switch-link text-center mt-3">
+            {t("Forgot your password?")}{" "}
+            <span className="link" onClick={handleForgotPassword}>
+              {t("Reset Password")}
+            </span>
+          </p>
 
           <p className="switch-link text-center mt-3">
             {t("Don’t have an account?")}{" "}

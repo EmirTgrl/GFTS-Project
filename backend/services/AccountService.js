@@ -34,11 +34,11 @@ const AccountService = {
       const payload = {
         id: userId,
         email: newEmail,
-        role: currentUser.role || "user",
-        version: currentUser.version || "basic",
+        role: currentUser.role,
+        version: currentUser.version,
       };
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
-        expiresIn: "1h",
+        expiresIn: "3h",
       });
 
       return { success: true, message: "Email updated successfully", token };

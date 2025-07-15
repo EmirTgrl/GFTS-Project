@@ -587,5 +587,15 @@
   "Do you want to add this version?": "Do you want to add this version?",
   "Do you want to update this version?": "Do you want to update this version?",
   "Do you really want to delete version \"{{versionName}}\"?": "Do you really want to delete version \"{{versionName}}\"?",
-  "Version has been deleted.": "Version has been deleted."
+  "Version has been deleted.": "Version has been deleted.",
+  "Account Settings": "Account Settings",
+  "Update Email": "Update Email",
+  "New Email": "New Email",
+  "Update Password": "Update Password",
+  "Current Password": "Current Password",
+  "New Password": "New Password",
+  "Enter current password": "Enter current password",
+  "Enter new password": "Enter new password",
+  "Do you want to update your email?": "Do you want to update your email?",
+  "Do you want to update your password?": "Do you want to update your password?"
 }

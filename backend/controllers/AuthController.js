@@ -7,4 +7,8 @@ router.post("/login", authService.login);
 
 router.post("/register", authService.register);
 
+router.post("/forgot-password", authService.forgotPassword);
+
+router.post("/reset-password", authService.resetPassword);
+
 module.exports = router;

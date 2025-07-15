@@ -1,5 +1,5 @@
 {
-  "Login": "Giriş",
+  "Login": "Giriş Yap",
   "You have been logged out.": "Çıkış yaptınız.",
   "Email Address": "E-posta Adresi",
   "Enter your email": "E-postanızı girin",
@@ -582,5 +582,15 @@
   "Do you want to add this version?": "Bu sürümü eklemek istiyor musunuz?",
   "Do you want to update this version?": "Bu sürümü güncellemek istiyor musunuz?",
   "Do you really want to delete version \"{{versionName}}\"?": "Gerçekten \"{{versionName}}\" sürümünü silmek istiyor musunuz?",
-  "Version has been deleted.": "Sürüm silindi."
+  "Version has been deleted.": "Sürüm silindi.",
+  "Account Settings": "Hesap Ayarları",
+  "Update Email": "Mail Adresini Güncelle",
+  "New Email": "Yeni E-posta",
+  "Update Password": "Şifre Güncelle",
+  "Current Password": "Şimdiki Şifre",
+  "New Password": "Yeni Şifre",
+  "Enter current password": "Şimdiki şifreyi girin",
+  "Enter new password": "Yeni şifreyi girin",
+  "Do you want to update your email?": "E-posta adresinizi güncellemek istiyor musunuz?",
+  "Do you want to update your password?": "Şifrenizi güncellemek istiyor musunuz?"
 }
