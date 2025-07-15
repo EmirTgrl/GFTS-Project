@@ -24,6 +24,7 @@ const AdminVersions = () => {
   const [error, setError] = useState("");
   const { token, user } = useContext(AuthContext);
   const { t } = useTranslation();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const nameRef = useRef(null);
   const editNameRef = useRef(null);
@@ -31,8 +32,6 @@ const AdminVersions = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [versionToEdit, setVersionToEdit] = useState(null);
-
-  const API_URL = import.meta.env.VITE_API_URL;
 
   const fetchVersions = useCallback(async () => {
     setLoading(true);
@@ -47,18 +46,18 @@ const AdminVersions = () => {
       const data = await response.json();
       setVersions(data);
     } catch (error) {
-      setError(error.message || t("Failed to load versions."));
+      setError(t("Failed to load versions."));
       console.error("Error loading versions:", error);
     } finally {
       setLoading(false);
     }
-  }, [token, API_URL, t]);
+  }, [token, API_URL]);
 
   useEffect(() => {
     if (user?.role === "admin") {
       fetchVersions();
     }
-  }, [fetchVersions, user]);
+  }, [fetchVersions, user?.role]);
 
   if (user?.role !== "admin") {
     return <Navigate to="/auth" replace />;

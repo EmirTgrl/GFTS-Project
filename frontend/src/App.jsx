@@ -1,6 +1,5 @@
 import { useState } from "react";
 import "./i18n";
-import "./styles/tailwind.css";
 import "flag-icons/css/flag-icons.min.css";
 import {
   BrowserRouter as Router,

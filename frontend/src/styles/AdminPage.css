@@ -1,146 +1,158 @@
 .admin-panel {
-  --primary-color: #2563eb;
-  --secondary-color: #1f2937;
-  --bg-color: #f3f4f6;
+  --primary-color: #3b82f6;
+  --secondary-color: #1e3a8a;
+  --bg-color: #f8fafc;
   --card-bg: #ffffff;
-  --text-color: #111827;
-  --error-color: #dc2626;
-  --success-color: #059669;
-  background-color: var(--bg-color);
+  --text-color: #0f172a;
+  --error-color: #ef4444;
+  --success-color: #10b981;
+  background: linear-gradient(135deg, var(--bg-color), #e2e8f0);
   color: var(--text-color);
-  font-family: "Inter", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  padding-bottom: 2rem;
 }
 
-/* Navbar stilleri */
 .admin-panel .navbar {
-  background-color: var(--secondary-color) !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  padding: 1rem;
+  background: linear-gradient(90deg, var(--secondary-color), #2c5282) !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  padding: 1.25rem;
+  backdrop-filter: blur(10px);
 }
 
 .admin-panel .navbar-brand,
 .admin-panel .nav-link {
   color: #ffffff !important;
-  transition: color 0.2s ease, transform 0.2s ease;
+  font-weight: 500;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
 }
 
 .admin-panel .nav-link:hover {
   color: var(--primary-color) !important;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .admin-panel .nav-link .me-1 {
-  transition: transform 0.2s ease;
+  transition: transform 0.3s ease;
 }
 
 .admin-panel .nav-link:hover .me-1 {
-  transform: scale(1.2);
+  transform: scale(1.3) rotate(5deg);
 }
 
-/* Card stilleri */
 .admin-panel .card {
   border: none;
-  border-radius: 12px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
-  background-color: var(--card-bg);
-  transition: transform 0.2s ease;
+  border-radius: 16px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  background: var(--card-bg);
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .admin-panel .card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .admin-panel .card-title {
   color: var(--primary-color);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.5rem;
 }
 
-/* Table stilleri */
 .admin-panel .table {
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background-color: var(--card-bg);
+  background: var(--card-bg);
+  margin-bottom: 0;
 }
 
 .admin-panel .table th {
-  background-color: var(--secondary-color);
+  background: var(--secondary-color);
   color: #ffffff;
-  font-weight: 500;
-  padding: 1rem;
+  font-weight: 600;
+  padding: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .admin-panel .table td {
-  padding: 1rem;
+  padding: 1.25rem;
   vertical-align: middle;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.3s ease;
 }
 
 .admin-panel .table tr:hover {
-  background-color: rgba(37, 99, 235, 0.05);
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
-/* Buton stilleri */
 .admin-panel .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+  background: linear-gradient(135deg, var(--primary-color), #60a5fa);
   border: none;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 10px;
+  padding: 0.85rem 1.75rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .admin-panel .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
 }
 
 .admin-panel .btn-danger {
-  background: linear-gradient(135deg, var(--error-color), #ef4444);
+  background: linear-gradient(135deg, var(--error-color), #f87171);
   border: none;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 10px;
+  padding: 0.85rem 1.75rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .admin-panel .btn-danger:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
 }
 
 .admin-panel .btn-outline-success,
 .admin-panel .btn-outline-primary,
 .admin-panel .btn-outline-danger {
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  border-radius: 10px;
+  transition: all 0.3s ease;
 }
 
 .admin-panel .btn-outline-success:hover {
   background-color: var(--success-color);
   color: #ffffff;
+  border-color: var(--success-color);
 }
 
 .admin-panel .btn-outline-primary:hover {
   background-color: var(--primary-color);
   color: #ffffff;
+  border-color: var(--primary-color);
 }
 
 .admin-panel .btn-outline-danger:hover {
   background-color: var(--error-color);
   color: #ffffff;
+  border-color: var(--error-color);
 }
 
-/* Modal stilleri */
 .admin-panel .modal-content {
-  border-radius: 12px;
+  border-radius: 16px;
   border: none;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  animation: fadeIn 0.3s ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.4s ease;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-30px);
   }
   to {
     opacity: 1;
@@ -150,60 +162,125 @@
 
 .admin-panel .modal-header {
   border-bottom: none;
-  background-color: var(--secondary-color);
+  background: linear-gradient(90deg, var(--secondary-color), #2c5282);
   color: #ffffff;
-  border-radius: 12px 12px 0 0;
+  border-radius: 16px 16px 0 0;
+  padding: 1.5rem;
 }
 
 .admin-panel .modal-title {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.25rem;
 }
 
 .admin-panel .modal-footer {
   border-top: none;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.75rem;
+  background: #f8fafc;
 }
 
-/* Form stilleri */
 .admin-panel .form-control,
 .admin-panel .form-select {
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  padding: 0.75rem;
-  transition: border-color 0.2s ease;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 0.85rem;
+  transition: all 0.3s ease;
 }
 
 .admin-panel .form-control:focus,
 .admin-panel .form-select:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
-/* Hata mesajı */
 .admin-panel .text-danger {
-  background-color: rgba(220, 38, 38, 0.05);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  background-color: rgba(239, 68, 68, 0.1);
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
-/* Spinner */
 .admin-panel .spinner-border {
   color: var(--primary-color);
 }
 
-/* Responsive stiller */
+.admin-panel .pagination {
+  justify-content: center;
+  margin-top: 2rem;
+  gap: 0.25rem;
+}
+
+.admin-panel .pagination .page-item {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.admin-panel .pagination .page-link {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  color: var(--primary-color);
+  background: #f1f5f9;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  min-width: 38px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-panel .pagination .page-link:hover,
+.admin-panel .pagination .page-link:focus {
+  background: var(--primary-color);
+  color: #fff;
+  outline: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
+}
+
+.admin-panel .pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, var(--primary-color), #60a5fa);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.18);
+}
+
+.admin-panel .pagination .page-item.disabled .page-link {
+  background: #e5e7eb;
+  color: #a1a1aa;
+  cursor: not-allowed;
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .admin-panel .card-title {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 
   .admin-panel .table th,
   .admin-panel .table td {
-    padding: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.9rem;
   }
 
   .admin-panel .btn {
-    padding: 0.5rem 1rem;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .admin-panel .navbar {
+    padding: 0.75rem;
+  }
+
+  .admin-panel .pagination .page-link {
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 0.95rem;
+    padding: 0.25rem 0.5rem;
   }
 }

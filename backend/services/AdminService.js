@@ -2,7 +2,7 @@ const { pool } = require("../db.js");
 const bcrypt = require("bcrypt");
 
 const adminService = {
-  // Get all users and their projects for admin
+  // Get all users and their projects for admin (with pagination)
   getAllUsers: async (req, res) => {
     const user_role = req.user.role;
 
@@ -27,10 +27,25 @@ const adminService = {
       if (validFields.includes(param)) {
         fields.push(`u.${param} = ?`);
         values.push(req.query[param]);
-      } else {
+      } else if (param !== "page" && param !== "limit") {
         console.warn(`Unexpected query parameter: ${param}`);
       }
     }
+
+    // Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
+
+    // Count query for total users
+    const countQuery = `
+      SELECT COUNT(DISTINCT u.id) AS total
+      FROM users u
+      JOIN roles r ON u.role_id = r.id
+      JOIN versions v ON u.version_id = v.id
+      LEFT JOIN projects p ON u.id = p.user_id
+      ${fields.length > 0 ? " WHERE " + fields.join(" AND ") : ""}
+    `;
 
     let query = `
       SELECT 
@@ -42,9 +57,16 @@ const adminService = {
       JOIN versions v ON u.version_id = v.id
       LEFT JOIN projects p ON u.id = p.user_id
       ${fields.length > 0 ? " WHERE " + fields.join(" AND ") : ""}
+      ORDER BY u.id ASC
+      LIMIT ${limit} OFFSET ${offset}
     `;
 
     try {
+      // Get total count
+      const [countRows] = await pool.execute(countQuery, values);
+      const total = countRows[0]?.total || 0;
+
+      // Get paginated data
       const [rows] = await pool.execute(query, values);
 
       const usersMap = {};
@@ -71,7 +93,12 @@ const adminService = {
       });
 
       const users = Object.values(usersMap);
-      res.json(users);
+      res.json({
+        data: users,
+        total,
+        page,
+        limit,
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Server Error", details: error.message });
@@ -281,7 +308,7 @@ const adminService = {
     }
   },
 
-  // Get all GTFS projects
+  // Get all GTFS projects (with pagination)
   getAllProjects: async (req, res) => {
     const user_role = req.user.role;
 
@@ -291,7 +318,24 @@ const adminService = {
         .json({ error: "Unauthorized access, only admins can view projects" });
     }
 
+    // Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
+
     try {
+      // Count query for total projects
+      const countQuery = `
+        SELECT COUNT(*) AS total
+        FROM projects p
+        JOIN users u ON p.user_id = u.id
+        JOIN roles r ON u.role_id = r.id
+        JOIN versions v ON u.version_id = v.id
+      `;
+      const [countRows] = await pool.execute(countQuery);
+      const total = countRows[0]?.total || 0;
+
+      // Data query with pagination
       const query = `
         SELECT 
           p.project_id, p.user_id, p.file_name, p.import_date,
@@ -300,10 +344,17 @@ const adminService = {
         JOIN users u ON p.user_id = u.id
         JOIN roles r ON u.role_id = r.id
         JOIN versions v ON u.version_id = v.id
+        ORDER BY p.project_id DESC
+        LIMIT ${limit} OFFSET ${offset}
       `;
       const [rows] = await pool.execute(query);
 
-      res.json(rows.length > 0 ? rows : []);
+      res.json({
+        data: rows.length > 0 ? rows : [],
+        total,
+        page,
+        limit,
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Server Error", details: error.message });

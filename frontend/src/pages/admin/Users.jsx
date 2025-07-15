@@ -12,6 +12,7 @@ import {
   Modal,
   Form,
   Alert,
+  Pagination,
 } from "react-bootstrap";
 import { PencilSquare, Trash } from "react-bootstrap-icons";
 import Swal from "sweetalert2";
@@ -42,31 +43,41 @@ const AdminUsers = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [userToEdit, setUserToEdit] = useState(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch(`${API_URL}/api/admin/users`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  const fetchUsers = useCallback(
+    async (pageParam = page) => {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch(
+          `${API_URL}/api/admin/users?page=${pageParam}&limit=${limit}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setUsers(data.data || []);
+        setTotal(data.total || 0);
+      } catch (error) {
+        setError(error.message || t("Failed to load users."));
+        console.error("Errors in loading users:", error);
+      } finally {
+        setLoading(false);
       }
-      const data = await response.json();
-      setUsers(data);
-    } catch (error) {
-      setError(error.message || t("Failed to load users."));
-      console.error("Errors in loading users:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, API_URL, t]);
+    },
+    [token, API_URL, t, limit, page]
+  );
 
   const fetchRolesAndVersions = useCallback(async () => {
     try {
@@ -95,10 +106,10 @@ const AdminUsers = () => {
 
   useEffect(() => {
     if (user?.role === "admin") {
-      fetchUsers();
+      fetchUsers(page);
       fetchRolesAndVersions();
     }
-  }, [fetchUsers, fetchRolesAndVersions, user?.role]);
+  }, [fetchUsers, fetchRolesAndVersions, user?.role, page]);
 
   if (user?.role !== "admin") {
     return <Navigate to="/auth" replace />;
@@ -362,6 +373,14 @@ const AdminUsers = () => {
     }
   };
 
+  // Sayfa değiştirici fonksiyonu
+  const handlePageChange = (newPage) => {
+    if (newPage !== page) setPage(newPage);
+  };
+
+  // Pagination component'i
+  const totalPages = Math.ceil(total / limit);
+
   return (
     <Container className="py-3 mt-5">
       <Row>
@@ -388,58 +407,79 @@ const AdminUsers = () => {
                   <span className="visually-hidden">{t("Loading...")}</span>
                 </div>
               ) : (
-                <Table striped bordered hover responsive>
-                  <thead>
-                    <tr>
-                      <th>{t("ID")}</th>
-                      <th>{t("Email")}</th>
-                      <th>{t("Role")}</th>
-                      <th>{t("Version")}</th>
-                      <th>{t("Is Active")}</th>
-                      <th>{t("Created Date")}</th>
-                      <th className="text-center">{t("Actions")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id}>
-                        <td>{user.id}</td>
-                        <td>{user.email}</td>
-                        <td>{user.role}</td>
-                        <td>{user.version}</td>
-                        <td>{user.is_active ? t("Active") : t("Passive")}</td>
-                        <td>{new Date(user.created_at).toLocaleString()}</td>
-                        <td className="text-center">
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleShowEditModal(user)}
-                          >
-                            <PencilSquare size={16} />
-                          </Button>
-                          {user.is_active ? (
-                            <Button
-                              variant="outline-danger"
-                              size="sm"
-                              onClick={() => handleDeleteClick(user)}
-                            >
-                              <Trash size={16} />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline-success"
-                              size="sm"
-                              onClick={() => handleActivateUser(user)}
-                            >
-                              {t("Activate")}
-                            </Button>
-                          )}
-                        </td>
+                <>
+                  <Table striped bordered hover responsive>
+                    <thead>
+                      <tr>
+                        <th>{t("ID")}</th>
+                        <th>{t("Email")}</th>
+                        <th>{t("Role")}</th>
+                        <th>{t("Version")}</th>
+                        <th>{t("Is Active")}</th>
+                        <th>{t("Created Date")}</th>
+                        <th className="text-center">{t("Actions")}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </Table>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => (
+                        <tr key={user.id}>
+                          <td>{user.id}</td>
+                          <td>{user.email}</td>
+                          <td>{user.role}</td>
+                          <td>{user.version}</td>
+                          <td>{user.is_active ? t("Active") : t("Passive")}</td>
+                          <td>{new Date(user.created_at).toLocaleString()}</td>
+                          <td className="text-center">
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleShowEditModal(user)}
+                            >
+                              <PencilSquare size={16} />
+                            </Button>
+                            {user.is_active ? (
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => handleDeleteClick(user)}
+                              >
+                                <Trash size={16} />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline-success"
+                                size="sm"
+                                onClick={() => handleActivateUser(user)}
+                              >
+                                {t("Activate")}
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                  {totalPages > 1 && (
+                    <div className="d-flex justify-content-center mt-3">
+                      <Pagination>
+                        <Pagination.First onClick={() => handlePageChange(1)} disabled={page === 1} />
+                        <Pagination.Prev onClick={() => handlePageChange(page - 1)} disabled={page === 1} />
+                        {[...Array(totalPages)].map((_, idx) => (
+                          <Pagination.Item
+                            key={idx + 1}
+                            active={page === idx + 1}
+                            onClick={() => handlePageChange(idx + 1)}
+                          >
+                            {idx + 1}
+                          </Pagination.Item>
+                        ))}
+                        <Pagination.Next onClick={() => handlePageChange(page + 1)} disabled={page === totalPages} />
+                        <Pagination.Last onClick={() => handlePageChange(totalPages)} disabled={page === totalPages} />
+                      </Pagination>
+                    </div>
+                  )}
+                </>
               )}
             </Card.Body>
           </Card>
