@@ -511,7 +511,7 @@ const Header = () => {
             </Modal.Title>
           </Modal.Header>
           <Modal.Body className="p-4">
-            <VersionPage />
+            <VersionPage onClose={() => setShowVersionModal(false)} />
           </Modal.Body>
         </Modal>
       )}

@@ -29,6 +29,9 @@ import "./styles/Layout.css";
 import { useNavigate } from "react-router-dom";
 import AdminRoles from "./pages/admin/Roles";
 import AdminVersions from "./pages/admin/Versions";
+import PaymentForm from "./pages/PaymentForm";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailure from "./pages/PaymentFailure";
 
 function App() {
   return (
@@ -110,6 +113,9 @@ const AppContent = () => {
             <Route path="roles" element={<AdminRoles />} />
             <Route path="versions" element={<AdminVersions />} />
           </Route>
+          <Route path="/payment" element={<PaymentForm />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-failure" element={<PaymentFailure />} />
           <Route path="*" element={<div>404 - Page Not Found</div>} />
           <Route path="/" element={<Navigate to="/auth" replace />} />
         </Routes>

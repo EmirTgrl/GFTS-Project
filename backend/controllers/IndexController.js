@@ -17,6 +17,8 @@ const statsController = require("./StatsController.js");
 const fareController = require("./FareController.js");
 const otpController = require("./OTPController.js");
 const accountController = require("./AccountController.js");
+const paymentController = require("./PaymentController.js");
+const versionController = require("./VersionController.js");
 
 // routes
 router.use("/auth", authController);
@@ -34,5 +36,7 @@ router.use("/stats", statsController);
 router.use("/fares", fareController);
 router.use("/otp", otpController);
 router.use("/account", accountController);
+router.use("/payment", paymentController);
+router.use("/versions", versionController);
 
 module.exports = router;

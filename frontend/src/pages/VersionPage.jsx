@@ -1,9 +1,17 @@
 import { Container, Row, Col, Card, Button, ListGroup } from "react-bootstrap";
 import { CheckCircleFill, XCircleFill, StarFill } from "react-bootstrap-icons";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 
-const VersionPage = () => {
+const VersionPage = ({ onClose }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const handleSwitchToPremium = () => {
+    navigate("/payment");
+    onClose(); // Modalı kapat
+  };
 
   return (
     <Container className="py-4">
@@ -59,11 +67,7 @@ const VersionPage = () => {
                     variant="success"
                     size="lg"
                     className="w-100 rounded-pill"
-                    onClick={() =>
-                      window.alert(
-                        t("For premium membership, please contact your system administrator.")
-                      )
-                    }
+                    onClick={handleSwitchToPremium}
                   >
                     {t("Switch to Premium")}
                   </Button>
@@ -82,6 +86,9 @@ const VersionPage = () => {
       </div>
     </Container>
   );
+};
+VersionPage.propTypes = {
+  onClose: PropTypes.func.isRequired,
 };
 
 export default VersionPage;
