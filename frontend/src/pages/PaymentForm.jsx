@@ -39,12 +39,12 @@ const PaymentForm = () => {
 
   useEffect(() => {
     const handleIyzicoMessage = (event) => {
-      console.log(
-        "Received message from:",
-        event.origin,
-        "Data:",
-        JSON.stringify(event.data)
-      );
+      // console.log(
+      //   "Received message from:",
+      //   event.origin,
+      //   "Data:",
+      //   JSON.stringify(event.data)
+      // );
       if (
         event.origin.includes("iyzipay.com") ||
         event.origin.includes("iyzico.com")
