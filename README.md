@@ -21,6 +21,8 @@ GTFS-Editor, toplu taşıma sistemlerine ait veri setlerinin yönetilmesini ve G
 - 🖉 Harita üzerinden **"Edit Mode"** erişimi: Durak ve rota çizgileri ekleyip düzenleyebilme
 - 🗂️ MySQL ile güçlü veri yönetimi
 - 🧭 OSRM & OTP ile yön ve mesafe hesaplama desteği
+- 💰 Iyzico ile entegre ödeme sistemi: Aylık abonelik modeliyle premium özelliklere erişim
+- 📧 Nodemailer ile otomatik e-posta gönderimi: Ödeme sonrası e-posta bildirimi
 
 ---
 
@@ -31,6 +33,8 @@ GTFS-Editor, toplu taşıma sistemlerine ait veri setlerinin yönetilmesini ve G
 - **Veritabanı (Database):** MySQL
 - **Kimlik Doğrulama (Authentication):** JWT
 - **Harita & Rotalama (Mapping and routing):** OSRM (Open Source Routing Machine), OTP (OpenTripPlanner)
+- **Ödeme Sistemi (Payment):** Iyzico API
+- **E-posta Servisi (Email Service):** Nodemailer (SMTP)
 - **Veri Standardı (Data Standard):** GTFS & GTFS-Fare V2
 
 ---
@@ -58,6 +62,8 @@ GTFS-Editor is a feature-rich platform that supports managing public transit dat
 - 🖉 Access to **Edit Mode** on the map: Add/edit stops and route paths interactively
 - 🗂️ Robust data management with MySQL
 - 🧭 Routing integration using OSRM & OTP
+- 💰 Iyzico payment integration: Monthly subscription model for premium access
+- 📧 Email notifications via Nodemailer: Automatically send emails for payment confirmations
 
 ---
 
