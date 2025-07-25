@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useContext } from "react";
 import { AuthContext } from "../components/Auth/AuthContext";
-import { fetchAllVersions } from "../api/versionApi"; // Yeni versionApi
-import { initializePayment } from "../api/paymentApi"; // Sadece ödeme için
+import { fetchAllVersions } from "../api/versionApi";
+import { initializePayment } from "../api/paymentApi";
 import { Card, Form, Button, Alert, Spinner } from "react-bootstrap";
 import "../styles/Payment.css";
 
@@ -38,14 +38,13 @@ const PaymentForm = () => {
   }, [token]);
 
   useEffect(() => {
-    // İyzico 3D Secure'den gelen postMessage olayını dinle
     const handleIyzicoMessage = (event) => {
-      // console.log(
-      //   "Received message from:",
-      //   event.origin,
-      //   "Data:",
-      //   JSON.stringify(event.data)
-      // );
+      console.log(
+        "Received message from:",
+        event.origin,
+        "Data:",
+        JSON.stringify(event.data)
+      );
       if (
         event.origin.includes("iyzipay.com") ||
         event.origin.includes("iyzico.com")
@@ -57,9 +56,9 @@ const PaymentForm = () => {
               : event.data;
           console.log("Parsed Iyzico 3DS message:", data);
           if (data.status === "success") {
-            window.location.href = `http://localhost:5173/payment-success`;
+            window.location.href = `${import.meta.env.VITE_API_URL}/payment-success`;
           } else if (data.status === "failure") {
-            window.location.href = `http://localhost:5173/payment-failure`;
+            window.location.href = `${import.meta.env.VITE_API_URL}/payment-failure`;
           } else {
             console.warn("Unknown Iyzico message status:", data.status);
             setError("Unexpected payment result. Please try again.");
@@ -80,7 +79,6 @@ const PaymentForm = () => {
 
     window.addEventListener("message", handleIyzicoMessage);
 
-    // Fallback: Ödeme tamamlandıktan sonra iyzico URL'sinde takılı kalırsa
     const checkPaymentStatus = setInterval(() => {
       if (
         window.location.href.includes("iyzipay.com") ||
@@ -105,9 +103,9 @@ const PaymentForm = () => {
           .then((data) => {
             console.log("Fallback payment check:", data);
             if (data.message === "Payment successful") {
-              window.location.href = `http://localhost:5173/payment-success`;
+              window.location.href = `${import.meta.env.VITE_API_URL}/payment-success`;
             } else {
-              window.location.href = `http://localhost:5173/payment-failure`;
+              window.location.href = `${import.meta.env.VITE_API_URL}/payment-failure`;
             }
           })
           .catch((err) => {
@@ -141,39 +139,41 @@ const PaymentForm = () => {
       const result = await initializePayment(selectedVersion, token);
       console.log("Iyzico frontend response:", result);
 
-      if (result.checkoutFormContent) {
-        const checkoutFormDiv = document.getElementById(
-          "iyzipay-checkout-form"
-        );
-        checkoutFormDiv.innerHTML = result.checkoutFormContent;
+      if (!result.checkoutFormContent) {
+        console.error("No checkoutFormContent received in response");
+        throw new Error("Payment page failed to open: No checkout form content");
+      }
 
-        // Ödeme token'ını kaydet
-        const tokenMatch = result.checkoutFormContent.match(/token:"([^"]+)"/);
-        if (tokenMatch && tokenMatch[1]) {
-          setPaymentToken(tokenMatch[1]);
-          console.log("Payment token saved:", tokenMatch[1]);
-        } else {
-          console.warn("No token found in checkoutFormContent");
-          setError("Failed to extract payment token.");
-        }
+      const checkoutFormDiv = document.getElementById("iyzipay");
+      if (!checkoutFormDiv) {
+        console.error("Checkout form div not found in DOM");
+        throw new Error("Payment form container not found in page");
+      }
+      checkoutFormDiv.innerHTML = result.checkoutFormContent;
 
-        // İyzico script'ini yükle
-        const matches = result.checkoutFormContent.match(
-          /<script[^>]*>([\s\S]*?)<\/script>/
-        );
-        if (matches && matches[1]) {
-          const script = document.createElement("script");
-          script.type = "text/javascript";
-          script.text = matches[1];
-          console.log("Iyzico script loaded");
-          document.body.appendChild(script);
-        } else {
-          console.error("Payment form script not found in checkoutFormContent");
-          setError("Payment form script not found.");
-        }
+      // Ödeme token'ını kaydet
+      const tokenMatch = result.checkoutFormContent.match(/token:"([^"]+)"/);
+      if (tokenMatch && tokenMatch[1]) {
+        setPaymentToken(tokenMatch[1]);
+        console.log("Payment token saved:", tokenMatch[1]);
       } else {
-        console.error("No checkoutFormContent received");
-        setError("Payment page failed to open.");
+        console.warn("No token found in checkoutFormContent");
+        setError("Failed to extract payment token.");
+      }
+
+      // İyzico script'ini yükle
+      const matches = result.checkoutFormContent.match(
+        /<script[^>]*>([\s\S]*?)<\/script>/
+      );
+      if (matches && matches[1]) {
+        const script = document.createElement("script");
+        script.type = "text/javascript";
+        script.text = matches[1];
+        console.log("Iyzico script loaded");
+        document.body.appendChild(script);
+      } else {
+        console.error("Payment form script not found in checkoutFormContent");
+        setError("Payment form script not found.");
       }
     } catch (err) {
       console.error("Payment initialization error:", err);
