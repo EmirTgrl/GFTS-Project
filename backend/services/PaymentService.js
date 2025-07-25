@@ -9,10 +9,10 @@ const paymentSessions = new Map();
 
 const iyzipay = new Iyzipay({
   apiKey:
-    process.env.IYZICO_API_KEY || "sandbox-tAO3e0CJPoHiEKJVpNvQ8FEb0ecOODKj",
+    process.env.IYZICO_API_KEY,
   secretKey:
-    process.env.IYZICO_SECRET_KEY || "sandbox-HeTlSAJqUwINjNKXgh1te0Y3elnJkKbT",
-  uri: process.env.IYZICO_BASE_URL || "https://sandbox-api.iyzipay.com",
+    process.env.IYZICO_SECRET_KEY,
+  uri: process.env.IYZICO_BASE_URL,
 });
 
 // Nodemailer transporter oluşturma
