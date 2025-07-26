@@ -1,0 +1,10 @@
+FROM eclipse-temurin:21-jdk
+
+WORKDIR /otp
+
+COPY otp-shaded-2.7.0.jar .
+COPY otp-data ./otp-data
+
+EXPOSE 8080
+
+CMD ["java", "-Xms4G", "-Xmx12G", "-jar", "otp-shaded-2.7.0.jar", "--build", "otp-data", "--serve"]

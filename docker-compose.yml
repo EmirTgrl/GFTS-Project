@@ -1,14 +1,11 @@
-version: "3.8"
 services:
   db:
     image: mysql:8.0
     container_name: gtfs-mysql-db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
     ports:
       - "3306:3306"
     volumes:
@@ -17,38 +14,54 @@ services:
 
   backend:
     build:
-      context: ./backend  # Updated path: Now points to the backend directory
-      dockerfile: Dockerfile #Dockerfile name.
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: gtfs-backend
     restart: always
     ports:
       - "5000:5000"
     depends_on:
       - db
-    environment:
-      - DB_HOST=db
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - JWT_SECRET=${JWT_SECRET}
-      - PORT=5000
+    env_file:
+      - ./backend/.env
     volumes:
-      - ./backend:/usr/src/app  # Updated path: Mount the backend directory
+      - ./backend:/usr/src/app
       - /usr/src/app/node_modules
 
   frontend:
     build:
-      context: ./frontend  # Updated path: Now points directly to the frontend directory
-      dockerfile: Dockerfile # Dockerfile name.
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: gtfs-frontend
     ports:
       - "5173:5173"
     depends_on:
       - backend
+    env_file:
+      - ./frontend/.env
     volumes:
-      - ./frontend:/app 
-      - /app/node_modules 
+      - ./frontend:/app
+      - /app/node_modules
 
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    container_name: osrm-server
+    command: osrm-routed --algorithm mld /data/turkey-latest.osrm
+    volumes:
+      - ./osrm/data:/data
+    ports:
+      - "5001:5000"
+
+  otp:
+    image: eclipse-temurin:21-jdk
+    container_name: otp-server
+    working_dir: /otp
+    volumes:
+      - ./backend:/otp
+    command: >
+      java -Xms4G -Xmx12G -jar /otp/otp-shaded-2.7.0.jar --serve --build /otp/otp-data
+    ports:
+      - "8080:8080"
 
 volumes:
   mysql_data:

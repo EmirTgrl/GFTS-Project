@@ -1,5 +1,7 @@
 FROM node:20
 
+RUN apt-get update && apt-get install -y openjdk-17-jre-headless && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /usr/src/app
 
 COPY package*.json ./
@@ -10,4 +12,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD [ "npm", "start" ]
+CMD [ "node", "server.js" ]
