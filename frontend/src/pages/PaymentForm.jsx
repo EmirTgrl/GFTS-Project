@@ -12,7 +12,6 @@ const PaymentForm = () => {
   const [selectedVersion, setSelectedVersion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [paymentToken, setPaymentToken] = useState(null);
 
   useEffect(() => {
     const loadVersions = async () => {
@@ -37,90 +36,6 @@ const PaymentForm = () => {
     loadVersions();
   }, [token]);
 
-  useEffect(() => {
-    const handleIyzicoMessage = (event) => {
-      // console.log(
-      //   "Received message from:",
-      //   event.origin,
-      //   "Data:",
-      //   JSON.stringify(event.data)
-      // );
-      if (
-        event.origin.includes("iyzipay.com") ||
-        event.origin.includes("iyzico.com")
-      ) {
-        try {
-          const data =
-            typeof event.data === "string"
-              ? JSON.parse(event.data)
-              : event.data;
-          console.log("Parsed Iyzico 3DS message:", data);
-          if (data.status === "success") {
-            window.location.href = `${import.meta.env.VITE_API_URL}/payment-success`;
-          } else if (data.status === "failure") {
-            window.location.href = `${import.meta.env.VITE_API_URL}/payment-failure`;
-          } else {
-            console.warn("Unknown Iyzico message status:", data.status);
-            setError("Unexpected payment result. Please try again.");
-          }
-        } catch (err) {
-          console.error(
-            "Iyzico message parse error:",
-            err,
-            "Raw data:",
-            event.data
-          );
-          setError("Failed to process payment result.");
-        }
-      } else {
-        console.log("Ignored message from non-Iyzico origin:", event.origin);
-      }
-    };
-
-    window.addEventListener("message", handleIyzicoMessage);
-
-    const checkPaymentStatus = setInterval(() => {
-      if (
-        window.location.href.includes("iyzipay.com") ||
-        window.location.href.includes("iyzico.com")
-      ) {
-        console.log("Still on Iyzico page, checking payment status...");
-        let urlToken =
-          new URLSearchParams(window.location.search).get("token") ||
-          paymentToken;
-        if (!urlToken) {
-          console.warn("No token found in URL or state");
-          setError("Payment token not found. Please try again.");
-          return;
-        }
-        console.log("Checking payment with token:", urlToken);
-        fetch(`${import.meta.env.VITE_API_URL}/api/payment/callback`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: urlToken }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            console.log("Fallback payment check:", data);
-            if (data.message === "Payment successful") {
-              window.location.href = `${import.meta.env.VITE_API_URL}/payment-success`;
-            } else {
-              window.location.href = `${import.meta.env.VITE_API_URL}/payment-failure`;
-            }
-          })
-          .catch((err) => {
-            console.error("Fallback payment check error:", err);
-            setError("Failed to verify payment status.");
-          });
-      }
-    }, 3000);
-
-    return () => {
-      window.removeEventListener("message", handleIyzicoMessage);
-      clearInterval(checkPaymentStatus);
-    };
-  }, [paymentToken]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedVersion) {
@@ -137,44 +52,15 @@ const PaymentForm = () => {
 
     try {
       const result = await initializePayment(selectedVersion, token);
-      console.log("Iyzico frontend response:", result);
+      console.log("Iyzico payment link response:", result);
 
-      if (!result.checkoutFormContent) {
-        console.error("No checkoutFormContent received in response");
-        throw new Error("Payment page failed to open: No checkout form content");
+      if (!result.paymentLink) {
+        console.error("No payment link received in response");
+        throw new Error("Payment link creation failed");
       }
 
-      const checkoutFormDiv = document.getElementById("iyzipay");
-      if (!checkoutFormDiv) {
-        console.error("Checkout form div not found in DOM");
-        throw new Error("Payment form container not found in page");
-      }
-      checkoutFormDiv.innerHTML = result.checkoutFormContent;
-
-      // Ödeme token'ını kaydet
-      const tokenMatch = result.checkoutFormContent.match(/token:"([^"]+)"/);
-      if (tokenMatch && tokenMatch[1]) {
-        setPaymentToken(tokenMatch[1]);
-        console.log("Payment token saved:", tokenMatch[1]);
-      } else {
-        console.warn("No token found in checkoutFormContent");
-        setError("Failed to extract payment token.");
-      }
-
-      // İyzico script'ini yükle
-      const matches = result.checkoutFormContent.match(
-        /<script[^>]*>([\s\S]*?)<\/script>/
-      );
-      if (matches && matches[1]) {
-        const script = document.createElement("script");
-        script.type = "text/javascript";
-        script.text = matches[1];
-        console.log("Iyzico script loaded");
-        document.body.appendChild(script);
-      } else {
-        console.error("Payment form script not found in checkoutFormContent");
-        setError("Payment form script not found.");
-      }
+      // Kullanıcıyı manuel ödeme linkine yönlendir
+      window.location.href = result.paymentLink;
     } catch (err) {
       console.error("Payment initialization error:", err);
       setError(`Failed to initiate payment: ${err.message}`);
@@ -240,7 +126,6 @@ const PaymentForm = () => {
                 </Button>
               </div>
             </Form>
-            <div id="iyzipay" className="mt-4"></div>
           </Card.Body>
         </Card>
       </div>
