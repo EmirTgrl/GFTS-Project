@@ -4,9 +4,11 @@ import { AuthContext } from "../components/Auth/AuthContext";
 import { fetchAllVersions } from "../api/versionApi";
 import { initializePayment } from "../api/paymentApi";
 import { Card, Form, Button, Alert, Spinner } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import "../styles/Payment.css";
 
 const PaymentForm = () => {
+  const { t } = useTranslation();
   const { user, token } = useContext(AuthContext);
   const [versions, setVersions] = useState([]);
   const [selectedVersion, setSelectedVersion] = useState("");
@@ -19,7 +21,7 @@ const PaymentForm = () => {
         setLoading(true);
         setError("");
         if (!token) {
-          throw new Error("Please log in to access payment options.");
+          throw new Error(t("Please log in to access payment options."));
         }
         const data = await fetchAllVersions(token);
         const filteredVersions = data.data.filter(
@@ -28,22 +30,22 @@ const PaymentForm = () => {
         setVersions(filteredVersions);
       } catch (err) {
         console.error("Error loading versions:", err);
-        setError(`Plans failed to load: ${err.message}`);
+        setError(t(`Plans failed to load: ${err.message}`));
       } finally {
         setLoading(false);
       }
     };
     loadVersions();
-  }, [token]);
+  }, [token, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedVersion) {
-      setError("Please select a plan.");
+      setError(t("Please select a plan."));
       return;
     }
     if (!user?.id) {
-      setError("User information not found, please login.");
+      setError(t("User information not found, please login."));
       return;
     }
 
@@ -56,14 +58,13 @@ const PaymentForm = () => {
 
       if (!result.paymentLink) {
         console.error("No payment link received in response");
-        throw new Error("Payment link creation failed");
+        throw new Error(t("Payment link creation failed"));
       }
 
-      // Kullanıcıyı manuel ödeme linkine yönlendir
       window.location.href = result.paymentLink;
     } catch (err) {
       console.error("Payment initialization error:", err);
-      setError(`Failed to initiate payment: ${err.message}`);
+      setError(t(`Failed to initiate payment: ${err.message}`));
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ const PaymentForm = () => {
         <Card className="payment-card shadow-lg">
           <Card.Body className="p-4">
             <Card.Title className="text-center mb-4 fs-3 fw-bold text-primary">
-              Buy Premium Package
+              {t("Buy Premium Package")}
             </Card.Title>
             {error && (
               <Alert variant="danger" className="payment-alert">
@@ -84,7 +85,7 @@ const PaymentForm = () => {
             )}
             <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-4">
-                <Form.Label className="fw-bold">Select Plan</Form.Label>
+                <Form.Label className="fw-bold">{t("Select Plan")}</Form.Label>
                 <Form.Select
                   id="version"
                   value={selectedVersion}
@@ -93,7 +94,7 @@ const PaymentForm = () => {
                   required
                   className="payment-select"
                 >
-                  <option value="">Select a Plan</option>
+                  <option value="">{t("Select a Plan")}</option>
                   {versions.map((v) => (
                     <option key={v.id} value={v.id}>
                       {v.name} - {v.price}₺ / {v.duration_days} days
@@ -118,10 +119,10 @@ const PaymentForm = () => {
                         aria-hidden="true"
                         className="me-2"
                       />
-                      Processing...
+                      {t("Processing...")}
                     </>
                   ) : (
-                    "Buy Now"
+                    t("Buy Now")
                   )}
                 </Button>
               </div>

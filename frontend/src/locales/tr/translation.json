@@ -592,5 +592,15 @@
   "Enter current password": "Şimdiki şifreyi girin",
   "Enter new password": "Yeni şifreyi girin",
   "Do you want to update your email?": "E-posta adresinizi güncellemek istiyor musunuz?",
-  "Do you want to update your password?": "Şifrenizi güncellemek istiyor musunuz?"
+  "Do you want to update your password?": "Şifrenizi güncellemek istiyor musunuz?",
+  "Your premium subscription has expired. You are now on the basic plan. To regain premium features, please renew your subscription.": "Premium aboneliğiniz sona erdi. Şu anda temel plandasınız. Premium özelliklere yeniden erişmek için lütfen aboneliğinizi yenileyin.",
+  "Please log in to access payment options": "Ödeme seçeneklerine erişmek için lütfen giriş yapın",
+  "Please select a plan": "Lütfen bir plan seçin",
+  "User information not found, please login": "Kullanıcı bilgileri bulunamadı, lütfen giriş yapın",
+  "Payment link creation failed": "Ödeme bağlantısı oluşturma başarısız oldu",
+  "Failed to initiate payment": "Ödeme başlatma başarısız oldu",
+  "Select Plan": "Plan Seç",
+  "Select a Plan": "Bir Plan Seçin",
+  "days": "gün",
+  "Processing...": "İşleniyor..."
 }

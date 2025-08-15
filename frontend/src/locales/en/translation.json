@@ -597,5 +597,15 @@
   "Enter current password": "Enter current password",
   "Enter new password": "Enter new password",
   "Do you want to update your email?": "Do you want to update your email?",
-  "Do you want to update your password?": "Do you want to update your password?"
+  "Do you want to update your password?": "Do you want to update your password?",
+  "Your premium subscription has expired. You are now on the basic plan. To regain premium features, please renew your subscription.": "Your premium subscription has expired. You are now on the basic plan. To regain premium features, please renew your subscription.",
+  "Please log in to access payment options": "Please log in to access payment options",
+  "Please select a plan": "Please select a plan",
+  "User information not found, please login": "User information not found, please login",
+  "Payment link creation failed": "Payment link creation failed",
+  "Failed to initiate payment": "Failed to initiate payment",
+  "Select Plan": "Select Plan",
+  "Select a Plan": "Select a Plan",
+  "days": "days",
+  "Processing...": "Processing..."
 }

@@ -225,9 +225,7 @@ const authService = {
       );
 
       if (tokens.length === 0) {
-        return res
-          .status(400)
-          .json({ message: "Invalid or used token." });
+        return res.status(400).json({ message: "Invalid or used token." });
       }
 
       const resetTokenData = tokens[0];

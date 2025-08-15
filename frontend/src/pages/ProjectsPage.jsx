@@ -41,9 +41,10 @@ const ProjectsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState({});
+  const [showPremiumExpiredModal, setShowPremiumExpiredModal] = useState(false); // Yeni: Süre doldu modalı
   const projectsPerPage = 10;
   const navigate = useNavigate();
-  const { isAuthenticated, token } = useContext(AuthContext);
+  const { isAuthenticated, token, user } = useContext(AuthContext); // user bilgisi eklendi
 
   const loadProjects = useCallback(async () => {
     try {
@@ -54,6 +55,22 @@ const ProjectsPage = () => {
       setProjects([]);
     }
   }, [token]);
+
+  // Premium süresi kontrolü
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      user &&
+      user.version === "premium" &&
+      user.premium_until
+    ) {
+      const currentDate = new Date();
+      const premiumUntil = new Date(user.premium_until);
+      if (premiumUntil < currentDate) {
+        setShowPremiumExpiredModal(true); // Süre dolduysa modalı göster
+      }
+    }
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -120,12 +137,10 @@ const ProjectsPage = () => {
     try {
       const { blob, filename } = await exportProject(projectId, token);
 
-      // Blob nesnesini kontrol et
       if (!blob || !(blob instanceof Blob)) {
         throw new Error("Invalid blob received.");
       }
 
-      // Filename'in geçerli bir string olduğundan emin ol
       const fileName =
         typeof filename === "string" && filename
           ? filename
@@ -163,10 +178,6 @@ const ProjectsPage = () => {
     setSelectedProject(null);
   };
 
-  // const handleOpenModal = () => {
-  //   setShowModal(true);
-  // };
-
   const handleCloseModal = () => {
     setShowModal(false);
   };
@@ -189,6 +200,11 @@ const ProjectsPage = () => {
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
+  };
+
+  // Premium süresi doldu modalını kapatma fonksiyonu
+  const handleClosePremiumExpiredModal = () => {
+    setShowPremiumExpiredModal(false);
   };
 
   return (
@@ -223,9 +239,6 @@ const ProjectsPage = () => {
                   <h2 className="card-title h3 fw-bold">
                     {t("Your GTFS Files")}
                   </h2>
-                  {/* <Button variant="success" size="sm" onClick={handleOpenModal}>
-                    + {t("New Project")}
-                  </Button> */}
                 </div>
                 <hr className="mb-4" />
                 {currentProjects.length > 0 ? (
@@ -590,6 +603,31 @@ const ProjectsPage = () => {
               </p>
             )}
           </Modal.Body>
+        </Modal>
+
+        <Modal
+          show={showPremiumExpiredModal}
+          onHide={handleClosePremiumExpiredModal}
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>{t("Premium Subscription Expired")}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p>
+              {t(
+                "Your premium subscription has expired. You are now on the basic plan. To regain premium features, please renew your subscription."
+              )}
+            </p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={handleClosePremiumExpiredModal}
+            >
+              {t("Close")}
+            </Button>
+          </Modal.Footer>
         </Modal>
       </Container>
     </div>
