@@ -59,7 +59,7 @@ services:
     volumes:
       - ./backend:/otp
     command: >
-      java -Xms4G -Xmx12G -jar /otp/otp-shaded-2.7.0.jar --serve --build /otp/otp-data
+      java -Xms4G -Xmx12G -jar /otp/otp-shaded-2.7.0.jar --load /otp/otp-data --serve
     ports:
       - "8080:8080"
 

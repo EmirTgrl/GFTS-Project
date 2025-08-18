@@ -232,15 +232,18 @@ const exportService = {
       });
 
       // --- OTP DATA & CONFIG DOSYALARINI OLUŞTUR ---
-      // Her proje için ayrı klasör
-      const otpDataDir = path.resolve(__dirname, `../otp-data/project_${projectId}`);
+      // OTP'nin okuyacağı merkezi bir klasör belirle
+      const otpDataDir = path.resolve(__dirname, "../otp-data");
       await fsPromises.mkdir(otpDataDir, { recursive: true });
 
-      // GTFS zip dosyasını otp-data klasörüne kopyala
-      const otpGtfsPath = path.join(otpDataDir, "gtfs.zip");
+      // GTFS zip dosyasını, proje kimliğine özel bir isimle otp-data klasörüne kopyala
+      const otpGtfsPath = path.join(
+        otpDataDir,
+        `gtfs_project_${projectId}.zip`
+      );
       await fsPromises.copyFile(zipPath, otpGtfsPath);
 
-      // build-config.json oluştur
+      // build-config.json içeriğini düzenle
       const buildConfigPath = path.join(otpDataDir, "build-config.json");
       const buildConfig = {
         transitServiceStart: "2025-01-01",
@@ -252,53 +255,28 @@ const exportService = {
             source: `file://${otpGtfsPath.replace(/\\/g, "/")}`,
           },
         ],
-        writeGraph: true,
+        writeGraph: false,
       };
-      await fsPromises.writeFile(buildConfigPath, JSON.stringify(buildConfig, null, 2));
+      await fsPromises.writeFile(
+        buildConfigPath,
+        JSON.stringify(buildConfig, null, 2)
+      );
 
-      // router-config.json oluştur/güncelle
-      const routerConfigPath = path.join(otpDataDir, "router-config.json");
-      let routerConfig = {
-        updaters: [],
-        routingDefaults: {
-          walkSpeed: 1.33,
-          maxWalkDistance: 800,
-          numItineraries: 3,
-        },
-      };
-      try {
-        const existingConfig = await fsPromises.readFile(routerConfigPath, "utf8");
-        const parsedConfig = JSON.parse(existingConfig);
-        routerConfig = { ...routerConfig, ...parsedConfig };
-      } catch (error) {
-        // yoksa default ile devam
-      }
-      await fsPromises.writeFile(routerConfigPath, JSON.stringify(routerConfig, null, 2));
+      // router-config.json ve otp-config.json zaten Docker volumes ile paylaşıldığı için
+      // dinamik olarak oluşturulmaları gerekmez, zaten var olanlar kullanılacaktır.
 
-      // otp-config.json oluştur/güncelle (isteğe bağlı)
-      const otpConfigPath = path.join(otpDataDir, "otp-config.json");
-      const otpConfig = {
-        server: {
-          cors: {
-            enabled: true,
-            allowOrigins: ["http://localhost:5173"],
-            allowMethods: ["GET", "POST", "OPTIONS"],
-            allowHeaders: ["Authorization", "Content-Type"],
-          },
-        },
-      };
-      await fsPromises.writeFile(otpConfigPath, JSON.stringify(otpConfig, null, 2));
-
-      // --- OTP GRAPH BUILD KOMUTU OTOMATİK ---
+      // --- OTP SUNUCU BAŞLATMA KOMUTU GÜNCELLENDİ ---
+      // Sadece --load komutunu kullanacağız, grafik zaten oluşmuş durumda
       const javaPath = `"C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.7.6-hotspot\\bin\\java.exe"`;
       const otpJarPath = path.resolve(__dirname, "../otp-shaded-2.7.0.jar");
-      const buildServeCmd = `${javaPath} -Xms4G -Xmx12G -jar "${otpJarPath}" --build "${otpDataDir}" --serve`;
+      const serveCmd = `${javaPath} -Xms4G -Xmx12G -jar "${otpJarPath}" --load "${otpDataDir}" --serve`;
 
-      exec(buildServeCmd, (err, stdout, stderr) => {
+      exec(serveCmd, (err, stdout, stderr) => {
         if (err) {
-          console.error("OTP build/serve error:", err);
+          console.error("❌ OTP serve error:", err);
+          console.error("❌ STDERR:", stderr);
         } else {
-          console.log("OTP build/serve output:", stdout);
+          console.log("✅ OTP serve output:", stdout);
         }
       });
 
