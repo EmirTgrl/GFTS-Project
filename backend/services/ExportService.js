@@ -6,41 +6,22 @@ const csv = require("csv-stringify");
 const path = require("path");
 const { exec } = require("child_process");
 
-// Format dates to GTFS standard (YYYYMMDD) from string input
+// GTFS standartlarına göre tarih formatı (YYYYMMDD)
 const formatDateForGTFS = (dateString) => {
   if (!dateString) return "";
-
-  // If the date is already in YYYYMMDD format, return it as is
   if (/^\d{8}$/.test(dateString)) return dateString;
-
-  // If the date is in YYYY-MM-DD format, convert to YYYYMMDD
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return dateString.replace(/-/g, "");
   }
-
-  // If the date is a Unix timestamp, convert it
-  if (!isNaN(dateString) && String(dateString).length >= 10) {
-    const timestamp =
-      String(dateString).length > 10
-        ? parseInt(dateString)
-        : parseInt(dateString) * 1000;
-    const d = new Date(timestamp);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}${month}${day}`;
-  }
-
-  // Otherwise, try parsing as a Date and convert
   const d = new Date(dateString);
-  if (isNaN(d.getTime())) return ""; // Invalid date, return empty string
+  if (isNaN(d.getTime())) return "";
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}${month}${day}`;
 };
 
-// Format times to GTFS standard (HH:MM:SS)
+// GTFS standartlarına göre zaman formatı (HH:MM:SS)
 const formatTimeForGTFS = (timeString) => {
   if (!timeString) return "";
   const [hours, minutes, seconds] = timeString.split(":");
@@ -59,7 +40,7 @@ const exportService = {
     }
 
     try {
-      // Verify project exists and belongs to the user
+      // Projenin varlığını ve kullanıcıya ait olduğunu doğrula
       const [projectExists] = await pool.execute(
         `SELECT file_name FROM projects WHERE project_id = ? AND user_id = ?`,
         [projectId, user_id]
@@ -72,15 +53,16 @@ const exportService = {
       }
 
       const projectName = projectExists[0].file_name.replace(".zip", "");
-      const outputDir = path.join("gtfs_output", projectId);
-      await fsPromises.mkdir(outputDir, { recursive: true });
 
+      // GTFS zip dosyasını bellekten oluşturacak akışları ayarla
       const archive = archiver("zip", { zlib: { level: 6 } });
-      const zipPath = path.resolve(outputDir, `${projectName}.zip`);
+      const zipPath = path.join(
+        path.resolve(__dirname, "../otp-data"),
+        `gtfs_project_${projectId}.zip`
+      );
       const zipStream = fs.createWriteStream(zipPath);
       archive.pipe(zipStream);
 
-      // List of GTFS tables based on initializeTables.js
       const gtfsTables = [
         "agency",
         "stops",
@@ -104,46 +86,33 @@ const exportService = {
         "stop_areas",
       ];
 
-      // Check existing tables in the database
+      // Veritabanındaki GTFS tablolarını kontrol et
       const [allTables] = await pool.query(`
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = DATABASE()
+        SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()
       `);
-
       const existingTables = allTables
         .map((t) => t.table_name || t.TABLE_NAME)
         .filter((t) => gtfsTables.includes(t));
 
       if (!existingTables.length) {
+        archive.finalize();
         return res
           .status(400)
           .json({ message: "No GTFS tables available for export." });
       }
 
-      let exportedTables = 0;
       let requiredTablesMissing = [];
+      let exportedTablesCount = 0;
 
       for (const tableName of existingTables) {
-        // Fetch column names, excluding user_id and project_id
         const [columns] = await pool.query(
-          `
-          SELECT COLUMN_NAME
-          FROM INFORMATION_SCHEMA.COLUMNS
-          WHERE TABLE_SCHEMA = DATABASE()
-          AND TABLE_NAME = ?
-          AND COLUMN_NAME NOT IN ('user_id', 'project_id')
-        `,
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME NOT IN ('user_id', 'project_id')`,
           [tableName]
         );
-
         const columnNames = columns.map((col) => col.COLUMN_NAME);
 
-        if (columnNames.length === 0) {
-          continue;
-        }
+        if (columnNames.length === 0) continue;
 
-        // Fetch rows for the user and project
         const [rows] = await pool.execute(
           `SELECT ${columnNames.join(
             ","
@@ -167,48 +136,35 @@ const exportService = {
           continue;
         }
 
-        // Format dates and times for GTFS compliance as strings
         if (["calendar", "calendar_dates"].includes(tableName)) {
           rows.forEach((row) => {
             if (row.start_date)
-              row.start_date = formatDateForGTFS(row.start_date.toString());
-            if (row.end_date)
-              row.end_date = formatDateForGTFS(row.end_date.toString());
-            if (row.date) row.date = formatDateForGTFS(row.date.toString());
+              row.start_date = formatDateForGTFS(row.start_date);
+            if (row.end_date) row.end_date = formatDateForGTFS(row.end_date);
+            if (row.date) row.date = formatDateForGTFS(row.date);
           });
         }
-
         if (["stop_times", "timeframes"].includes(tableName)) {
           rows.forEach((row) => {
             if (row.arrival_time)
-              row.arrival_time = formatTimeForGTFS(row.arrival_time.toString());
+              row.arrival_time = formatTimeForGTFS(row.arrival_time);
             if (row.departure_time)
-              row.departure_time = formatTimeForGTFS(
-                row.departure_time.toString()
-              );
+              row.departure_time = formatTimeForGTFS(row.departure_time);
             if (row.start_time)
-              row.start_time = formatTimeForGTFS(row.start_time.toString());
-            if (row.end_time)
-              row.end_time = formatTimeForGTFS(row.end_time.toString());
+              row.start_time = formatTimeForGTFS(row.start_time);
+            if (row.end_time) row.end_time = formatTimeForGTFS(row.end_time);
           });
         }
 
         const csvStream = csv.stringify(rows, {
           header: true,
           columns: columnNames,
-          cast: {
-            date: (value) => formatDateForGTFS(value.toString()),
-            string: (value) => value,
-            number: (value) => value.toString(),
-            boolean: (value) => (value ? "1" : "0"),
-          },
         });
 
         archive.append(csvStream, { name: `${tableName}.txt` });
-        exportedTables++;
+        exportedTablesCount++;
       }
 
-      // Check for missing required tables
       if (requiredTablesMissing.length > 0) {
         archive.finalize();
         return res.status(400).json({
@@ -218,33 +174,25 @@ const exportService = {
         });
       }
 
-      if (archive.pointer() === 0) {
+      if (exportedTablesCount === 0) {
+        archive.finalize();
         return res
           .status(400)
           .json({ message: "No data available for export." });
       }
 
-      // Finalize the archive
+      // Arşivleme işlemini sonlandır ve zip dosyasını diske kaydet
       await new Promise((resolve, reject) => {
         archive.on("end", resolve);
         archive.on("error", reject);
         archive.finalize();
       });
 
-      // --- OTP DATA & CONFIG DOSYALARINI OLUŞTUR ---
-      // OTP'nin okuyacağı merkezi bir klasör belirle
-      const otpDataDir = path.resolve(__dirname, "../otp-data");
-      await fsPromises.mkdir(otpDataDir, { recursive: true });
-
-      // GTFS zip dosyasını, proje kimliğine özel bir isimle otp-data klasörüne kopyala
-      const otpGtfsPath = path.join(
-        otpDataDir,
-        `gtfs_project_${projectId}.zip`
+      // OTP için build-config.json dosyasını güncelle
+      const buildConfigPath = path.join(
+        path.resolve(__dirname, "../otp-data"),
+        "build-config.json"
       );
-      await fsPromises.copyFile(zipPath, otpGtfsPath);
-
-      // build-config.json içeriğini düzenle
-      const buildConfigPath = path.join(otpDataDir, "build-config.json");
       const buildConfig = {
         transitServiceStart: "2025-01-01",
         transitServiceEnd: "2026-01-01",
@@ -252,24 +200,23 @@ const exportService = {
         transitFeeds: [
           {
             type: "gtfs",
-            source: `file://${otpGtfsPath.replace(/\\/g, "/")}`,
+            source: `file://${zipPath.replace(/\\/g, "/")}`,
           },
         ],
-        writeGraph: false,
+        writeGraph: true,
       };
       await fsPromises.writeFile(
         buildConfigPath,
         JSON.stringify(buildConfig, null, 2)
       );
 
-      // router-config.json ve otp-config.json zaten Docker volumes ile paylaşıldığı için
-      // dinamik olarak oluşturulmaları gerekmez, zaten var olanlar kullanılacaktır.
-
-      // --- OTP SUNUCU BAŞLATMA KOMUTU GÜNCELLENDİ ---
-      // Sadece --load komutunu kullanacağız, grafik zaten oluşmuş durumda
+      // OTP sunucusunu yeniden başlatma komutu
       const javaPath = `"C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.7.6-hotspot\\bin\\java.exe"`;
       const otpJarPath = path.resolve(__dirname, "../otp-shaded-2.7.0.jar");
-      const serveCmd = `${javaPath} -Xms4G -Xmx12G -jar "${otpJarPath}" --load "${otpDataDir}" --serve`;
+      const serveCmd = `${javaPath} -Xms4G -Xmx12G -jar "${otpJarPath}" --load "${path.resolve(
+        __dirname,
+        "../otp-data"
+      )}" --serve`;
 
       exec(serveCmd, (err, stdout, stderr) => {
         if (err) {
@@ -280,7 +227,7 @@ const exportService = {
         }
       });
 
-      // --- DOSYA İNDİRME ---
+      // Oluşturulan zip dosyasını kullanıcıya gönder
       res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
       res.setHeader(
         "Content-Disposition",
@@ -291,9 +238,12 @@ const exportService = {
       readStream.pipe(res);
     } catch (error) {
       console.error("❌ GTFS Export Error:", error);
-      return res.status(500).json({
-        message: error.message || "An error occurred while exporting GTFS data",
-      });
+      if (!res.headersSent) {
+        return res.status(500).json({
+          message:
+            error.message || "An error occurred while exporting GTFS data",
+        });
+      }
     }
   },
 };
